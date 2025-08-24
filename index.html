@@ -77,7 +77,6 @@
 
     <script>
       const app = document.getElementById("app");
-      const STORAGE_KEY = "todos-v3";
       const NOTIFIED_TODOS_KEY = "notified-todos";
       // 通知設定を保存するキーを追加
       const NOTIFICATION_PERMISSION_KEY = "notificationPermission";
@@ -89,17 +88,79 @@
         sortBy: "dueDate",
       };
 
-      // --- データ操作 (LocalStorage) ---
+      // --- データ操作 (IndexedDB) ---
+      const DB_NAME = "shokubunTodoDB";
+      const DB_VERSION = 1;
+      const OBJECT_STORE_NAME = "todos";
+
+      let db;
+
+      const openDB = () => {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+          request.onerror = (event) => {
+            console.error("IndexedDB error:", event.target.error);
+            reject(event.target.error);
+          };
+
+          request.onsuccess = (event) => {
+            db = event.target.result;
+            resolve(db);
+          };
+
+          request.onupgradeneeded = (event) => {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains(OBJECT_STORE_NAME)) {
+              db.createObjectStore(OBJECT_STORE_NAME, { keyPath: "id" });
+            }
+          };
+        });
+      };
+
       const todoManager = {
-        fetch: () => {
-          const todos = localStorage.getItem(STORAGE_KEY);
-          return todos ? JSON.parse(todos) : [];
+        fetch: async () => {
+          if (!db) await openDB();
+          return new Promise((resolve) => {
+            const transaction = db.transaction([OBJECT_STORE_NAME], "readonly");
+            const objectStore = transaction.objectStore(OBJECT_STORE_NAME);
+            const request = objectStore.getAll();
+            request.onsuccess = (event) => {
+              resolve(event.target.result);
+            };
+            request.onerror = (event) => {
+              console.error("Fetch from IndexedDB failed:", event.target.error);
+              resolve([]);
+            };
+          });
         },
-        save: (todos) => {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+        save: async (todos) => {
+          if (!db) await openDB();
+          return new Promise((resolve) => {
+            const transaction = db.transaction(
+              [OBJECT_STORE_NAME],
+              "readwrite"
+            );
+            const objectStore = transaction.objectStore(OBJECT_STORE_NAME);
+            // オブジェクトストアをクリア
+            const clearRequest = objectStore.clear();
+            clearRequest.onsuccess = () => {
+              // Todosを一つずつ追加
+              todos.forEach((todo) => {
+                objectStore.put(todo);
+              });
+              transaction.oncomplete = () => {
+                resolve();
+              };
+            };
+            clearRequest.onerror = (event) => {
+              console.error("Save to IndexedDB failed:", event.target.error);
+              resolve();
+            };
+          });
         },
         get: (id) => state.todos.find((todo) => todo.id === id),
-        add: (todo) => {
+        add: async (todo) => {
           const now = new Date().toISOString();
           const newTodo = {
             id: crypto.randomUUID(),
@@ -108,22 +169,22 @@
             ...todo,
           };
           state.todos.push(newTodo);
-          todoManager.save(state.todos);
+          await todoManager.save(state.todos);
         },
-        update: (id, updatedTodo) => {
+        update: async (id, updatedTodo) => {
           state.todos = state.todos.map((todo) =>
             todo.id === id ? { ...todo, ...updatedTodo } : todo
           );
-          todoManager.save(state.todos);
+          await todoManager.save(state.todos);
         },
-        delete: (id) => {
+        delete: async (id) => {
           state.todos.forEach((todo) => {
             if (todo.dependency === id) {
               todo.dependency = "";
             }
           });
           state.todos = state.todos.filter((todo) => todo.id !== id);
-          todoManager.save(state.todos);
+          await todoManager.save(state.todos);
         },
       };
 
@@ -555,7 +616,7 @@
 
       // --- イベントハンドラー ---
 
-      const handleSave = (e) => {
+      const handleSave = async (e) => {
         e.preventDefault();
         const form = e.target;
         const id = form.id.value;
@@ -573,11 +634,12 @@
         };
 
         if (id) {
-          todoManager.update(id, todoData);
+          await todoManager.update(id, todoData);
         } else {
-          todoManager.add(todoData);
+          await todoManager.add(todoData);
         }
         location.hash = "";
+        await render();
       };
 
       const handleNew = () => {
@@ -588,12 +650,12 @@
         location.hash = `#/edit/${id}`;
       };
 
-      const handleDelete = (id) => {
+      const handleDelete = async (id) => {
         renderModal(
           "このTodoを本当に削除しますか？<br>この操作は取り消せません。",
-          () => {
-            todoManager.delete(id);
-            render();
+          async () => {
+            await todoManager.delete(id);
+            await render();
           }
         );
       };
@@ -602,16 +664,16 @@
         location.hash = "";
       };
 
-      const handleFilter = (filter) => {
+      const handleFilter = async (filter) => {
         const url = new URL(window.location);
         url.searchParams.set("status", filter);
         history.pushState({}, "", url);
-        render();
+        await render();
       };
 
-      const handleSort = (sortBy) => {
+      const handleSort = async (sortBy) => {
         state.sortBy = sortBy;
-        render();
+        await render();
       };
 
       // --- 通知関連 ---
@@ -665,11 +727,11 @@
         }
       };
 
-      const checkForNotifications = () => {
+      const checkForNotifications = async () => {
         if (Notification.permission !== "granted") return;
 
         const now = new Date();
-        const allTodos = todoManager.fetch();
+        const allTodos = await todoManager.fetch();
         let notifiedTodoIds = JSON.parse(
           sessionStorage.getItem(NOTIFIED_TODOS_KEY) || "[]"
         );
@@ -707,7 +769,7 @@
 
       // --- ルーティングと初期化 ---
 
-      const router = () => {
+      const router = async () => {
         const path = location.hash.split("/");
 
         if (path[1] === "new") {
@@ -724,13 +786,15 @@
         }
       };
 
-      const render = () => {
+      const render = async () => {
+        state.todos = await todoManager.fetch(); // IndexedDBからデータを取得
         router();
       };
 
       // 初期化処理
-      document.addEventListener("DOMContentLoaded", () => {
-        state.todos = todoManager.fetch();
+      document.addEventListener("DOMContentLoaded", async () => {
+        await openDB(); // IndexedDBを開く
+        await render(); // データベースの初期化後にレンダリングを実行
 
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker
@@ -746,10 +810,8 @@
             );
         }
 
-        window.addEventListener("hashchange", router);
+        window.addEventListener("hashchange", render);
         window.addEventListener("popstate", render);
-        render();
-
         setInterval(checkForNotifications, 30000);
       });
     </script>
