@@ -412,7 +412,14 @@ function App() {
                           <span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusClasses[todo.status]}`}>{todo.status}</span>
                         </div>
                       </div>
-                      <div className="text-sm text-slate-600 mb-3 markdown-preview" dangerouslySetInnerHTML={{ __html: marked.parse(todo.description || '') }} />
+                      <div
+                        className="text-sm text-slate-600 mb-3 markdown-preview"
+                        dangerouslySetInnerHTML={{
+                          __html: typeof marked.parse(todo.description || '') === 'string'
+                            ? marked.parse(todo.description || '') as string
+                            : ''
+                        }}
+                      />
                     </div>
                     <div>
                       <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 mt-4 pt-4 border-t">
