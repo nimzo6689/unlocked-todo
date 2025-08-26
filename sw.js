@@ -1,10 +1,22 @@
+async function cacheFirstWithRefresh(request) {
+  const fetchResponsePromise = fetch(request).then(async (networkResponse) => {
+    if (networkResponse.ok) {
+      const cache = await caches.open("shokubun-todo");
+      cache.put(request, networkResponse.clone());
+    }
+    return networkResponse;
+  });
+
+  return (await caches.match(request)) || (await fetchResponsePromise);
+}
+
+self.addEventListener("fetch", (event) => {
+  event.respondWith(cacheFirstWithRefresh(event.request));
+});
+
 self.addEventListener("install", (event) => {
   console.log("Service Worker installed.");
   self.skipWaiting();
-});
-
-self.addEventListener("activate", (event) => {
-  console.log("Service Worker activated.");
 });
 
 // 通知がクリックされたときのイベント
@@ -18,18 +30,14 @@ self.addEventListener("notificationclick", (event) => {
     clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
-        if (clientList.length > 0) {
-          let client = clientList[0];
-          // 既存のウィンドウがあればそれにフォーカスする
-          for (let i = 0; i < clientList.length; i++) {
-            if (clientList[i].focused) {
-              client = clientList[i];
-            }
-          }
-          return client.focus();
-        }
         // ウィンドウがなければ新しく開く
-        return clients.openWindow("/");
+        if (!clientList.length) {
+          return clients.openWindow("/");
+        }
+
+        // 既存のウィンドウがあればそれにフォーカスする
+        const client = clientList.find((c) => c.focused) || clientList[0];
+        return client.focus();
       })
   );
 });

@@ -707,15 +707,10 @@
         }
         const permission = await Notification.requestPermission();
         if (permission === "granted") {
-          console.log("Notification permission granted.");
-          // 許可されたらLocalStorageに保存
           localStorage.setItem(NOTIFICATION_PERMISSION_KEY, "granted");
         } else {
-          console.log("Notification permission denied.");
-          // 拒否されたらLocalStorageから削除
           localStorage.removeItem(NOTIFICATION_PERMISSION_KEY);
         }
-        // ボタンの状態を即座に更新
         updateNotificationButtonState();
       };
 
@@ -750,9 +745,6 @@
             !isDependencyIncomplete;
 
           if (isReady && !notifiedTodoIds.includes(todo.id)) {
-            console.log(
-              `Todo "${todo.title}" is now active. Sending notification.`
-            );
             showNotification("タスクが開始可能です！", {
               body: `「${todo.title}」に着手できます。`,
               icon: "https://placehold.co/192x192/0ea5e9/ffffff?text=Todo",
