@@ -1,69 +1,49 @@
-# React + TypeScript + Vite
+# Shokubun Todo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+今、着手可能な Todo が一目でわかる ToDo アプリです。  
+個人のタスク管理を前提にデザインしています。  
+ブラウザにデータが保存（LocalStorage）されるため、ネットワーク通信は発生しません。  
 
-Currently, two official plugins are available:
+## 開発手順
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```
+git clone https://github.com/nimzo6689/shokubun-todo.git
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# NPM パッケージのインストール
+npm install
+# 開発サーバーの起動
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 技術選定
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+**言語**: TypeScript  
+**レンダリング**: React  
+**ルーティング**: React Router  
+**ステート管理**: Zustand  
+**バンドラー**: Vite  
+**スタイル**: Tailwind CSS  
+**フォーマッター**: prettier  
+**Linter**: ESLint  
+**Unit Test**: Vitest  
+**E2E Test**: Playwright  
+**CI/CD**: GitHub Actions  
+**ホスティング**: GitHub Pages  
+**IDE**: Visual Studio Code  
+**Agentic Coding**: GitHub Copilot  
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## ロードマップ
+
+**サンキー・ダイアグラムでの視覚化**
+
+- 着手可能期間と工数の比率で色に濃淡を付ける。  
+- 依存関係が多いタスクが太く表示される。  
+- 横軸は着手可能期間に比例する。  
+- 着手可能期間に応じて表示する。  
+- 完了済みのタスクはグレーアウトにする。  
+- ライブラリは Apache ECharts を使う。  
+
+**予実管理機能**
+
+- Todo に着手した際に、タスク実行時間の計測をし、後で見積もり工数との差やタグごとの割合を表示するページを作る。  
+- Completed のタスクを対象に集計する。  

@@ -25,12 +25,15 @@ const NOTIFICATION_PERMISSION_KEY = 'notificationPermission';
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
+
     request.onerror = (event) => {
       reject((event.target as IDBRequest).error);
     };
+
     request.onsuccess = (event) => {
       resolve((event.target as IDBRequest).result as IDBDatabase);
     };
+
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBRequest).result as IDBDatabase;
       if (!db.objectStoreNames.contains(OBJECT_STORE_NAME)) {
@@ -43,9 +46,11 @@ function openDB(): Promise<IDBDatabase> {
 const todoDB = {
   fetch: async (): Promise<Todo[]> => {
     const db = await openDB();
+
     return new Promise((resolve) => {
       const transaction = db.transaction([OBJECT_STORE_NAME], 'readonly');
       const objectStore = transaction.objectStore(OBJECT_STORE_NAME);
+
       const request = objectStore.getAll();
       request.onsuccess = (event) => {
         resolve((event.target as IDBRequest).result as Todo[]);
@@ -53,11 +58,14 @@ const todoDB = {
       request.onerror = () => resolve([]);
     });
   },
+
   save: async (todos: Todo[]) => {
     const db = await openDB();
+
     return new Promise((resolve) => {
       const transaction = db.transaction([OBJECT_STORE_NAME], 'readwrite');
       const objectStore = transaction.objectStore(OBJECT_STORE_NAME);
+
       const clearRequest = objectStore.clear();
       clearRequest.onsuccess = () => {
         todos.forEach((todo) => objectStore.put(todo));
@@ -71,6 +79,7 @@ const todoDB = {
 function formatDate(isoString?: string) {
   if (!isoString) return 'N/A';
   const date = new Date(isoString);
+
   return date.toLocaleString('ja-JP', {
     year: 'numeric',
     month: '2-digit',
@@ -171,14 +180,17 @@ function App() {
     const notifiedTodoIds: string[] = JSON.parse(
       sessionStorage.getItem(NOTIFIED_TODOS_KEY) || '[]'
     );
+
     todos.forEach((todo) => {
       const startableAt = new Date(todo.startableAt || todo.createdAt);
       const dependentTodo = todo.dependency ? getTodo(todo.dependency) : null;
       const isDependencyIncomplete = dependentTodo && dependentTodo.status !== 'Completed';
+
       const isReady =
         todo.status === 'Active' &&
         startableAt <= now &&
         !isDependencyIncomplete;
+
       if (isReady && !notifiedTodoIds.includes(todo.id)) {
         showNotification('タスクが開始可能です！', {
           body: `「${todo.title}」に着手できます。`,
@@ -195,6 +207,7 @@ function App() {
     e.preventDefault();
     const now = new Date().toISOString();
     let newTodos = [...todos];
+
     if (form.id) {
       newTodos = newTodos.map((todo) =>
         todo.id === form.id ? { ...todo, ...form } as Todo : todo
@@ -214,6 +227,7 @@ function App() {
       };
       newTodos.push(newTodo);
     }
+
     await todoDB.save(newTodos);
     setTodos(await todoDB.fetch());
     setView('list');
@@ -226,11 +240,13 @@ function App() {
     setForm(getTodo(id) || defaultForm);
     setView('form');
   }
+
   function handleNew() {
   // setEditId 削除
     setForm(defaultForm);
     setView('form');
   }
+
   function handleDelete(id: string) {
     setModal({
       message: 'このTodoを本当に削除しますか？\nこの操作は取り消せません。',
@@ -239,20 +255,24 @@ function App() {
         newTodos.forEach((todo) => {
           if (todo.dependency === id) todo.dependency = '';
         });
+
         await todoDB.save(newTodos);
         setTodos(await todoDB.fetch());
         setModal(null);
       },
     });
   }
+
   function handleCancel() {
     setView('list');
   // setEditId 削除
     setForm(defaultForm);
   }
+
   function handleFilterChange(f: string) {
     setFilter(f);
   }
+
   function handleSortChange(s: 'dueDate' | 'createdAt') {
     setSortBy(s);
   }
