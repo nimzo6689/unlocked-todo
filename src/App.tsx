@@ -1,103 +1,15 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { marked } from 'marked';
+import React, { useEffect, useState } from 'react';
 import './App.css';
+import { todoDB } from './db';
+import type { Todo } from './db';
+import { TodoCard } from './components/TodoCard';
+import { TodoForm } from './components/TodoForm';
+import { Modal } from './components/Modal';
 
-type Todo = {
-  id: string;
-  title: string;
-  description: string;
-  createdAt: string;
-  startableAt: string;
-  dueDate: string;
-  status: 'Active' | 'Waiting' | 'Completed';
-  effort: number;
-  assignee: '自分' | '他人';
-  dependency?: string;
-};
-
-const DB_NAME = 'shokubunTodoDB';
-const DB_VERSION = 1;
-const OBJECT_STORE_NAME = 'todos';
 
 const NOTIFIED_TODOS_KEY = 'notified-todos';
 const NOTIFICATION_PERMISSION_KEY = 'notificationPermission';
 
-function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onerror = (event) => {
-      reject((event.target as IDBRequest).error);
-    };
-
-    request.onsuccess = (event) => {
-      resolve((event.target as IDBRequest).result as IDBDatabase);
-    };
-
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBRequest).result as IDBDatabase;
-      if (!db.objectStoreNames.contains(OBJECT_STORE_NAME)) {
-        db.createObjectStore(OBJECT_STORE_NAME, { keyPath: 'id' });
-      }
-    };
-  });
-}
-
-const todoDB = {
-  fetch: async (): Promise<Todo[]> => {
-    const db = await openDB();
-
-    return new Promise((resolve) => {
-      const transaction = db.transaction([OBJECT_STORE_NAME], 'readonly');
-      const objectStore = transaction.objectStore(OBJECT_STORE_NAME);
-
-      const request = objectStore.getAll();
-      request.onsuccess = (event) => {
-        resolve((event.target as IDBRequest).result as Todo[]);
-      };
-      request.onerror = () => resolve([]);
-    });
-  },
-
-  save: async (todos: Todo[]) => {
-    const db = await openDB();
-
-    return new Promise((resolve) => {
-      const transaction = db.transaction([OBJECT_STORE_NAME], 'readwrite');
-      const objectStore = transaction.objectStore(OBJECT_STORE_NAME);
-
-      const clearRequest = objectStore.clear();
-      clearRequest.onsuccess = () => {
-        todos.forEach((todo) => objectStore.put(todo));
-        transaction.oncomplete = () => resolve(undefined);
-      };
-      clearRequest.onerror = () => resolve(undefined);
-    });
-  },
-};
-
-function formatDate(isoString?: string) {
-  if (!isoString) return 'N/A';
-  const date = new Date(isoString);
-
-  return date.toLocaleString('ja-JP', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-function formatDateForInput(isoString?: string) {
-  if (!isoString) return '';
-  const date = new Date(isoString);
-  const tzoffset = date.getTimezoneOffset() * 60000;
-  const localISOTime = new Date(date.getTime() - tzoffset)
-    .toISOString()
-    .slice(0, 16);
-  return localISOTime;
-}
 
 type View = 'list' | 'form';
 
@@ -110,16 +22,6 @@ const defaultForm: Partial<Todo> = {
   effort: 0,
   assignee: '自分',
   dependency: '',
-};
-
-const statusClasses: Record<string, string> = {
-  Active: 'bg-blue-100 text-blue-800',
-  Waiting: 'bg-purple-100 text-purple-800',
-  Completed: 'bg-green-100 text-green-800',
-};
-const assigneeClasses: Record<string, string> = {
-  自分: 'bg-indigo-100 text-indigo-800',
-  他人: 'bg-pink-100 text-pink-800',
 };
 
 const filterButtons = [
@@ -318,31 +220,11 @@ function App() {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
 
-  // Markdownプレビュー
-  const descriptionRef = useRef<HTMLTextAreaElement>(null);
-  const [previewHtml, setPreviewHtml] = useState('');
-  useEffect(() => {
-    const result = marked.parse(form.description || '');
-    if (typeof result === 'string') {
-      setPreviewHtml(result);
-    } else if (result instanceof Promise) {
-      result.then((html) => setPreviewHtml(html));
-    }
-  }, [form.description]);
-
   // --- UI ---
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-6xl">
       {modal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm">
-            <p className="text-slate-700 mb-6 whitespace-pre-line">{modal.message}</p>
-            <div className="flex justify-end space-x-3">
-              <button className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg" onClick={() => setModal(null)}>キャンセル</button>
-              <button className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg" onClick={modal.onConfirm}>削除</button>
-            </div>
-          </div>
-        </div>
+        <Modal message={modal.message} onConfirm={modal.onConfirm} onCancel={() => setModal(null)} />
       )}
       {view === 'list' && (
         <>
@@ -393,80 +275,16 @@ function App() {
           </div>
           <main id="todo-list" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredTodos.length > 0 ? (
-              filteredTodos.map((todo) => {
-                const now = new Date();
-                const dueDate = new Date(todo.dueDate);
-                const startableAt = new Date(todo.startableAt || todo.createdAt);
-                const isOverdue = new Date(dueDate.getTime() - (todo.effort || 0) * 3600 * 1000) < now;
-                const isDueToday = dueDate.toDateString() === now.toDateString();
-                let cardBgClass = 'bg-white';
-                if (todo.status !== 'Completed') {
-                  if (isOverdue) {
-                    cardBgClass = 'bg-red-100 border-red-300';
-                  } else if (isDueToday) {
-                    cardBgClass = 'bg-yellow-100 border-yellow-300';
-                  }
-                } else {
-                  cardBgClass = 'bg-slate-50 opacity-70';
-                }
-                const dependentTodo = todo.dependency ? getTodo(todo.dependency) : null;
-                const isDependencyIncomplete = dependentTodo && dependentTodo.status !== 'Completed';
-                const isWaitingOnTime = todo.status === 'Active' && startableAt > now;
-                let waitingReasonHtml = '';
-                if (
-                  filter === 'waiting' &&
-                  (isDependencyIncomplete || isWaitingOnTime)
-                ) {
-                  if (isDependencyIncomplete) {
-                    waitingReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'><strong>待機理由:</strong> 依存タスク「${dependentTodo?.title}」が未完了です。</div>`;
-                  } else if (isWaitingOnTime) {
-                    waitingReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'><strong>待機理由:</strong> 着手可能日時 (${formatDate(todo.startableAt)}) になっていません。</div>`;
-                  }
-                }
-                return (
-                  <div key={todo.id} className={`${cardBgClass} rounded-lg shadow-md p-4 border flex flex-col justify-between transition-shadow hover:shadow-lg`}>
-                    <div>
-                      <div className="flex justify-between items-start">
-                        <h3 className="text-lg font-bold text-slate-900 mb-2">{todo.title}</h3>
-                        <div className="flex-shrink-0 ml-2">
-                          <span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusClasses[todo.status]}`}>{todo.status}</span>
-                        </div>
-                      </div>
-                      <div
-                        className="text-sm text-slate-600 mb-3 markdown-preview"
-                        dangerouslySetInnerHTML={{
-                          __html: typeof marked.parse(todo.description || '') === 'string'
-                            ? marked.parse(todo.description || '') as string
-                            : ''
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 mt-4 pt-4 border-t">
-                        <div><strong>作成日:</strong> {formatDate(todo.createdAt)}</div>
-                        <div><strong>着手可能日:</strong> {formatDate(todo.startableAt)}</div>
-                        <div><strong>期限日:</strong> {formatDate(todo.dueDate)}</div>
-                        <div><strong>工数:</strong> {todo.effort || 0} 時間</div>
-                        <div className="col-span-2"><strong>担当:</strong> <span className={`font-semibold px-2 py-0.5 rounded-full ${assigneeClasses[todo.assignee]}`}>{todo.assignee}</span></div>
-                        {dependentTodo && (
-                          <div className="col-span-2">
-                            <strong>依存Todo:</strong>
-                            <span className="text-slate-700">{dependentTodo.title}</span>
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusClasses[dependentTodo.status]}`}>{dependentTodo.status}</span>
-                          </div>
-                        )}
-                        {waitingReasonHtml && (
-                          <div className="col-span-2" dangerouslySetInnerHTML={{ __html: waitingReasonHtml }} />
-                        )}
-                      </div>
-                      <div className="flex justify-end space-x-2 mt-4">
-                        <button onClick={() => handleEdit(todo.id)} className="text-sm bg-slate-500 hover:bg-slate-600 text-white font-semibold py-1 px-3 rounded-md">編集</button>
-                        <button onClick={() => handleDelete(todo.id)} className="text-sm bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-3 rounded-md">削除</button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+              filteredTodos.map((todo) => (
+                <TodoCard
+                  key={todo.id}
+                  todo={todo}
+                  dependentTodo={todo.dependency ? getTodo(todo.dependency) : null}
+                  filter={filter}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))
             ) : (
               <p className="text-slate-500 col-span-full text-center py-10">タスクはありません。</p>
             )}
@@ -476,64 +294,13 @@ function App() {
       {view === 'form' && (
         <div className="bg-white p-6 sm:p-8 rounded-lg shadow-xl max-w-3xl mx-auto">
           <h1 className="text-2xl font-bold mb-6">{form.id ? 'Todoの編集' : 'Todoの新規作成'}</h1>
-          <form onSubmit={handleSave}>
-            <input type="hidden" value={form.id || ''} />
-            <div className="mb-4">
-              <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-1">タイトル <span className="text-red-500">*</span></label>
-              <input type="text" id="title" required value={form.title || ''} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
-            </div>
-            <div className="mb-4">
-              <label htmlFor="description" className="block text-sm font-medium text-slate-700 mb-1">説明 (Markdown対応)</label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <textarea ref={descriptionRef} id="description" rows={8} value={form.description || ''} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
-                <div id="markdown-preview-container" className="prose prose-sm p-3 border border-slate-200 rounded-md bg-slate-50 h-full min-h-[100px]" dangerouslySetInnerHTML={{ __html: previewHtml }} />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label htmlFor="startableAt" className="block text-sm font-medium text-slate-700 mb-1">着手可能日時</label>
-                <input type="datetime-local" id="startableAt" value={formatDateForInput(form.startableAt)} onChange={e => setForm(f => ({ ...f, startableAt: new Date(e.target.value).toISOString() }))} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
-              </div>
-              <div>
-                <label htmlFor="dueDate" className="block text-sm font-medium text-slate-700 mb-1">期限日時 <span className="text-red-500">*</span></label>
-                <input type="datetime-local" id="dueDate" required value={formatDateForInput(form.dueDate)} onChange={e => setForm(f => ({ ...f, dueDate: new Date(e.target.value).toISOString() }))} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
-              </div>
-              <div>
-                <label htmlFor="effort" className="block text-sm font-medium text-slate-700 mb-1">工数 (時間)</label>
-                <input type="number" id="effort" min={0} value={form.effort || 0} onChange={e => setForm(f => ({ ...f, effort: parseInt(e.target.value, 10) || 0 }))} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div>
-                <label htmlFor="status" className="block text-sm font-medium text-slate-700 mb-1">ステータス</label>
-                <select id="status" value={form.status || 'Active'} onChange={e => setForm(f => ({ ...f, status: e.target.value as Todo['status'] }))} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
-                  <option value="Active">Active</option>
-                  <option value="Waiting">Waiting</option>
-                  <option value="Completed">Completed</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="assignee" className="block text-sm font-medium text-slate-700 mb-1">担当</label>
-                <select id="assignee" value={form.assignee || '自分'} onChange={e => setForm(f => ({ ...f, assignee: e.target.value as Todo['assignee'] }))} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
-                  <option value="自分">自分</option>
-                  <option value="他人">他人</option>
-                </select>
-              </div>
-            </div>
-            <div className="mb-6">
-              <label htmlFor="dependency" className="block text-sm font-medium text-slate-700 mb-1">依存Todo</label>
-              <select id="dependency" value={form.dependency || ''} onChange={e => setForm(f => ({ ...f, dependency: e.target.value }))} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white">
-                <option value="">なし</option>
-                {todos.filter(t => t.id !== form.id).map(t => (
-                  <option key={t.id} value={t.id}>{t.title}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex justify-end space-x-3">
-              <button type="button" onClick={handleCancel} className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-lg">キャンセル</button>
-              <button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md">保存</button>
-            </div>
-          </form>
+          <TodoForm
+            form={form}
+            todos={todos}
+            onChange={setForm}
+            onSave={handleSave}
+            onCancel={handleCancel}
+          />
         </div>
       )}
     </div>
