@@ -4,8 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Shokubun Todo</title>
-    <!-- Tailwind CSSの読み込み -->
-    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
     <!-- Google Fonts (Inter) の読み込み -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,57 +11,6 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <style>
-      /* 基本的なフォント設定とカスタムスタイル */
-      body {
-        font-family: "Inter", sans-serif;
-        background-color: #f8fafc; /* bg-slate-50 */
-      }
-      /* Markdownプレビュー用のスタイル */
-      .markdown-preview h1,
-      .markdown-preview h2,
-      .markdown-preview h3 {
-        font-weight: bold;
-        margin-top: 1rem;
-        margin-bottom: 0.5rem;
-      }
-      .markdown-preview h1 {
-        font-size: 1.5em;
-      }
-      .markdown-preview h2 {
-        font-size: 1.25em;
-      }
-      .markdown-preview h3 {
-        font-size: 1.1em;
-      }
-      .markdown-preview p {
-        margin-bottom: 0.5rem;
-      }
-      .markdown-preview ul {
-        list-style-type: disc;
-        margin-left: 1.5rem;
-      }
-      .markdown-preview ol {
-        list-style-type: decimal;
-        margin-left: 1.5rem;
-      }
-      .markdown-preview blockquote {
-        border-left: 4px solid #e2e8f0;
-        padding-left: 1rem;
-        color: #64748b;
-      }
-      .markdown-preview code {
-        background-color: #f1f5f9;
-        padding: 0.2rem 0.4rem;
-        border-radius: 0.25rem;
-      }
-      .markdown-preview pre {
-        background-color: #f1f5f9;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        overflow-x: auto;
-      }
-    </style>
   </head>
   <body>
     <div id="root"></div>
