@@ -1,3 +1,5 @@
+import type { Todo } from "./db";
+
 export type FilterButton = {
   key: string;
   label: string;
@@ -8,7 +10,6 @@ export const filterButtons: FilterButton[] = [
   { key: "completed", label: "Completed" },
   { key: "all", label: "All" },
 ];
-import type { Todo } from "./db";
 
 export const defaultForm: Partial<Todo> = {
   title: "",

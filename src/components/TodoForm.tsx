@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import type { Todo } from "../db";
-import { formatDateForInput } from "../utils";
+import type { Todo } from "../common/db";
+import { formatDateForInput } from "../common/utils";
 import { marked } from "marked";
 
 export type TodoFormProps = {

@@ -1,8 +1,8 @@
 import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { TodoForm } from "./TodoForm";
-import type { Todo } from "../db";
-import { defaultForm } from "../utils";
+import type { Todo } from "../common/db";
+import { defaultForm } from "../common/utils";
 
 export const FormRoute = ({
   todos,
@@ -53,7 +53,7 @@ export const FormRoute = ({
       newTodos.push(newTodo);
     }
 
-    const { todoDB } = await import("../db");
+    const { todoDB } = await import("../common/db");
     await todoDB.save(newTodos);
     await onSaveSuccess();
     onChange(defaultForm);

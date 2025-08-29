@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import "./App.css";
-import { todoDB } from "./db";
-import type { Todo } from "./db";
+import { todoDB } from "./common/db";
+import type { Todo } from "./common/db";
 import { FormRoute } from "./components/FormRoute";
 import { ListRoute } from "./components/ListRoute";
 

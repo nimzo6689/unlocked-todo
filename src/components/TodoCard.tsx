@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import type { Todo } from "../db";
-import { formatDate } from "../utils";
+import type { Todo } from "../common/db";
+import { formatDate } from "../common/utils";
 import { marked } from "marked";
 
 const statusClasses: Record<string, string> = {

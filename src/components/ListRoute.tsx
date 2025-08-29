@@ -1,8 +1,8 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { TodoCard } from "./TodoCard";
 import { Modal } from "./Modal";
-import type { Todo } from "../db";
-import { filterButtons } from "../utils";
+import type { Todo } from "../common/db";
+import { filterButtons } from "../common/utils";
 
 export const ListRoute = ({
   todos,
@@ -39,7 +39,7 @@ export const ListRoute = ({
         newTodos.forEach((todo) => {
           if (todo.dependency === id) todo.dependency = "";
         });
-        const { todoDB } = await import("../db");
+        const { todoDB } = await import("../common/db");
         await todoDB.save(newTodos);
         setModal(null);
       },
@@ -131,7 +131,7 @@ export const ListRoute = ({
             フィルター:
           </span>
           <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg">
-            {filterButtons.map((btn: import("../utils").FilterButton) => (
+            {filterButtons.map((btn: import("../common/utils").FilterButton) => (
               <button
                 key={btn.key}
                 className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors ${
