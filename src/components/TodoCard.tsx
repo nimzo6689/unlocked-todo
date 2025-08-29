@@ -68,16 +68,16 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   }, [todo.description]);
   return (
     <div
-      className={`${cardBgClass} rounded-lg shadow-md p-4 border flex flex-col justify-between transition-shadow hover:shadow-lg`}
+      className={`${cardBgClass} rounded-lg shadow-md p-3 sm:p-4 border flex flex-col justify-between transition-shadow hover:shadow-lg`}
     >
       <div>
-        <div className="flex justify-between items-start">
-          <h3 className="text-lg font-bold text-slate-900 mb-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start gap-1 sm:gap-0">
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-2">
             {todo.title}
           </h3>
-          <div className="flex-shrink-0 ml-2">
+          <div className="flex-shrink-0 ml-2 mt-1 sm:mt-0">
             <span
-              className={`text-xs font-semibold px-2 py-1 rounded-full ${
+              className={`text-xs sm:text-sm font-semibold px-2 py-1 rounded-full ${
                 statusClasses[todo.status]
               }`}
             >
@@ -86,14 +86,14 @@ export const TodoCard: React.FC<TodoCardProps> = ({
           </div>
         </div>
         <div
-          className="text-sm text-slate-600 mb-3 markdown-preview"
+          className="text-xs sm:text-sm text-slate-600 mb-3 markdown-preview"
           dangerouslySetInnerHTML={{
             __html: previewHtml,
           }}
         />
       </div>
       <div>
-        <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 mt-4 pt-4 border-t">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm text-slate-500 mt-4 pt-4 border-t">
           <div>
             <strong>作成日:</strong> {formatDate(todo.createdAt)}
           </div>
@@ -106,7 +106,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
           <div>
             <strong>工数:</strong> {todo.effort || 0} 時間
           </div>
-          <div className="col-span-2">
+          <div className="col-span-1 sm:col-span-2">
             <strong>担当:</strong>{" "}
             <span
               className={`font-semibold px-2 py-0.5 rounded-full ${
@@ -117,11 +117,11 @@ export const TodoCard: React.FC<TodoCardProps> = ({
             </span>
           </div>
           {dependentTodo && (
-            <div className="col-span-2">
+            <div className="col-span-1 sm:col-span-2">
               <strong>依存Todo:</strong>
               <span className="text-slate-700">{dependentTodo.title}</span>
               <span
-                className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                className={`text-xs sm:text-sm font-semibold px-2 py-0.5 rounded-full ${
                   statusClasses[dependentTodo.status]
                 }`}
               >
@@ -131,21 +131,21 @@ export const TodoCard: React.FC<TodoCardProps> = ({
           )}
           {waitingReasonHtml && (
             <div
-              className="col-span-2"
+              className="col-span-1 sm:col-span-2"
               dangerouslySetInnerHTML={{ __html: waitingReasonHtml }}
             />
           )}
         </div>
-        <div className="flex justify-end space-x-2 mt-4">
+        <div className="flex flex-wrap justify-end gap-2 mt-4">
           <button
             onClick={() => onEdit(todo.id)}
-            className="text-sm bg-slate-500 hover:bg-slate-600 text-white font-semibold py-1 px-3 rounded-md"
+            className="text-xs sm:text-sm bg-slate-500 hover:bg-slate-600 text-white font-semibold py-1 px-2 sm:px-3 rounded-md"
           >
             編集
           </button>
           <button
             onClick={() => onDelete(todo.id)}
-            className="text-sm bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-3 rounded-md"
+            className="text-xs sm:text-sm bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-2 sm:px-3 rounded-md"
           >
             削除
           </button>

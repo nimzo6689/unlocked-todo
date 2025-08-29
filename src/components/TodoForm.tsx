@@ -29,12 +29,12 @@ export const TodoForm: React.FC<TodoFormProps> = ({
   }, [form.description]);
 
   return (
-    <form onSubmit={onSave}>
+    <form onSubmit={onSave} className="p-2 sm:p-4">
       <input type="hidden" value={form.id || ""} />
       <div className="mb-4">
         <label
           htmlFor="title"
-          className="block text-sm font-medium text-slate-700 mb-1"
+          className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
         >
           タイトル <span className="text-red-500">*</span>
         </label>
@@ -44,36 +44,36 @@ export const TodoForm: React.FC<TodoFormProps> = ({
           required
           value={form.title || ""}
           onChange={(e) => onChange({ ...form, title: e.target.value })}
-          className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
         />
       </div>
       <div className="mb-4">
         <label
           htmlFor="description"
-          className="block text-sm font-medium text-slate-700 mb-1"
+          className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
         >
           説明 (Markdown対応)
         </label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
           <textarea
             id="description"
             rows={8}
             value={form.description || ""}
             onChange={(e) => onChange({ ...form, description: e.target.value })}
-            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
           />
           <div
             id="markdown-preview-container"
-            className="prose prose-sm p-3 border border-slate-200 rounded-md bg-slate-50 h-full min-h-[100px]"
+            className="prose prose-xs sm:prose-sm p-2 sm:p-3 border border-slate-200 rounded-md bg-slate-50 h-full min-h-[100px]"
             dangerouslySetInnerHTML={{ __html: previewHtml }}
           />
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-4">
         <div>
           <label
             htmlFor="startableAt"
-            className="block text-sm font-medium text-slate-700 mb-1"
+            className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
           >
             着手可能日時
           </label>
@@ -87,13 +87,13 @@ export const TodoForm: React.FC<TodoFormProps> = ({
                 startableAt: new Date(e.target.value).toISOString(),
               })
             }
-            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
           />
         </div>
         <div>
           <label
             htmlFor="dueDate"
-            className="block text-sm font-medium text-slate-700 mb-1"
+            className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
           >
             期限日時 <span className="text-red-500">*</span>
           </label>
@@ -108,13 +108,13 @@ export const TodoForm: React.FC<TodoFormProps> = ({
                 dueDate: new Date(e.target.value).toISOString(),
               })
             }
-            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
           />
         </div>
         <div>
           <label
             htmlFor="effort"
-            className="block text-sm font-medium text-slate-700 mb-1"
+            className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
           >
             工数 (時間)
           </label>
@@ -126,15 +126,15 @@ export const TodoForm: React.FC<TodoFormProps> = ({
             onChange={(e) =>
               onChange({ ...form, effort: parseInt(e.target.value, 10) || 0 })
             }
-            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
           />
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-6">
         <div>
           <label
             htmlFor="status"
-            className="block text-sm font-medium text-slate-700 mb-1"
+            className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
           >
             ステータス
           </label>
@@ -144,7 +144,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({
             onChange={(e) =>
               onChange({ ...form, status: e.target.value as Todo["status"] })
             }
-            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+            className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
           >
             <option value="Active">Active</option>
             <option value="Waiting">Waiting</option>
@@ -154,7 +154,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({
         <div>
           <label
             htmlFor="assignee"
-            className="block text-sm font-medium text-slate-700 mb-1"
+            className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
           >
             担当
           </label>
@@ -167,7 +167,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({
                 assignee: e.target.value as Todo["assignee"],
               })
             }
-            className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+            className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
           >
             <option value="自分">自分</option>
             <option value="他人">他人</option>
@@ -177,7 +177,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({
       <div className="mb-6">
         <label
           htmlFor="dependency"
-          className="block text-sm font-medium text-slate-700 mb-1"
+          className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
         >
           依存Todo
         </label>
@@ -185,7 +185,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({
           id="dependency"
           value={form.dependency || ""}
           onChange={(e) => onChange({ ...form, dependency: e.target.value })}
-          className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+          className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
         >
           <option value="">なし</option>
           {todos
@@ -197,17 +197,17 @@ export const TodoForm: React.FC<TodoFormProps> = ({
             ))}
         </select>
       </div>
-      <div className="flex justify-end space-x-3">
+      <div className="flex flex-wrap justify-end gap-2 mt-2">
         <button
           type="button"
           onClick={onCancel}
-          className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-lg"
+          className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm"
         >
           キャンセル
         </button>
         <button
           type="submit"
-          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md"
+          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
         >
           保存
         </button>
