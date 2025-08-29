@@ -13,6 +13,7 @@ import { TodoCard } from "./components/TodoCard";
 import { TodoForm } from "./components/TodoForm";
 import { Modal } from "./components/Modal";
 
+// localStorageに保存するキー
 const NOTIFIED_TODOS_KEY = "notified-todos";
 const NOTIFICATION_PERMISSION_KEY = "notificationPermission";
 
@@ -301,6 +302,11 @@ function App() {
     onConfirm: () => void;
   } | null>(null);
 
+  // 初回レンダリング時にlocalStorageとNotification.permissionをチェックして状態を初期化
+  const [notificationEnabled, setNotificationEnabled] = useState(
+    () => localStorage.getItem(NOTIFICATION_PERMISSION_KEY) === "granted"
+  );
+
   const fetchTodos = useCallback(async () => {
     const data = await todoDB.fetch();
     setTodos(data);
@@ -316,15 +322,13 @@ function App() {
     }
   }, []);
 
-  const getTodo = useCallback((id: string) => todos.find((t) => t.id === id), [
-    todos,
-  ]);
+  const getTodo = useCallback(
+    (id: string) => todos.find((t) => t.id === id),
+    [todos]
+  );
 
   useEffect(() => {
-    const showNotification = (
-      title: string,
-      options: NotificationOptions
-    ) => {
+    const showNotification = (title: string, options: NotificationOptions) => {
       if ("serviceWorker" in navigator && "PushManager" in window) {
         navigator.serviceWorker.ready.then((registration) => {
           registration.showNotification(title, options);
@@ -334,10 +338,10 @@ function App() {
 
     const checkForNotifications = () => {
       if (Notification.permission !== "granted") return;
-      const now = new Date();
       const notifiedTodoIds: string[] = JSON.parse(
-        sessionStorage.getItem(NOTIFIED_TODOS_KEY) || "[]"
+        localStorage.getItem(NOTIFIED_TODOS_KEY) || "[]"
       );
+      const now = new Date();
 
       todos.forEach((todo) => {
         const startableAt = new Date(todo.startableAt || todo.createdAt);
@@ -358,34 +362,32 @@ function App() {
           notifiedTodoIds.push(todo.id);
         }
       });
-      sessionStorage.setItem(
-        NOTIFIED_TODOS_KEY,
-        JSON.stringify(notifiedTodoIds)
-      );
+      localStorage.setItem(NOTIFIED_TODOS_KEY, JSON.stringify(notifiedTodoIds));
     };
 
     const interval = setInterval(() => checkForNotifications(), 30000);
     return () => clearInterval(interval);
   }, [todos, getTodo]);
 
-  const notificationEnabled =
-    localStorage.getItem(NOTIFICATION_PERMISSION_KEY) === "granted" &&
-    Notification.permission === "granted";
-
-  async function requestNotificationPermission() {
+  // async関数を削除し、直接thenで処理する
+  function requestNotificationPermission() {
     if (!("Notification" in window)) {
-      alert("このブラウザは通知をサポートしていません。");
+      setModal({
+        message: "このブラウザは通知をサポートしていません。",
+        onConfirm: () => setModal(null),
+      });
       return;
     }
-    const permission = await Notification.requestPermission();
-    if (permission === "granted") {
-      localStorage.setItem(NOTIFICATION_PERMISSION_KEY, "granted");
-    } else {
-      localStorage.removeItem(NOTIFICATION_PERMISSION_KEY);
-    }
-    // 状態を即時反映させるため、手動で再レンダリングをトリガー
-    // この場合は単純なstate更新でOK
-    setFilter(filter);
+
+    Notification.requestPermission().then((permission) => {
+      if (permission === "granted") {
+        localStorage.setItem(NOTIFICATION_PERMISSION_KEY, "granted");
+        setNotificationEnabled(true);
+      } else {
+        localStorage.removeItem(NOTIFICATION_PERMISSION_KEY);
+        setNotificationEnabled(false);
+      }
+    });
   }
 
   return (
