@@ -1,4 +1,4 @@
-// IndexedDB操作と型定義
+// IndexedDB 操作と型定義
 export type Todo = {
   id: string;
   title: string;

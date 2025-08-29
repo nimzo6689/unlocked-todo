@@ -1,3 +1,26 @@
+export type FilterButton = {
+  key: string;
+  label: string;
+};
+export const filterButtons: FilterButton[] = [
+  { key: "active", label: "Active" },
+  { key: "waiting", label: "Waiting" },
+  { key: "completed", label: "Completed" },
+  { key: "all", label: "All" },
+];
+import type { Todo } from "./db";
+
+export const defaultForm: Partial<Todo> = {
+  title: "",
+  description: "",
+  startableAt: new Date().toISOString(),
+  dueDate: "",
+  status: "Active",
+  effort: 0,
+  assignee: "自分",
+  dependency: "",
+};
+
 // 日付フォーマット等のユーティリティ
 export function formatDate(isoString?: string) {
   if (!isoString) return 'N/A';
