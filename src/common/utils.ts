@@ -1,25 +1,26 @@
-import type { Todo } from "./db";
+import type { Todo } from './db';
 
 export type FilterButton = {
   key: string;
   label: string;
 };
+
 export const filterButtons: FilterButton[] = [
-  { key: "active", label: "Active" },
-  { key: "waiting", label: "Waiting" },
-  { key: "completed", label: "Completed" },
-  { key: "all", label: "All" },
+  { key: 'active', label: 'Active' },
+  { key: 'waiting', label: 'Waiting' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'all', label: 'All' },
 ];
 
 export const defaultForm: Partial<Todo> = {
-  title: "",
-  description: "",
+  title: '',
+  description: '',
   startableAt: new Date().toISOString(),
-  dueDate: "",
-  status: "Active",
+  dueDate: '',
+  status: 'Active',
   effort: 0,
-  assignee: "自分",
-  dependency: "",
+  assignee: '自分',
+  dependency: '',
 };
 
 // 日付フォーマット等のユーティリティ
@@ -39,8 +40,6 @@ export function formatDateForInput(isoString?: string) {
   if (!isoString) return '';
   const date = new Date(isoString);
   const tzoffset = date.getTimezoneOffset() * 60000;
-  const localISOTime = new Date(date.getTime() - tzoffset)
-    .toISOString()
-    .slice(0, 16);
+  const localISOTime = new Date(date.getTime() - tzoffset).toISOString().slice(0, 16);
   return localISOTime;
 }

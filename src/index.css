@@ -1,8 +1,8 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* 基本的なフォント設定とカスタムスタイル */
 body {
-  font-family: "Inter", sans-serif;
+  font-family: 'Inter', sans-serif;
   background-color: #f8fafc; /* bg-slate-50 */
 }
 /* Markdownプレビュー用のスタイル */

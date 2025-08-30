@@ -46,7 +46,7 @@ function App() {
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+      navigator.serviceWorker.register("/sw.js");
     }
   }, []);
 
@@ -65,7 +65,10 @@ function App() {
     };
 
     const checkForNotifications = () => {
-      if (Notification.permission !== "granted") return;
+      if (Notification.permission !== "granted") {
+        return;
+      }
+
       const notifiedTodoIds: string[] = JSON.parse(
         localStorage.getItem(NOTIFIED_TODOS_KEY) || "[]"
       );

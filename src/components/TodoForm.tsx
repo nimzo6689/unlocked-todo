@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import type { Todo } from "../common/db";
-import { formatDateForInput } from "../common/utils";
-import { marked } from "marked";
+import React, { useEffect, useState } from 'react';
+import type { Todo } from '../common/db';
+import { formatDateForInput } from '../common/utils';
+import { marked } from 'marked';
 
 export type TodoFormProps = {
   form: Partial<Todo>;
@@ -11,39 +11,31 @@ export type TodoFormProps = {
   onCancel: () => void;
 };
 
-export const TodoForm: React.FC<TodoFormProps> = ({
-  form,
-  todos,
-  onChange,
-  onSave,
-  onCancel,
-}) => {
-  const [previewHtml, setPreviewHtml] = useState("");
+export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSave, onCancel }) => {
+  const [previewHtml, setPreviewHtml] = useState('');
+
   useEffect(() => {
-    const result = marked.parse(form.description || "");
-    if (typeof result === "string") {
+    const result = marked.parse(form.description || '');
+    if (typeof result === 'string') {
       setPreviewHtml(result);
     } else if (result instanceof Promise) {
-      result.then((html) => setPreviewHtml(html));
+      result.then(html => setPreviewHtml(html));
     }
   }, [form.description]);
 
   return (
     <form onSubmit={onSave} className="p-2 sm:p-4">
-      <input type="hidden" value={form.id || ""} />
+      <input type="hidden" value={form.id || ''} />
       <div className="mb-4">
-        <label
-          htmlFor="title"
-          className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
-        >
+        <label htmlFor="title" className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
           タイトル <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
           id="title"
           required
-          value={form.title || ""}
-          onChange={(e) => onChange({ ...form, title: e.target.value })}
+          value={form.title || ''}
+          onChange={e => onChange({ ...form, title: e.target.value })}
           className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
         />
       </div>
@@ -58,8 +50,8 @@ export const TodoForm: React.FC<TodoFormProps> = ({
           <textarea
             id="description"
             rows={8}
-            value={form.description || ""}
-            onChange={(e) => onChange({ ...form, description: e.target.value })}
+            value={form.description || ''}
+            onChange={e => onChange({ ...form, description: e.target.value })}
             className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
           />
           <div
@@ -69,7 +61,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({
           />
         </div>
       </div>
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-4">
         <div>
           <label
             htmlFor="startableAt"
@@ -81,7 +73,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({
             type="datetime-local"
             id="startableAt"
             value={formatDateForInput(form.startableAt)}
-            onChange={(e) =>
+            onChange={e =>
               onChange({
                 ...form,
                 startableAt: new Date(e.target.value).toISOString(),
@@ -102,7 +94,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({
             id="dueDate"
             required
             value={formatDateForInput(form.dueDate)}
-            onChange={(e) =>
+            onChange={e =>
               onChange({
                 ...form,
                 dueDate: new Date(e.target.value).toISOString(),
@@ -123,14 +115,12 @@ export const TodoForm: React.FC<TodoFormProps> = ({
             id="effort"
             min={0}
             value={form.effort || 0}
-            onChange={(e) =>
-              onChange({ ...form, effort: parseInt(e.target.value, 10) || 0 })
-            }
+            onChange={e => onChange({ ...form, effort: parseInt(e.target.value, 10) || 0 })}
             className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
           />
         </div>
       </div>
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-6">
         <div>
           <label
             htmlFor="status"
@@ -140,10 +130,8 @@ export const TodoForm: React.FC<TodoFormProps> = ({
           </label>
           <select
             id="status"
-            value={form.status || "Active"}
-            onChange={(e) =>
-              onChange({ ...form, status: e.target.value as Todo["status"] })
-            }
+            value={form.status || 'Active'}
+            onChange={e => onChange({ ...form, status: e.target.value as Todo['status'] })}
             className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
           >
             <option value="Active">Active</option>
@@ -160,11 +148,11 @@ export const TodoForm: React.FC<TodoFormProps> = ({
           </label>
           <select
             id="assignee"
-            value={form.assignee || "自分"}
-            onChange={(e) =>
+            value={form.assignee || '自分'}
+            onChange={e =>
               onChange({
                 ...form,
-                assignee: e.target.value as Todo["assignee"],
+                assignee: e.target.value as Todo['assignee'],
               })
             }
             className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
@@ -183,14 +171,14 @@ export const TodoForm: React.FC<TodoFormProps> = ({
         </label>
         <select
           id="dependency"
-          value={form.dependency || ""}
-          onChange={(e) => onChange({ ...form, dependency: e.target.value })}
+          value={form.dependency || ''}
+          onChange={e => onChange({ ...form, dependency: e.target.value })}
           className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
         >
           <option value="">なし</option>
           {todos
-            .filter((t) => t.id !== form.id)
-            .map((t) => (
+            .filter(t => t.id !== form.id)
+            .map(t => (
               <option key={t.id} value={t.id}>
                 {t.title}
               </option>

@@ -1,16 +1,17 @@
-import React, { useEffect, useState } from "react";
-import type { Todo } from "../common/db";
-import { formatDate } from "../common/utils";
-import { marked } from "marked";
+import React, { useEffect, useState } from 'react';
+import type { Todo } from '../common/db';
+import { formatDate } from '../common/utils';
+import { marked } from 'marked';
 
 const statusClasses: Record<string, string> = {
-  Active: "bg-blue-100 text-blue-800",
-  Waiting: "bg-purple-100 text-purple-800",
-  Completed: "bg-green-100 text-green-800",
+  Active: 'bg-blue-100 text-blue-800',
+  Waiting: 'bg-purple-100 text-purple-800',
+  Completed: 'bg-green-100 text-green-800',
 };
+
 const assigneeClasses: Record<string, string> = {
-  自分: "bg-indigo-100 text-indigo-800",
-  他人: "bg-pink-100 text-pink-800",
+  自分: 'bg-indigo-100 text-indigo-800',
+  他人: 'bg-pink-100 text-pink-800',
 };
 
 export type TodoCardProps = {
@@ -31,50 +32,49 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   const now = new Date();
   const dueDate = new Date(todo.dueDate);
   const startableAt = new Date(todo.startableAt || todo.createdAt);
-  const isOverdue =
-    new Date(dueDate.getTime() - (todo.effort || 0) * 3600 * 1000) < now;
+  const isOverdue = new Date(dueDate.getTime() - (todo.effort || 0) * 3600 * 1000) < now;
   const isDueToday = dueDate.toDateString() === now.toDateString();
-  let cardBgClass = "bg-white";
-  if (todo.status !== "Completed") {
+  let cardBgClass = 'bg-white';
+  if (todo.status !== 'Completed') {
     if (isOverdue) {
-      cardBgClass = "bg-red-100 border-red-300";
+      cardBgClass = 'bg-red-100 border-red-300';
     } else if (isDueToday) {
-      cardBgClass = "bg-yellow-100 border-yellow-300";
+      cardBgClass = 'bg-yellow-100 border-yellow-300';
     }
   } else {
-    cardBgClass = "bg-slate-50 opacity-70";
+    cardBgClass = 'bg-slate-50 opacity-70';
   }
-  const isDependencyIncomplete =
-    dependentTodo && dependentTodo.status !== "Completed";
-  const isWaitingOnTime = todo.status === "Active" && startableAt > now;
-  let waitingReasonHtml = "";
-  if (filter === "waiting" && (isDependencyIncomplete || isWaitingOnTime)) {
+  const isDependencyIncomplete = dependentTodo && dependentTodo.status !== 'Completed';
+  const isWaitingOnTime = todo.status === 'Active' && startableAt > now;
+  let waitingReasonHtml = '';
+  if (filter === 'waiting' && (isDependencyIncomplete || isWaitingOnTime)) {
     if (isDependencyIncomplete) {
       waitingReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'><strong>待機理由:</strong> 依存タスク「${dependentTodo?.title}」が未完了です。</div>`;
     } else if (isWaitingOnTime) {
       waitingReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'><strong>待機理由:</strong> 着手可能日時 (${formatDate(
-        todo.startableAt
+        todo.startableAt,
       )}) になっていません。</div>`;
     }
   }
-  const [previewHtml, setPreviewHtml] = useState("");
+
+  const [previewHtml, setPreviewHtml] = useState('');
+
   useEffect(() => {
-    const result = marked.parse(todo.description || "");
-    if (typeof result === "string") {
+    const result = marked.parse(todo.description || '');
+    if (typeof result === 'string') {
       setPreviewHtml(result);
     } else if (result instanceof Promise) {
-      result.then((html) => setPreviewHtml(html));
+      result.then(html => setPreviewHtml(html));
     }
   }, [todo.description]);
+
   return (
     <div
       className={`${cardBgClass} rounded-lg shadow-md p-3 sm:p-4 border flex flex-col justify-between transition-shadow hover:shadow-lg`}
     >
       <div>
         <div className="flex flex-col sm:flex-row justify-between items-start gap-1 sm:gap-0">
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-2">
-            {todo.title}
-          </h3>
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-2">{todo.title}</h3>
           <div className="flex-shrink-0 ml-2 mt-1 sm:mt-0">
             <span
               className={`text-xs sm:text-sm font-semibold px-2 py-1 rounded-full ${
@@ -107,11 +107,9 @@ export const TodoCard: React.FC<TodoCardProps> = ({
             <strong>工数:</strong> {todo.effort || 0} 時間
           </div>
           <div className="col-span-1 sm:col-span-2">
-            <strong>担当:</strong>{" "}
+            <strong>担当:</strong>{' '}
             <span
-              className={`font-semibold px-2 py-0.5 rounded-full ${
-                assigneeClasses[todo.assignee]
-              }`}
+              className={`font-semibold px-2 py-0.5 rounded-full ${assigneeClasses[todo.assignee]}`}
             >
               {todo.assignee}
             </span>
