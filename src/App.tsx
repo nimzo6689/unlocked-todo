@@ -1,25 +1,14 @@
 import { useEffect, useState, useCallback } from "react";
 import { HashRouter, Routes, Route } from "react-router-dom";
-import "./App.css";
 import { todoDB } from "./common/db";
 import type { Todo } from "./common/db";
+import { defaultForm } from './common/utils';
 import { FormRoute } from "./components/FormRoute";
 import { ListRoute } from "./components/ListRoute";
 
 // LocalStorage に保存するキー
 const NOTIFIED_TODOS_KEY = "notified-todos";
 const NOTIFICATION_PERMISSION_KEY = "notificationPermission";
-
-const defaultForm: Partial<Todo> = {
-  title: "",
-  description: "",
-  startableAt: new Date().toISOString(),
-  dueDate: "",
-  status: "Active",
-  effort: 0,
-  assignee: "自分",
-  dependency: "",
-};
 
 function App() {
   const [todos, setTodos] = useState<Todo[]>([]);

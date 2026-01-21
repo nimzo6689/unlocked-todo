@@ -16,14 +16,14 @@ export const defaultForm: Partial<Todo> = {
   title: '',
   description: '',
   startableAt: new Date().toISOString(),
-  dueDate: '',
+  dueDate: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
   status: 'Active',
-  effort: 0,
+  effort: 0.5,
   assignee: '自分',
   dependency: '',
 };
 
-// 日付フォーマット等のユーティリティ
+// 画面への表示用（2023/10/25 14:30）
 export function formatDate(isoString?: string) {
   if (!isoString) return 'N/A';
   const date = new Date(isoString);
@@ -36,6 +36,7 @@ export function formatDate(isoString?: string) {
   });
 }
 
+// <input type="datetime-local"> の値用（2023-10-25T14:30）
 export function formatDateForInput(isoString?: string) {
   if (!isoString) return '';
   const date = new Date(isoString);
