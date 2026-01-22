@@ -13,7 +13,7 @@ export type Todo = {
 };
 
 const DB_NAME = 'unlockedTodoDB';
-const DB_VERSION = 1;
+const DB_VERSION = 0;
 const OBJECT_STORE_NAME = 'todos';
 
 function openDB(): Promise<IDBDatabase> {
