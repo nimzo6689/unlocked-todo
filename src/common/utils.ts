@@ -6,8 +6,8 @@ export type FilterButton = {
 };
 
 export const filterButtons: FilterButton[] = [
-  { key: 'active', label: 'Active' },
-  { key: 'waiting', label: 'Waiting' },
+  { key: 'unlocked', label: 'Unlocked' },
+  { key: 'locked', label: 'Locked' },
   { key: 'completed', label: 'Completed' },
   { key: 'all', label: 'All' },
 ];
@@ -17,7 +17,7 @@ export const defaultForm: Partial<Todo> = {
   description: '',
   startableAt: new Date().toISOString(),
   dueDate: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-  status: 'Active',
+  status: 'Unlocked',
   effort: 0.5,
   assignee: '自分',
   dependency: '',

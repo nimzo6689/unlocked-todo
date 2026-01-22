@@ -4,8 +4,8 @@ import { formatDate } from '../common/utils';
 import { marked } from 'marked';
 
 const statusClasses: Record<string, string> = {
-  Active: 'bg-blue-100 text-blue-800',
-  Waiting: 'bg-purple-100 text-purple-800',
+  Unlocked: 'bg-blue-100 text-blue-800',
+  Locked: 'bg-purple-100 text-purple-800',
   Completed: 'bg-green-100 text-green-800',
 };
 
@@ -45,13 +45,13 @@ export const TodoCard: React.FC<TodoCardProps> = ({
     cardBgClass = 'bg-slate-50 opacity-70';
   }
   const isDependencyIncomplete = dependentTodo && dependentTodo.status !== 'Completed';
-  const isWaitingOnTime = todo.status === 'Active' && startableAt > now;
-  let waitingReasonHtml = '';
-  if (filter === 'waiting' && (isDependencyIncomplete || isWaitingOnTime)) {
+  const isLockedOnTime = todo.status === 'Unlocked' && startableAt > now;
+  let lockedReasonHtml = '';
+  if (filter === 'locked' && (isDependencyIncomplete || isLockedOnTime)) {
     if (isDependencyIncomplete) {
-      waitingReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'><strong>待機理由:</strong> 依存タスク「${dependentTodo?.title}」が未完了です。</div>`;
-    } else if (isWaitingOnTime) {
-      waitingReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'><strong>待機理由:</strong> 着手可能日時 (${formatDate(
+      lockedReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'><strong>待機理由:</strong> 依存タスク「${dependentTodo?.title}」が未完了です。</div>`;
+    } else if (isLockedOnTime) {
+      lockedReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'><strong>待機理由:</strong> 着手可能日時 (${formatDate(
         todo.startableAt,
       )}) になっていません。</div>`;
     }
@@ -127,10 +127,10 @@ export const TodoCard: React.FC<TodoCardProps> = ({
               </span>
             </div>
           )}
-          {waitingReasonHtml && (
+          {lockedReasonHtml && (
             <div
               className="col-span-1 sm:col-span-2"
-              dangerouslySetInnerHTML={{ __html: waitingReasonHtml }}
+              dangerouslySetInnerHTML={{ __html: lockedReasonHtml }}
             />
           )}
         </div>

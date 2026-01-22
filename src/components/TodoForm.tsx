@@ -130,12 +130,12 @@ export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSav
           </label>
           <select
             id="status"
-            value={form.status || 'Active'}
+            value={form.status || 'Unlocked'}
             onChange={e => onChange({ ...form, status: e.target.value as Todo['status'] })}
             className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
           >
-            <option value="Active">Active</option>
-            <option value="Waiting">Waiting</option>
+            <option value="Unlocked">Unlocked</option>
+            <option value="Locked">Locked</option>
             <option value="Completed">Completed</option>
           </select>
         </div>

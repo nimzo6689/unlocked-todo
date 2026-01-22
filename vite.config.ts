@@ -13,8 +13,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
       },
       manifest: {
-        name: 'Shokubun Todo',
-        short_name: 'Shokubun Todo',
+        name: 'Unlocked Todo',
+        short_name: 'Unlocked Todo',
         start_url: '.',
         display: 'standalone',
         background_color: '#ffffff',

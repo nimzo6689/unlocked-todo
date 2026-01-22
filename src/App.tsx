@@ -70,7 +70,7 @@ function App() {
           dependentTodo && dependentTodo.status !== "Completed";
 
         const isReady =
-          todo.status === "Active" &&
+          todo.status === "Unlocked" &&
           startableAt <= now &&
           !isDependencyIncomplete;
 

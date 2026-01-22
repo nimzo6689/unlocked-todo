@@ -6,13 +6,13 @@ export type Todo = {
   createdAt: string;
   startableAt: string;
   dueDate: string;
-  status: 'Active' | 'Waiting' | 'Completed';
+  status: 'Unlocked' | 'Locked' | 'Completed';
   effort: number;
   assignee: '自分' | '他人';
   dependency?: string;
 };
 
-const DB_NAME = 'shokubunTodoDB';
+const DB_NAME = 'unlockedTodoDB';
 const DB_VERSION = 1;
 const OBJECT_STORE_NAME = 'todos';
 

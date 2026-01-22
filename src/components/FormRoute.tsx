@@ -45,7 +45,7 @@ export const FormRoute = ({
         title: form.title || '',
         description: form.description || '',
         dueDate: form.dueDate || '',
-        status: (form.status as Todo['status']) || 'Active',
+        status: (form.status as Todo['status']) || 'Unlocked',
         effort: form.effort || 0,
         assignee: (form.assignee as Todo['assignee']) || '自分',
         dependency: form.dependency || '',

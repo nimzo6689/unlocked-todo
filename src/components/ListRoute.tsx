@@ -21,7 +21,7 @@ export const ListRoute = ({
 }) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const filter = searchParams.get('filter') || 'active';
+  const filter = searchParams.get('filter') || 'unlocked';
   const sortBy = (searchParams.get('sortBy') as 'dueDate' | 'createdAt') || 'dueDate';
 
   function handleEdit(id: string) {
@@ -69,13 +69,13 @@ export const ListRoute = ({
       const isDependencyIncomplete = dependentTodo && dependentTodo.status !== 'Completed';
       if (filter === 'all') return true;
       if (filter === 'completed') return todo.status === 'Completed';
-      if (filter === 'active') {
-        return todo.status === 'Active' && startableAt <= now && !isDependencyIncomplete;
+      if (filter === 'unlocked') {
+        return todo.status === 'Unlocked' && startableAt <= now && !isDependencyIncomplete;
       }
-      if (filter === 'waiting') {
+      if (filter === 'locked') {
         return (
-          todo.status === 'Waiting' ||
-          (todo.status === 'Active' && (startableAt > now || isDependencyIncomplete))
+          todo.status === 'Locked' ||
+          (todo.status === 'Unlocked' && (startableAt > now || isDependencyIncomplete))
         );
       }
       return false;
