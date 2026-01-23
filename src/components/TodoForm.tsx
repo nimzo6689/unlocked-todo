@@ -105,17 +105,18 @@ export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSav
         </div>
         <div>
           <label
-            htmlFor="effort"
+            htmlFor="effortMinutes"
             className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
           >
-            工数 (時間)
+            工数 (分)
           </label>
           <input
             type="number"
-            id="effort"
+            id="effortMinutes"
             min={0}
-            value={form.effort || 0}
-            onChange={e => onChange({ ...form, effort: parseInt(e.target.value, 10) || 0 })}
+            step={5}
+            value={form.effortMinutes || 0}
+            onChange={e => onChange({ ...form, effortMinutes: parseInt(e.target.value, 10) || 0 })}
             className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
           />
         </div>

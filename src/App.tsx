@@ -85,7 +85,7 @@ function App() {
       localStorage.setItem(NOTIFIED_TODOS_KEY, JSON.stringify(notifiedTodoIds));
     };
 
-    const interval = setInterval(() => checkForNotifications(), 30000);
+    const interval = setInterval(() => checkForNotifications(), 30_000);
     return () => clearInterval(interval);
   }, [todos, getTodo]);
 

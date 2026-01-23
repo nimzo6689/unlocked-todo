@@ -18,7 +18,7 @@ export const defaultForm: Partial<Todo> = {
   startableAt: new Date().toISOString(),
   dueDate: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
   status: 'Unlocked',
-  effort: 0.5,
+  effortMinutes: 25, // ポモドーロ・テクニックの標準値
   assignee: '自分',
   dependency: '',
 };

@@ -7,13 +7,13 @@ export type Todo = {
   startableAt: string;
   dueDate: string;
   status: 'Unlocked' | 'Locked' | 'Completed';
-  effort: number;
+  effortMinutes: number;
   assignee: '自分' | '他人';
   dependency?: string;
 };
 
 const DB_NAME = 'unlockedTodoDB';
-const DB_VERSION = 0;
+const DB_VERSION = 1;
 const OBJECT_STORE_NAME = 'todos';
 
 function openDB(): Promise<IDBDatabase> {

@@ -32,7 +32,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   const now = new Date();
   const dueDate = new Date(todo.dueDate);
   const startableAt = new Date(todo.startableAt || todo.createdAt);
-  const isOverdue = new Date(dueDate.getTime() - (todo.effort || 0) * 3600 * 1000) < now;
+  const isOverdue = new Date(dueDate.getTime() - (todo.effortMinutes || 0) * 60 * 1000) < now;
   const isDueToday = dueDate.toDateString() === now.toDateString();
   let cardBgClass = 'bg-white';
   if (todo.status !== 'Completed') {
@@ -49,9 +49,9 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   let lockedReasonHtml = '';
   if (filter === 'locked' && (isDependencyIncomplete || isLockedOnTime)) {
     if (isDependencyIncomplete) {
-      lockedReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'><strong>待機理由:</strong> 依存タスク「${dependentTodo?.title}」が未完了です。</div>`;
+      lockedReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'>依存タスク「${dependentTodo?.title}」が未完了です。</div>`;
     } else if (isLockedOnTime) {
-      lockedReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'><strong>待機理由:</strong> 着手可能日時 (${formatDate(
+      lockedReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'>着手可能日時 (${formatDate(
         todo.startableAt,
       )}) になっていません。</div>`;
     }
@@ -104,7 +104,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
             <strong>期限日:</strong> {formatDate(todo.dueDate)}
           </div>
           <div>
-            <strong>工数:</strong> {todo.effort || 0} 時間
+            <strong>工数:</strong> {todo.effortMinutes || 0} 分
           </div>
           <div className="col-span-1 sm:col-span-2">
             <strong>担当:</strong>{' '}
