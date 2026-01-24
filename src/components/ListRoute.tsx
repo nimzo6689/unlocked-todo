@@ -11,6 +11,7 @@ export const ListRoute = ({
   setModal,
   requestNotificationPermission,
   notificationEnabled,
+  handleDelete,
 }: {
   todos: Todo[];
   getTodo: (id: string) => Todo | undefined;
@@ -18,6 +19,7 @@ export const ListRoute = ({
   setModal: (modal: { message: string; onConfirm: () => void } | null) => void;
   requestNotificationPermission: () => void;
   notificationEnabled: boolean;
+  handleDelete: (id: string) => void;
 }) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -30,21 +32,6 @@ export const ListRoute = ({
 
   function handleNew() {
     navigate('/new');
-  }
-
-  async function handleDelete(id: string) {
-    setModal({
-      message: 'このTodoを本当に削除しますか？\nこの操作は取り消せません。',
-      onConfirm: async () => {
-        const newTodos = todos.filter(todo => todo.id !== id);
-        newTodos.forEach(todo => {
-          if (todo.dependency === id) todo.dependency = '';
-        });
-        const { todoDB } = await import('../common/db');
-        await todoDB.save(newTodos);
-        setModal(null);
-      },
-    });
   }
 
   function handleFilterChange(f: string) {

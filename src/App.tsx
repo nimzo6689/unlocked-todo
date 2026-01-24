@@ -109,6 +109,22 @@ function App() {
     });
   }
 
+  async function handleDelete(id: string) {
+    setModal({
+      message: 'このTodoを本当に削除しますか？\nこの操作は取り消せません。',
+      onConfirm: async () => {
+        const newTodos = todos.filter(todo => todo.id !== id);
+        newTodos.forEach(todo => {
+          if (todo.dependency === id) todo.dependency = '';
+        });
+        const { todoDB } = await import('./common/db');
+        await todoDB.save(newTodos);
+        setTodos(newTodos);
+        setModal(null);
+      },
+    });
+  }
+
   return (
     <HashRouter>
       <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-6xl">
@@ -123,6 +139,7 @@ function App() {
                 setModal={setModal}
                 requestNotificationPermission={requestNotificationPermission}
                 notificationEnabled={notificationEnabled}
+                handleDelete={handleDelete}
               />
             }
           />
