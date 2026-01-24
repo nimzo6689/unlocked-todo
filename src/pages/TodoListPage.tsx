@@ -1,26 +1,19 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { TodoCard } from '../components/TodoCard';
 import { Modal } from '../components/Modal';
-import type { Todo } from '../common/db';
 import { filterButtons } from '../common/utils';
+import { useTodoContext } from '../contexts/TodoContext';
 
-export const TodoListPage = ({
-  todos,
-  getTodo,
-  modal,
-  setModal,
-  requestNotificationPermission,
-  notificationEnabled,
-  handleDelete,
-}: {
-  todos: Todo[];
-  getTodo: (id: string) => Todo | undefined;
-  modal: { message: string; onConfirm: () => void } | null;
-  setModal: (modal: { message: string; onConfirm: () => void } | null) => void;
-  requestNotificationPermission: () => void;
-  notificationEnabled: boolean;
-  handleDelete: (id: string) => void;
-}) => {
+export const TodoListPage = () => {
+  const {
+    todos,
+    getTodo,
+    modal,
+    setModal,
+    requestNotificationPermission,
+    notificationEnabled,
+    handleDelete
+  } = useTodoContext();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const filter = searchParams.get('filter') || 'unlocked';

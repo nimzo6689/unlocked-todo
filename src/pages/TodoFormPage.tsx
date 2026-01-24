@@ -3,30 +3,20 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { TodoForm } from '../components/TodoForm';
 import type { Todo } from '../common/db';
 import { defaultForm } from '../common/utils';
+import { useTodoContext } from '../contexts/TodoContext';
 
-export const TodoFormPage = ({
-  todos,
-  form,
-  onChange,
-  getTodo,
-  onSaveSuccess,
-}: {
-  todos: Todo[];
-  form: Partial<Todo>;
-  onChange: (form: Partial<Todo>) => void;
-  getTodo: (id: string) => Todo | undefined;
-  onSaveSuccess: () => Promise<void>;
-}) => {
+export const TodoFormPage = () => {
+  const { todos, form, setForm, getTodo, fetchTodos } = useTodoContext();
   const { id } = useParams();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (id) {
-      onChange(getTodo(id) || defaultForm);
+      setForm(getTodo(id) || defaultForm);
     } else {
-      onChange(defaultForm);
+      setForm(defaultForm);
     }
-  }, [id, getTodo, onChange]);
+  }, [id, getTodo, setForm]);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -55,13 +45,13 @@ export const TodoFormPage = ({
 
     const { todoDB } = await import('../common/db');
     await todoDB.save(newTodos);
-    await onSaveSuccess();
-    onChange(defaultForm);
+    await fetchTodos();
+    setForm(defaultForm);
     navigate('/');
   }
 
   function handleCancel() {
-    onChange(defaultForm);
+    setForm(defaultForm);
     navigate('/');
   }
 
@@ -71,7 +61,7 @@ export const TodoFormPage = ({
       <TodoForm
         form={form}
         todos={todos}
-        onChange={onChange}
+        onChange={setForm}
         onSave={handleSave}
         onCancel={handleCancel}
       />
