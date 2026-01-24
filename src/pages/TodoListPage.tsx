@@ -1,10 +1,10 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { TodoCard } from './TodoCard';
-import { Modal } from './Modal';
+import { TodoCard } from '../components/TodoCard';
+import { Modal } from '../components/Modal';
 import type { Todo } from '../common/db';
 import { filterButtons } from '../common/utils';
 
-export const ListRoute = ({
+export const TodoListPage = ({
   todos,
   getTodo,
   modal,

@@ -3,8 +3,8 @@ import { HashRouter, Routes, Route } from "react-router-dom";
 import { todoDB } from "./common/db";
 import type { Todo } from "./common/db";
 import { defaultForm } from './common/utils';
-import { FormRoute } from "./components/FormRoute";
-import { ListRoute } from "./components/ListRoute";
+import { TodoFormPage } from "./pages/TodoFormPage";
+import { TodoListPage } from "./pages/TodoListPage";
 
 // LocalStorage に保存するキー
 const NOTIFIED_TODOS_KEY = "notified-todos";
@@ -132,7 +132,7 @@ function App() {
           <Route
             path="/"
             element={
-              <ListRoute
+              <TodoListPage
                 todos={todos}
                 getTodo={getTodo}
                 modal={modal}
@@ -146,7 +146,7 @@ function App() {
           <Route
             path="/new"
             element={
-              <FormRoute
+              <TodoFormPage
                 todos={todos}
                 form={form}
                 onChange={setForm}
@@ -158,7 +158,7 @@ function App() {
           <Route
             path="/edit/:id"
             element={
-              <FormRoute
+              <TodoFormPage
                 todos={todos}
                 form={form}
                 onChange={setForm}

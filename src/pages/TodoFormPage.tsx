@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { TodoForm } from './TodoForm';
+import { TodoForm } from '../components/TodoForm';
 import type { Todo } from '../common/db';
 import { defaultForm } from '../common/utils';
 
-export const FormRoute = ({
+export const TodoFormPage = ({
   todos,
   form,
   onChange,
