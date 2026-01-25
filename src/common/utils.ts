@@ -15,8 +15,8 @@ export const filterButtons: FilterButton[] = [
 export const defaultForm: Partial<Todo> = {
   title: '',
   description: '',
-  startableAt: new Date().toISOString(),
-  dueDate: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+  startableAt: '',
+  dueDate: '',
   status: 'Unlocked',
   effortMinutes: 25, // ポモドーロ・テクニックの標準値
   assignee: '自分',

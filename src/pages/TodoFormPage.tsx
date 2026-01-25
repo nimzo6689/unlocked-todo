@@ -14,7 +14,11 @@ export const TodoFormPage = () => {
     if (id) {
       setForm(getTodo(id) || defaultForm);
     } else {
-      setForm(defaultForm);
+      setForm({
+        ...defaultForm,
+        startableAt: new Date().toISOString(),
+        dueDate: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      });
     }
   }, [id, getTodo, setForm]);
 
