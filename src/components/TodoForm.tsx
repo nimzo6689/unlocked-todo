@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import type { Todo } from '../common/db';
 import { formatDateForInput } from '../common/utils';
-import { marked } from 'marked';
 
 export type TodoFormProps = {
   form: Partial<Todo>;
@@ -12,17 +11,6 @@ export type TodoFormProps = {
 };
 
 export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSave, onCancel }) => {
-  const [previewHtml, setPreviewHtml] = useState('');
-
-  useEffect(() => {
-    const result = marked.parse(form.description || '');
-    if (typeof result === 'string') {
-      setPreviewHtml(result);
-    } else if (result instanceof Promise) {
-      result.then(html => setPreviewHtml(html));
-    }
-  }, [form.description]);
-
   return (
     <form onSubmit={onSave} className="p-2 sm:p-4">
       <input type="hidden" value={form.id || ''} />
@@ -44,22 +32,15 @@ export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSav
           htmlFor="description"
           className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
         >
-          説明 (Markdown対応)
+          説明
         </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
-          <textarea
-            id="description"
-            rows={8}
-            value={form.description || ''}
-            onChange={e => onChange({ ...form, description: e.target.value })}
-            className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
-          />
-          <div
-            id="markdown-preview-container"
-            className="prose prose-xs sm:prose-sm p-2 sm:p-3 border border-slate-200 rounded-md bg-slate-50 h-full min-h-[100px]"
-            dangerouslySetInnerHTML={{ __html: previewHtml }}
-          />
-        </div>
+        <textarea
+          id="description"
+          rows={8}
+          value={form.description || ''}
+          onChange={e => onChange({ ...form, description: e.target.value })}
+          className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
+        />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-4">
         <div>
