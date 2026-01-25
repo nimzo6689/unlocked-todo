@@ -105,7 +105,7 @@ export const TodoListPage = () => {
         <div className="flex items-center flex-wrap gap-1 sm:gap-2">
           <span className="text-xs sm:text-sm font-medium text-slate-600">フィルター:</span>
           <div className="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-lg">
-            {filterButtons.map((btn: import('../common/utils').FilterButton) => (
+            {filterButtons.map((btn: import('../common/types').FilterButton) => (
               <button
                 key={btn.key}
                 className={`px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition-colors ${

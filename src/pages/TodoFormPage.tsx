@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { TodoForm } from '../components/TodoForm';
-import type { Todo } from '../common/db';
+import type { Todo } from '../common/types';
 import { defaultForm } from '../common/utils';
 import { useTodoContext } from '../contexts/TodoContext';
 

@@ -1,16 +1,4 @@
-// IndexedDB 操作と型定義
-export type Todo = {
-  id: string;
-  title: string;
-  description: string;
-  createdAt: string;
-  startableAt: string;
-  dueDate: string;
-  status: 'Unlocked' | 'Locked' | 'Completed';
-  effortMinutes: number;
-  assignee: '自分' | '他人';
-  dependency?: string;
-};
+import type { Todo } from '../common/types';
 
 const DB_NAME = 'unlockedTodoDB';
 const DB_VERSION = 1;

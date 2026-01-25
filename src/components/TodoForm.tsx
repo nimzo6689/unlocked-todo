@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Todo } from '../common/db';
+import type { Todo } from '../common/types';
 import { formatDateForInput } from '../common/utils';
 
 export type TodoFormProps = {

@@ -1,9 +1,5 @@
-import type { Todo } from './db';
-
-export type FilterButton = {
-  key: string;
-  label: string;
-};
+import type { Todo } from './types';
+import type { FilterButton } from './types';
 
 export const filterButtons: FilterButton[] = [
   { key: 'unlocked', label: 'Unlocked' },

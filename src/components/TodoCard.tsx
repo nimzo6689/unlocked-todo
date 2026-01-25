@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import type { Todo } from '../common/db';
+import type { Todo } from '../common/types';
 import { formatDate } from '../common/utils';
 import { marked } from 'marked';
 

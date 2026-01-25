@@ -11,6 +11,11 @@ export type Todo = {
   dependency?: string;
 };
 
+export type FilterButton = {
+  key: string;
+  label: string;
+};
+
 export type ModalState = {
   message: string;
   onConfirm: () => void;

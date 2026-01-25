@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import { type Todo, type ModalState } from '../common/types'; // 型定義を別ファイルからインポート
+import { type Todo, type ModalState } from '../common/types';
 
 export interface TodoContextType {
   todos: Todo[];
