@@ -95,13 +95,10 @@ export const TodoCard: React.FC<TodoCardProps> = ({
       <div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm text-slate-500 mt-4 pt-4 border-t">
           <div>
-            <strong>作成日:</strong> {formatDate(todo.createdAt)}
+            <strong>着手可能日時:</strong> {formatDate(todo.startableAt)}
           </div>
           <div>
-            <strong>着手可能日:</strong> {formatDate(todo.startableAt)}
-          </div>
-          <div>
-            <strong>期限日:</strong> {formatDate(todo.dueDate)}
+            <strong>期限:</strong> {formatDate(todo.dueDate)}
           </div>
           <div>
             <strong>工数:</strong> {todo.effortMinutes || 0} 分

@@ -87,7 +87,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSav
             htmlFor="dueDate"
             className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
           >
-            期限日時 <span className="text-red-500">*</span>
+            期限 <span className="text-red-500">*</span>
           </label>
           <input
             type="datetime-local"
