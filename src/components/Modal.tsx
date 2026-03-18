@@ -18,7 +18,7 @@ export const Modal: React.FC<ModalProps> = ({ message, onConfirm, onCancel }) =>
           キャンセル
         </button>
         <button
-          className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm"
+          className="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm"
           onClick={onConfirm}
         >
           OK
