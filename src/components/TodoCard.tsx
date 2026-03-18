@@ -20,6 +20,7 @@ export type TodoCardProps = {
   filter: string;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  onComplete: (id: string) => void;
 };
 
 export const TodoCard: React.FC<TodoCardProps> = ({
@@ -28,6 +29,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   filter,
   onEdit,
   onDelete,
+  onComplete,
 }) => {
   const now = new Date();
   const dueDate = new Date(todo.dueDate);
@@ -132,6 +134,14 @@ export const TodoCard: React.FC<TodoCardProps> = ({
           )}
         </div>
         <div className="flex flex-wrap justify-end gap-2 mt-4">
+          {todo.status !== 'Completed' && (
+            <button
+              onClick={() => onComplete(todo.id)}
+              className="text-xs sm:text-sm bg-green-500 hover:bg-green-600 text-white font-semibold py-1 px-2 sm:px-3 rounded-md"
+            >
+              完了
+            </button>
+          )}
           <button
             onClick={() => onEdit(todo.id)}
             className="text-xs sm:text-sm bg-slate-500 hover:bg-slate-600 text-white font-semibold py-1 px-2 sm:px-3 rounded-md"

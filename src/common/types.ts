@@ -34,4 +34,5 @@ export type TodoContextType = {
   setTodos: (todos: Todo[]) => void;
   requestNotificationPermission: () => void;
   handleDelete: (id: string) => void;
+  handleComplete: (id: string) => void;
 }

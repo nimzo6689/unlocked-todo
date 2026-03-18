@@ -1,20 +1,5 @@
 import { createContext, useContext } from 'react';
-import { type Todo, type ModalState } from '../common/types';
-
-export interface TodoContextType {
-  todos: Todo[];
-  fetchTodos: () => Promise<void>;
-  getTodo: (id: string) => Todo | undefined;
-  setTodos: (todos: Todo[]) => void;
-  form: Partial<Todo>;
-  setForm: (form: Partial<Todo>) => void;
-  modal: ModalState | null;
-  setModal: (value: ModalState | null) => void;
-  requestNotificationPermission: () => void;
-  notificationEnabled: boolean;
-  setNotificationEnabled: (value: boolean) => void;
-  handleDelete: (id: string) => void;
-}
+import { type TodoContextType } from '../common/types';
 
 export const TodoContext = createContext<TodoContextType | undefined>(undefined);
 

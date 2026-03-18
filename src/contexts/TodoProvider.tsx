@@ -123,6 +123,21 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     });
   };
 
+  const handleComplete = (id: string) => {
+    setModal({
+      message: 'このTodoを完了にしますか？',
+      onConfirm: async () => {
+        const newTodos = todos.map((todo) =>
+          todo.id === id ? { ...todo, status: 'Completed' as const } : todo
+        );
+        const { todoDB } = await import('../common/db');
+        await todoDB.save(newTodos);
+        setTodos(newTodos);
+        setModal(null);
+      },
+    });
+  };
+
   const value: TodoContextType = {
     todos,
     form,
@@ -133,6 +148,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     setTodos,
     requestNotificationPermission,
     handleDelete,
+    handleComplete,
     setForm,
     setModal,
     setNotificationEnabled,
