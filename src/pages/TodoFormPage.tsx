@@ -14,10 +14,15 @@ export const TodoFormPage = () => {
     if (id) {
       setForm(getTodo(id) || defaultForm);
     } else {
+      const now = new Date();
+      const dueDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0, 0);
+      if (dueDate <= now) {
+        dueDate.setDate(dueDate.getDate() + 1);
+      }
       setForm({
         ...defaultForm,
         startableAt: new Date().toISOString(),
-        dueDate: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        dueDate: dueDate.toISOString(),
       });
     }
   }, [id, getTodo, setForm]);
