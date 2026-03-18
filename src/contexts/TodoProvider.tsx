@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, type ReactNode } from 'react';
 import { todoDB } from '../common/db';
 import type { Todo, ModalState, TodoContextType } from '../common/types';
-import { defaultForm } from '../common/utils';
+import { defaultForm, getDependencyIds } from '../common/utils';
 import { TodoContext } from './TodoContext';
 
 // LocalStorage に保存するキー
@@ -63,9 +63,12 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
 
       todos.forEach((todo) => {
         const startableAt = new Date(todo.startableAt || todo.createdAt);
-        const dependentTodo = todo.dependency ? getTodo(todo.dependency) : null;
-        const isDependencyIncomplete =
-          dependentTodo && dependentTodo.status !== 'Completed';
+        const dependentTodos = getDependencyIds(todo)
+          .map(getTodo)
+          .filter((t): t is Todo => Boolean(t));
+        const isDependencyIncomplete = dependentTodos.some(
+          (t) => t.status !== 'Completed',
+        );
 
         const isReady =
           todo.status === 'Unlocked' &&
@@ -113,7 +116,15 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
       onConfirm: async () => {
         const newTodos = todos.filter((todo) => todo.id !== id);
         newTodos.forEach((todo) => {
-          if (todo.dependency === id) todo.dependency = '';
+          if (!todo.dependency) return;
+          if (Array.isArray(todo.dependency)) {
+            todo.dependency = todo.dependency.filter((depId) => depId !== id);
+            if (todo.dependency.length === 0) {
+              todo.dependency = undefined;
+            }
+          } else if (todo.dependency === id) {
+            todo.dependency = undefined;
+          }
         });
         const { todoDB } = await import('../common/db');
         await todoDB.save(newTodos);

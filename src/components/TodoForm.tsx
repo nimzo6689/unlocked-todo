@@ -153,19 +153,32 @@ export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSav
         </label>
         <select
           id="dependency"
-          value={form.dependency || ''}
-          onChange={e => onChange({ ...form, dependency: e.target.value })}
+          multiple
+          size={Math.min(6, todos.length)}
+          value={
+            Array.isArray(form.dependency)
+              ? form.dependency
+              : form.dependency
+              ? [form.dependency]
+              : []
+          }
+          onChange={e => {
+            const selected = Array.from(e.target.selectedOptions).map(o => o.value);
+            onChange({ ...form, dependency: selected });
+          }}
           className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
         >
-          <option value="">なし</option>
           {todos
-            .filter(t => t.id !== form.id)
+            .filter(t => t.id !== form.id && t.status !== 'Completed')
             .map(t => (
               <option key={t.id} value={t.id}>
                 {t.title}
               </option>
             ))}
         </select>
+        <p className="text-xs text-slate-500 mt-1">
+          複数選択するには Ctrl または Command キーを押しながら選択してください。
+        </p>
       </div>
       <div className="flex flex-wrap justify-end gap-2 mt-2">
         <button

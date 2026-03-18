@@ -37,6 +37,12 @@ export const TodoFormPage = () => {
         todo.id === form.id ? ({ ...todo, ...form } as Todo) : todo,
       );
     } else {
+      const dependency = Array.isArray(form.dependency)
+        ? form.dependency
+        : form.dependency
+        ? [form.dependency]
+        : [];
+
       const newTodo: Todo = {
         id: crypto.randomUUID(),
         createdAt: now,
@@ -47,7 +53,7 @@ export const TodoFormPage = () => {
         status: (form.status as Todo['status']) || 'Unlocked',
         effortMinutes: form.effortMinutes || 0,
         assignee: (form.assignee as Todo['assignee']) || '自分',
-        dependency: form.dependency || '',
+        dependency,
       };
       newTodos.push(newTodo);
     }

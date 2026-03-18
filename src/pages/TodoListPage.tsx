@@ -1,7 +1,8 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import type { Todo } from '../common/types';
 import { TodoCard } from '../components/TodoCard';
 import { Modal } from '../components/Modal';
-import { filterButtons } from '../common/utils';
+import { filterButtons, getDependencyIds } from '../common/utils';
 import { useTodoContext } from '../contexts/TodoContext';
 
 export const TodoListPage = () => {
@@ -46,8 +47,10 @@ export const TodoListPage = () => {
     .filter(todo => {
       const now = new Date();
       const startableAt = new Date(todo.startableAt || todo.createdAt);
-      const dependentTodo = todo.dependency ? getTodo(todo.dependency) : null;
-      const isDependencyIncomplete = dependentTodo && dependentTodo.status !== 'Completed';
+      const dependentTodos = getDependencyIds(todo)
+        .map(getTodo)
+        .filter((t): t is Todo => Boolean(t));
+      const isDependencyIncomplete = dependentTodos.some(t => t.status !== 'Completed');
       if (filter === 'all') return true;
       if (filter === 'completed') return todo.status === 'Completed';
       if (filter === 'unlocked') {
@@ -142,7 +145,9 @@ export const TodoListPage = () => {
             <TodoCard
               key={todo.id}
               todo={todo}
-              dependentTodo={todo.dependency ? getTodo(todo.dependency) : null}
+              dependentTodos={getDependencyIds(todo)
+                .map(getTodo)
+                .filter((t): t is Todo => Boolean(t))}
               filter={filter}
               onEdit={handleEdit}
               onDelete={() => handleDelete(todo.id)}

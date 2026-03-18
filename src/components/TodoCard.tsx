@@ -16,7 +16,7 @@ const assigneeClasses: Record<string, string> = {
 
 export type TodoCardProps = {
   todo: Todo;
-  dependentTodo?: Todo | null;
+  dependentTodos?: Todo[];
   filter: string;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
@@ -25,7 +25,7 @@ export type TodoCardProps = {
 
 export const TodoCard: React.FC<TodoCardProps> = ({
   todo,
-  dependentTodo,
+  dependentTodos,
   filter,
   onEdit,
   onDelete,
@@ -46,12 +46,15 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   } else {
     cardBgClass = 'bg-slate-50 opacity-70';
   }
-  const isDependencyIncomplete = dependentTodo && dependentTodo.status !== 'Completed';
+  const dependencyList = dependentTodos ?? [];
+  const incompleteDependencies = dependencyList.filter((t: Todo) => t.status !== 'Completed');
+  const isDependencyIncomplete = incompleteDependencies.length > 0;
   const isLockedOnTime = todo.status === 'Unlocked' && startableAt > now;
   let lockedReasonHtml = '';
   if (filter === 'locked' && (isDependencyIncomplete || isLockedOnTime)) {
     if (isDependencyIncomplete) {
-      lockedReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'>依存タスク「${dependentTodo?.title}」が未完了です。</div>`;
+      const titles = incompleteDependencies.map((t: Todo) => t.title).join('、');
+      lockedReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'>依存タスク「${titles}」が未完了です。</div>`;
     } else if (isLockedOnTime) {
       lockedReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'>着手可能日時 (${formatDate(
         todo.startableAt,
@@ -113,17 +116,26 @@ export const TodoCard: React.FC<TodoCardProps> = ({
               {todo.assignee}
             </span>
           </div>
-          {dependentTodo && (
+          {dependencyList.length > 0 && (
             <div className="col-span-1 sm:col-span-2">
               <strong>依存Todo:</strong>
-              <span className="text-slate-700">{dependentTodo.title}</span>
-              <span
-                className={`text-xs sm:text-sm font-semibold px-2 py-0.5 rounded-full ${
-                  statusClasses[dependentTodo.status]
-                }`}
-              >
-                {dependentTodo.status}
-              </span>
+              <div className="mt-1 space-y-1">
+                {dependencyList.map((dep: Todo) => {
+                  const displayStatus = dep.status === 'Completed' ? 'Unlocked' : 'Locked';
+                  return (
+                    <div key={dep.id} className="flex items-center gap-2">
+                      <span className="text-slate-700">{dep.title}</span>
+                      <span
+                        className={`text-xs sm:text-sm font-semibold px-2 py-0.5 rounded-full ${
+                          statusClasses[displayStatus]
+                        }`}
+                      >
+                        {displayStatus}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
           {lockedReasonHtml && (

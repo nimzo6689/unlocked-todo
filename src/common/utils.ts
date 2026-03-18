@@ -16,7 +16,13 @@ export const defaultForm: Partial<Todo> = {
   status: 'Unlocked',
   effortMinutes: 25, // ポモドーロ・テクニックの標準値
   assignee: '自分',
-  dependency: '',
+  dependency: [],
+};
+
+export const getDependencyIds = (todo: Todo): string[] => {
+  if (!todo.dependency) return [];
+  if (Array.isArray(todo.dependency)) return todo.dependency.filter(Boolean);
+  return [todo.dependency];
 };
 
 // 画面への表示用（2023/10/25 14:30）

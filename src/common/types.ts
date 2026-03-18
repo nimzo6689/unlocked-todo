@@ -8,7 +8,7 @@ export type Todo = {
   status: 'Unlocked' | 'Locked' | 'Completed';
   effortMinutes: number;
   assignee: '自分' | '他人';
-  dependency?: string;
+  dependency?: string | string[];
 };
 
 export type FilterButton = {
