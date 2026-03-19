@@ -9,6 +9,7 @@ export type Todo = {
   effortMinutes: number;
   assignee: '自分' | '他人';
   dependency?: string | string[];
+  completedAt?: string;
 };
 
 export type FilterButton = {

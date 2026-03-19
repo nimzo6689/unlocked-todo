@@ -11,6 +11,11 @@ export type TodoFormProps = {
 };
 
 export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSave, onCancel }) => {
+  const hasDependency = form.dependency
+    ? Array.isArray(form.dependency)
+      ? form.dependency.length > 0
+      : true
+    : false;
   return (
     <form onSubmit={onSave} className="p-2 sm:p-4">
       <input type="hidden" value={form.id || ''} />
@@ -53,6 +58,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSav
           <input
             type="datetime-local"
             id="startableAt"
+            disabled={hasDependency}
             value={formatDateForInput(form.startableAt)}
             onChange={e =>
               onChange({
@@ -60,7 +66,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSav
                 startableAt: new Date(e.target.value).toISOString(),
               })
             }
-            className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
+            className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm disabled:bg-slate-100 disabled:cursor-not-allowed"
           />
         </div>
         <div>
@@ -164,7 +170,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSav
           }
           onChange={e => {
             const selected = Array.from(e.target.selectedOptions).map(o => o.value);
-            onChange({ ...form, dependency: selected });
+            onChange({ ...form, dependency: selected, ...(selected.length > 0 ? { startableAt: '' } : {}) });
           }}
           className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
         >

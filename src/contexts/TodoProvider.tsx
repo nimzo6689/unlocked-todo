@@ -114,16 +114,15 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     setModal({
       message: 'このTodoを本当に削除しますか？\nこの操作は取り消せません。',
       onConfirm: async () => {
+        const deletedAt = new Date().toISOString();
         const newTodos = todos.filter((todo) => todo.id !== id);
         newTodos.forEach((todo) => {
-          if (!todo.dependency) return;
-          if (Array.isArray(todo.dependency)) {
-            todo.dependency = todo.dependency.filter((depId) => depId !== id);
-            if (todo.dependency.length === 0) {
-              todo.dependency = undefined;
-            }
-          } else if (todo.dependency === id) {
-            todo.dependency = undefined;
+          const originalDeps = getDependencyIds(todo);
+          const newDeps = originalDeps.filter((depId) => depId !== id);
+          const dependencyChanged = newDeps.length < originalDeps.length;
+          todo.dependency = newDeps.length > 0 ? newDeps : undefined;
+          if (dependencyChanged) {
+            todo.startableAt = deletedAt;
           }
         });
         const { todoDB } = await import('../common/db');
@@ -138,9 +137,32 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     setModal({
       message: 'このTodoを完了にしますか？',
       onConfirm: async () => {
-        const newTodos = todos.map((todo) =>
-          todo.id === id ? { ...todo, status: 'Completed' as const } : todo
+        const completedAt = new Date().toISOString();
+        let newTodos = todos.map((todo) =>
+          todo.id === id ? { ...todo, status: 'Completed' as const, completedAt } : todo
         );
+        // 依存関係をチェックして、startableAtを更新
+        newTodos = newTodos.map((todo) => {
+          if (!todo.dependency) return todo;
+          const depIds = getDependencyIds(todo);
+          if (depIds.includes(id)) {
+            // この完了が依存に含まれている場合、全ての依存が完了しているかチェック
+            const allDepsCompleted = depIds.every((depId) => {
+              const depTodo = newTodos.find((t) => t.id === depId);
+              return depTodo?.status === 'Completed';
+            });
+            if (allDepsCompleted) {
+              // 全て完了したら、最も遅いcompletedAtをstartableAtに
+              const maxCompletedAt = depIds
+                .map((depId) => newTodos.find((t) => t.id === depId)?.completedAt)
+                .filter(Boolean)
+                .sort()
+                .pop();
+              return { ...todo, startableAt: maxCompletedAt || todo.startableAt };
+            }
+          }
+          return todo;
+        });
         const { todoDB } = await import('../common/db');
         await todoDB.save(newTodos);
         setTodos(newTodos);

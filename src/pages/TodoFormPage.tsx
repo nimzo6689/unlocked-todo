@@ -32,6 +32,12 @@ export const TodoFormPage = () => {
     const now = new Date().toISOString();
     let newTodos = [...todos];
 
+    const hasDependency = form.dependency
+      ? Array.isArray(form.dependency)
+        ? form.dependency.length > 0
+        : true
+      : false;
+
     if (form.id) {
       newTodos = newTodos.map(todo =>
         todo.id === form.id ? ({ ...todo, ...form } as Todo) : todo,
@@ -46,7 +52,7 @@ export const TodoFormPage = () => {
       const newTodo: Todo = {
         id: crypto.randomUUID(),
         createdAt: now,
-        startableAt: form.startableAt || now,
+        startableAt: hasDependency ? (form.startableAt || '') : (form.startableAt || now),
         title: form.title || '',
         description: form.description || '',
         dueDate: form.dueDate || '',
