@@ -33,7 +33,21 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js');
+      const baseUrl = import.meta.env.BASE_URL || '/';
+      const isDev = import.meta.env.DEV;
+      const swPath = isDev
+        ? `${baseUrl}dev-sw.js?dev-sw`
+        : `${baseUrl}sw.js`;
+      const scope = baseUrl;
+
+      navigator.serviceWorker
+        .register(swPath, { scope })
+        .then((reg) => {
+          console.log('ServiceWorker registered', swPath, reg.scope);
+        })
+        .catch((error) => {
+          console.error('ServiceWorker registration failed:', error);
+        });
     }
   }, []);
 
