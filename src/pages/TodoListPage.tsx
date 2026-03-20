@@ -14,7 +14,8 @@ export const TodoListPage = () => {
     requestNotificationPermission,
     notificationEnabled,
     handleDelete,
-    handleComplete
+    handleComplete,
+    decrementEffort,
   } = useTodoContext();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -152,6 +153,7 @@ export const TodoListPage = () => {
               onEdit={handleEdit}
               onDelete={() => handleDelete(todo.id)}
               onComplete={() => handleComplete(todo.id)}
+              onEffortDecrement={() => decrementEffort(todo.id)}
             />
           ))
         ) : (

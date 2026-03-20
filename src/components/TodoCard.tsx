@@ -21,6 +21,7 @@ export type TodoCardProps = {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onComplete: (id: string) => void;
+  onEffortDecrement: (id: string) => void;
 };
 
 export const TodoCard: React.FC<TodoCardProps> = ({
@@ -30,6 +31,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   onEdit,
   onDelete,
   onComplete,
+  onEffortDecrement,
 }) => {
   const now = new Date();
   const dueDate = new Date(todo.dueDate);
@@ -63,6 +65,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   }
 
   const [previewHtml, setPreviewHtml] = useState('');
+  const [isWorking, setIsWorking] = useState(false);
 
   useEffect(() => {
     const result = marked.parse(todo.description || '');
@@ -72,6 +75,21 @@ export const TodoCard: React.FC<TodoCardProps> = ({
       result.then(html => setPreviewHtml(html));
     }
   }, [todo.description]);
+
+  useEffect(() => {
+    if (!isWorking) return;
+    const interval = setInterval(() => {
+      onEffortDecrement(todo.id);
+    }, 60_000);
+
+    return () => clearInterval(interval);
+  }, [isWorking, onEffortDecrement, todo.id]);
+
+  useEffect(() => {
+    if (todo.status !== 'Unlocked' && isWorking) {
+      setIsWorking(false);
+    }
+  }, [todo.status, isWorking]);
 
   return (
     <div
@@ -146,6 +164,18 @@ export const TodoCard: React.FC<TodoCardProps> = ({
           )}
         </div>
         <div className="flex flex-wrap justify-end gap-2 mt-4">
+          {filter === 'unlocked' && todo.status === 'Unlocked' && (
+            <button
+              onClick={() => setIsWorking((prev) => !prev)}
+              className={`text-xs sm:text-sm ${
+                isWorking
+                  ? 'bg-yellow-500 hover:bg-yellow-600'
+                  : 'bg-blue-500 hover:bg-blue-600'
+              } text-white font-semibold py-1 px-2 sm:px-3 rounded-md`}
+            >
+              {isWorking ? '中断' : '着手'}
+            </button>
+          )}
           {todo.status !== 'Completed' && (
             <button
               onClick={() => onComplete(todo.id)}

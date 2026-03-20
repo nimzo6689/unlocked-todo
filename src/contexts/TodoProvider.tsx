@@ -185,6 +185,17 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     });
   };
 
+  const decrementEffort = async (id: string) => {
+    const newTodos = todos.map((todo) => {
+      if (todo.id !== id) return todo;
+      const nextEffort = Math.max(0, (todo.effortMinutes || 0) - 1);
+      return { ...todo, effortMinutes: nextEffort };
+    });
+    const { todoDB } = await import('../common/db');
+    await todoDB.save(newTodos);
+    setTodos(newTodos);
+  };
+
   const value: TodoContextType = {
     todos,
     form,
@@ -196,6 +207,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     requestNotificationPermission,
     handleDelete,
     handleComplete,
+    decrementEffort,
     setForm,
     setModal,
     setNotificationEnabled,

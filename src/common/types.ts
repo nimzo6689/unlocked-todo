@@ -36,4 +36,5 @@ export type TodoContextType = {
   requestNotificationPermission: () => void;
   handleDelete: (id: string) => void;
   handleComplete: (id: string) => void;
+  decrementEffort: (id: string) => void;
 }
