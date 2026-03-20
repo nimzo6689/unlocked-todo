@@ -14,7 +14,7 @@ export const defaultForm: Partial<Todo> = {
   startableAt: '',
   dueDate: '',
   status: 'Unlocked',
-  effortMinutes: 25, // ポモドーロ・テクニックの標準値
+  effortMinutes: 30,
   assignee: '自分',
   dependency: [],
 };

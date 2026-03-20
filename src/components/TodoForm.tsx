@@ -100,12 +100,23 @@ export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSav
           <input
             type="number"
             id="effortMinutes"
-            min={0}
-            step={5}
-            value={form.effortMinutes || 0}
-            onChange={e => onChange({ ...form, effortMinutes: parseInt(e.target.value, 10) || 0 })}
+            min={1}
+            value={form.effortMinutes || 1}
+            onChange={e => onChange({ ...form, effortMinutes: parseInt(e.target.value, 10) || 1 })}
             className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
           />
+          <div className="mt-2 flex flex-wrap gap-2">
+            {[5, 10, 30, 60, 120].map(value => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onChange({ ...form, effortMinutes: value })}
+                className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100"
+              >
+                {value}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-6">
