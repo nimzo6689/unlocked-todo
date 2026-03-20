@@ -161,23 +161,37 @@ export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSav
           id="dependency"
           multiple
           size={Math.min(6, todos.length)}
-          value={
-            Array.isArray(form.dependency)
-              ? form.dependency
-              : form.dependency
-              ? [form.dependency]
-              : []
-          }
-          onChange={e => {
-            const selected = Array.from(e.target.selectedOptions).map(o => o.value);
-            onChange({ ...form, dependency: selected, ...(selected.length > 0 ? { startableAt: '' } : {}) });
-          }}
           className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
         >
           {todos
             .filter(t => t.id !== form.id && t.status !== 'Completed')
             .map(t => (
-              <option key={t.id} value={t.id}>
+              <option
+                key={t.id}
+                value={t.id}
+                selected={
+                  Array.isArray(form.dependency)
+                    ? form.dependency.includes(t.id)
+                    : form.dependency === t.id
+                }
+                onClick={e => {
+                  e.preventDefault();
+                  const currentDeps = Array.isArray(form.dependency)
+                    ? form.dependency
+                    : form.dependency
+                    ? [form.dependency]
+                    : [];
+                  const isSelected = currentDeps.includes(t.id);
+                  const newDeps = isSelected
+                    ? currentDeps.filter(id => id !== t.id)
+                    : [...currentDeps, t.id];
+                  onChange({
+                    ...form,
+                    dependency: newDeps,
+                    ...(newDeps.length > 0 ? { startableAt: '' } : {}),
+                  });
+                }}
+              >
                 {t.title}
               </option>
             ))}
