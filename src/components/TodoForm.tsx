@@ -106,7 +106,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSav
             className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
           />
           <div className="mt-2 flex flex-wrap gap-2">
-            {[5, 10, 30, 60, 120].map(value => (
+            {[5, 10, 25, 55, 115].map(value => (
               <button
                 key={value}
                 type="button"
