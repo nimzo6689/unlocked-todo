@@ -65,16 +65,31 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   }
 
   const [previewHtml, setPreviewHtml] = useState('');
+  const [truncatedHtml, setTruncatedHtml] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isWorking, setIsWorking] = useState(false);
 
+  const isLongDescription = (todo.description || '').length > 100;
+
   useEffect(() => {
-    const result = marked.parse(todo.description || '');
-    if (typeof result === 'string') {
-      setPreviewHtml(result);
-    } else if (result instanceof Promise) {
-      result.then(html => setPreviewHtml(html));
+    const desc = todo.description || '';
+    const fullResult = marked.parse(desc);
+    if (typeof fullResult === 'string') {
+      setPreviewHtml(fullResult);
+    } else if (fullResult instanceof Promise) {
+      fullResult.then(html => setPreviewHtml(html));
     }
-  }, [todo.description]);
+
+    if (isLongDescription) {
+      const truncatedDesc = desc.substring(0, 100) + '...';
+      const truncatedResult = marked.parse(truncatedDesc);
+      if (typeof truncatedResult === 'string') {
+        setTruncatedHtml(truncatedResult);
+      } else if (truncatedResult instanceof Promise) {
+        truncatedResult.then(html => setTruncatedHtml(html));
+      }
+    }
+  }, [todo.description, isLongDescription]);
 
   useEffect(() => {
     if (!isWorking) return;
@@ -111,9 +126,17 @@ export const TodoCard: React.FC<TodoCardProps> = ({
         <div
           className="text-xs sm:text-sm text-slate-600 mb-3 markdown-preview"
           dangerouslySetInnerHTML={{
-            __html: previewHtml,
+            __html: isLongDescription && !isExpanded ? truncatedHtml : previewHtml,
           }}
         />
+        {isLongDescription && (
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-xs text-blue-500 hover:text-blue-700 mb-3"
+          >
+            {isExpanded ? '折りたたむ' : '展開'}
+          </button>
+        )}
       </div>
       <div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm text-slate-500 mt-4 pt-4 border-t">
