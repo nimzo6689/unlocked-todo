@@ -7,10 +7,12 @@ export type TodoFormProps = {
   todos: Todo[];
   onChange: (form: Partial<Todo>) => void;
   onSave: (e: React.FormEvent) => void;
+  onComplete: (e: React.FormEvent) => void;
   onCancel: () => void;
+  saving?: boolean;
 };
 
-export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSave, onCancel }) => {
+export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSave, onComplete, onCancel, saving = false }) => {
   const hasDependency = form.dependency
     ? Array.isArray(form.dependency)
       ? form.dependency.length > 0
@@ -220,10 +222,20 @@ export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSav
           キャンセル
         </button>
         <button
-          type="submit"
-          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
+          type="button"
+          onClick={onSave}
+          disabled={saving}
+          className="bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
         >
           保存
+        </button>
+        <button
+          type="button"
+          onClick={onComplete}
+          disabled={saving}
+          className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
+        >
+          完了
         </button>
       </div>
     </form>

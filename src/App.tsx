@@ -2,6 +2,7 @@ import { HashRouter, Routes, Route } from "react-router-dom";
 import { TodoFormPage } from "./pages/TodoFormPage";
 import { TodoListPage } from "./pages/TodoListPage";
 import { TodoProvider } from "./contexts/TodoProvider";
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
             />
           </Routes>
         </div>
+        <Toaster />
       </HashRouter>
     </TodoProvider>
   );

@@ -1,14 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { TodoForm } from '../components/TodoForm';
 import type { Todo } from '../common/types';
 import { defaultForm } from '../common/utils';
 import { useTodoContext } from '../contexts/TodoContext';
+import toast from 'react-hot-toast';
 
 export const TodoFormPage = () => {
   const { todos, form, setForm, getTodo, fetchTodos } = useTodoContext();
   const { id } = useParams();
   const navigate = useNavigate();
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -67,8 +69,17 @@ export const TodoFormPage = () => {
     const { todoDB } = await import('../common/db');
     await todoDB.save(newTodos);
     await fetchTodos();
-    setForm(defaultForm);
-    navigate('/');
+    toast.success("保存しました");
+  }
+  async function handleComplete(e: React.FormEvent) {
+    setSaving(true);
+    try {
+      await handleSave(e);
+      setForm(defaultForm);
+      navigate('/');
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleCancel() {
@@ -84,7 +95,9 @@ export const TodoFormPage = () => {
         todos={todos}
         onChange={setForm}
         onSave={handleSave}
+        onComplete={handleComplete}
         onCancel={handleCancel}
+        saving={saving}
       />
     </div>
   );
