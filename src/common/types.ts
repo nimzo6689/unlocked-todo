@@ -30,6 +30,7 @@ export type TodoContextType = {
   setModal: (value: ModalState | null) => void;
   notificationEnabled: boolean;
   setNotificationEnabled: (value: boolean) => void;
+  currentInProgressId: string | null;
   fetchTodos: () => Promise<void>;
   getTodo: (id: string) => Todo | undefined;
   setTodos: (todos: Todo[]) => void;
@@ -37,4 +38,5 @@ export type TodoContextType = {
   handleDelete: (id: string) => void;
   handleComplete: (id: string) => void;
   decrementEffort: (id: string) => void;
+  startTodo: (id: string) => void;
 }

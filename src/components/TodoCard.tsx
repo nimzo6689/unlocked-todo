@@ -18,20 +18,24 @@ export type TodoCardProps = {
   todo: Todo;
   dependentTodos?: Todo[];
   filter: string;
+  currentInProgressId: string | null;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onComplete: (id: string) => void;
   onEffortDecrement: (id: string) => void;
+  onStartTodo: (id: string) => void;
 };
 
 export const TodoCard: React.FC<TodoCardProps> = ({
   todo,
   dependentTodos,
   filter,
+  currentInProgressId,
   onEdit,
   onDelete,
   onComplete,
   onEffortDecrement,
+  onStartTodo,
 }) => {
   const now = new Date();
   const dueDate = new Date(todo.dueDate);
@@ -67,7 +71,6 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   const [previewHtml, setPreviewHtml] = useState('');
   const [truncatedHtml, setTruncatedHtml] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isWorking, setIsWorking] = useState(false);
 
   const isLongDescription = (todo.description || '').length > 100;
 
@@ -91,20 +94,15 @@ export const TodoCard: React.FC<TodoCardProps> = ({
     }
   }, [todo.description, isLongDescription]);
 
+  // 着手中のタスクの工数を定期的に減らす
   useEffect(() => {
-    if (!isWorking) return;
+    if (currentInProgressId !== todo.id) return;
     const interval = setInterval(() => {
       onEffortDecrement(todo.id);
     }, 60_000);
 
     return () => clearInterval(interval);
-  }, [isWorking, onEffortDecrement, todo.id]);
-
-  useEffect(() => {
-    if (todo.status !== 'Unlocked' && isWorking) {
-      setIsWorking(false);
-    }
-  }, [todo.status, isWorking]);
+  }, [currentInProgressId, todo.id, onEffortDecrement]);
 
   return (
     <div
@@ -189,14 +187,14 @@ export const TodoCard: React.FC<TodoCardProps> = ({
         <div className="flex flex-wrap justify-end gap-2 mt-4">
           {filter === 'unlocked' && todo.status === 'Unlocked' && (
             <button
-              onClick={() => setIsWorking((prev) => !prev)}
+              onClick={() => onStartTodo(todo.id)}
               className={`text-xs sm:text-sm ${
-                isWorking
+                currentInProgressId === todo.id
                   ? 'bg-yellow-500 hover:bg-yellow-600'
                   : 'bg-blue-500 hover:bg-blue-600'
               } text-white font-semibold py-1 px-2 sm:px-3 rounded-md`}
             >
-              {isWorking ? '中断' : '着手'}
+              {currentInProgressId === todo.id ? '中断' : '着手'}
             </button>
           )}
           {todo.status !== 'Completed' && (

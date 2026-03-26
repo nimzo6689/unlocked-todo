@@ -21,6 +21,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
       Notification.permission &&
       localStorage.getItem(NOTIFICATION_PERMISSION_KEY) === 'granted'
   );
+  const [currentInProgressId, setCurrentInProgressId] = useState<string | null>(null);
 
   const fetchTodos = useCallback(async () => {
     const data = await todoDB.fetch();
@@ -196,11 +197,22 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     setTodos(newTodos);
   };
 
+  const startTodo = async (id: string) => {
+    if (currentInProgressId === id) {
+      // 停止
+      setCurrentInProgressId(null);
+    } else {
+      // 現在のを停止、新しいを着手
+      setCurrentInProgressId(id);
+    }
+  };
+
   const value: TodoContextType = {
     todos,
     form,
     modal,
     notificationEnabled,
+    currentInProgressId,
     fetchTodos,
     getTodo,
     setTodos,
@@ -208,6 +220,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     handleDelete,
     handleComplete,
     decrementEffort,
+    startTodo,
     setForm,
     setModal,
     setNotificationEnabled,
