@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { HashRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { TodoFormPage } from './pages/TodoFormPage';
 import { TodoListPage } from './pages/TodoListPage';
@@ -17,6 +17,7 @@ const drawerItems: DrawerItem[] = [
 const AppContent = () => {
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   return (
     <>
@@ -24,6 +25,7 @@ const AppContent = () => {
         open={isDrawerOpen}
         onOpenChange={setDrawerOpen}
         items={drawerItems}
+        currentPath={location.pathname}
         onSelect={path => navigate(path)}
       />
 

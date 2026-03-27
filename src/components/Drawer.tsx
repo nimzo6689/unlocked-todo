@@ -17,10 +17,11 @@ type DrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   items: DrawerItem[];
+  currentPath?: string;
   onSelect?: (path: string) => void;
 };
 
-export const Drawer = ({ open, onOpenChange, items, onSelect }: DrawerProps) => {
+export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: DrawerProps) => {
   return (
     <UiDrawer open={open} onOpenChange={onOpenChange} direction="left">
       <DrawerOverlay />
@@ -39,19 +40,26 @@ export const Drawer = ({ open, onOpenChange, items, onSelect }: DrawerProps) => 
 
         <nav className="px-4 pb-4">
           <ul className="space-y-2">
-            {items.map(item => (
-              <li key={item.path}>
-                <button
-                  onClick={() => {
-                    onSelect?.(item.path);
-                    onOpenChange(false);
-                  }}
-                  className="w-full text-left py-2 px-3 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors"
-                >
-                  {item.label}
-                </button>
-              </li>
-            ))}
+            {items.map(item => {
+              const isActive = currentPath === item.path;
+              return (
+                <li key={item.path}>
+                  <button
+                    onClick={() => {
+                      onSelect?.(item.path);
+                      onOpenChange(false);
+                    }}
+                    className={`w-full text-left py-2 px-3 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-blue-100 text-blue-700 font-medium'
+                        : 'text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </nav>
       </DrawerContent>
