@@ -85,7 +85,7 @@ export const TodoListPage = () => {
       )}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
         <div className="text-left w-full sm:w-auto">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Unlocked Todo</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">タスク一覧</h1>
           <p className="text-slate-500 mt-1 text-sm sm:text-base">
             現在 {filteredTodos.length} 件のタスクがあります。
           </p>
