@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 import type { Todo } from '../common/types';
 import { formatDateForInput, formatDurationFromSeconds } from '../common/utils';
 
@@ -41,6 +41,26 @@ export const TodoForm: React.FC<TodoFormProps> = ({
     : form.dependency
     ? [form.dependency]
     : [];
+
+  const [isPredecessorExpanded, setIsPredecessorExpanded] = React.useState(false);
+  const [isSuccessorExpanded, setIsSuccessorExpanded] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsPredecessorExpanded(currentDeps.length > 0);
+    setIsSuccessorExpanded(successorIds.length > 0);
+  }, [form.id]);
+
+  React.useEffect(() => {
+    if (currentDeps.length > 0) {
+      setIsPredecessorExpanded(true);
+    }
+  }, [currentDeps.length]);
+
+  React.useEffect(() => {
+    if (successorIds.length > 0) {
+      setIsSuccessorExpanded(true);
+    }
+  }, [successorIds.length]);
 
   function toggleDependency(todoId: string) {
     const isSelected = currentDeps.includes(todoId);
@@ -215,76 +235,86 @@ export const TodoForm: React.FC<TodoFormProps> = ({
         </div>
       </div>
       <div className="mb-6">
-        <label
-          htmlFor="predecessor"
-          className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
+        <button
+          type="button"
+          onClick={() => setIsPredecessorExpanded(prev => !prev)}
+          className="mb-1 flex w-full items-center justify-between rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-100"
+          aria-expanded={isPredecessorExpanded}
+          aria-controls="predecessor"
         >
-          先行タスク
-        </label>
-        <div
-          id="predecessor"
-          className="max-h-72 space-y-2 overflow-y-auto rounded-md border border-slate-300 bg-white p-2 shadow-sm"
-        >
-          {availableDependencyTodos.length > 0 ? (
-            availableDependencyTodos.map(todo => {
-              const isSelected = currentDeps.includes(todo.id);
-              const checkboxId = `predecessor-${todo.id}`;
-              const isBlockedBySuccessor = successorIds.includes(todo.id);
+          <span>先行タスク</span>
+          {isPredecessorExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        </button>
+        {isPredecessorExpanded && (
+          <div
+            id="predecessor"
+            className="max-h-72 space-y-2 overflow-y-auto rounded-md border border-slate-300 bg-white p-2 shadow-sm"
+          >
+            {availableDependencyTodos.length > 0 ? (
+              availableDependencyTodos.map(todo => {
+                const isSelected = currentDeps.includes(todo.id);
+                const checkboxId = `predecessor-${todo.id}`;
+                const isBlockedBySuccessor = successorIds.includes(todo.id);
 
-              return (
-                <div
-                  key={todo.id}
-                  className={`flex items-center gap-2 rounded-md border px-3 py-2 transition-colors ${
-                    isSelected
-                      ? 'border-blue-300 bg-blue-50'
-                      : 'border-slate-200 bg-white hover:bg-slate-50'
-                  }`}
-                >
-                  <label htmlFor={checkboxId} className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
-                    <input
-                      id={checkboxId}
-                      type="checkbox"
-                      checked={isSelected}
-                      disabled={isBlockedBySuccessor}
-                      onChange={() => toggleDependency(todo.id)}
-                      className="h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="truncate text-xs sm:text-sm text-slate-700">{todo.title}</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={e => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onOpenTodo(todo.id);
-                    }}
-                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-600 hover:bg-slate-100"
-                    aria-label={`${todo.title} のTodoフォームを開く`}
+                return (
+                  <div
+                    key={todo.id}
+                    className={`flex items-center gap-2 rounded-md border px-3 py-2 transition-colors ${
+                      isSelected
+                        ? 'border-blue-300 bg-blue-50'
+                        : 'border-slate-200 bg-white hover:bg-slate-50'
+                    }`}
                   >
-                    <span>開く</span>
-                    <ExternalLink size={14} />
-                  </button>
-                </div>
-              );
-            })
-          ) : (
-            <p className="px-1 py-2 text-xs sm:text-sm text-slate-500">選択可能なTodoはありません。</p>
-          )}
-        </div>
+                    <label htmlFor={checkboxId} className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                      <input
+                        id={checkboxId}
+                        type="checkbox"
+                        checked={isSelected}
+                        disabled={isBlockedBySuccessor}
+                        onChange={() => toggleDependency(todo.id)}
+                        className="h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="truncate text-xs sm:text-sm text-slate-700">{todo.title}</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={e => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onOpenTodo(todo.id);
+                      }}
+                      className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-600 hover:bg-slate-100"
+                      aria-label={`${todo.title} のTodoフォームを開く`}
+                    >
+                      <span>開く</span>
+                      <ExternalLink size={14} />
+                    </button>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="px-1 py-2 text-xs sm:text-sm text-slate-500">選択可能なTodoはありません。</p>
+            )}
+          </div>
+        )}
         <p className="mt-1 text-xs text-slate-500">行を押すと先行タスクを複数選択できます。</p>
       </div>
       <div className="mb-6">
-        <label
-          htmlFor="successor"
-          className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
+        <button
+          type="button"
+          onClick={() => setIsSuccessorExpanded(prev => !prev)}
+          className="mb-1 flex w-full items-center justify-between rounded-md border border-slate-300 bg-slate-50 px-3 py-2 text-left text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-100"
+          aria-expanded={isSuccessorExpanded}
+          aria-controls="successor"
         >
-          後続タスク
-        </label>
+          <span>後続タスク</span>
+          {isSuccessorExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        </button>
         {!form.id ? (
           <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs sm:text-sm text-slate-600">
             後続タスクは保存後に設定できます。
           </div>
-        ) : (
+        ) : isSuccessorExpanded ? (
           <div
             id="successor"
             className="max-h-72 space-y-2 overflow-y-auto rounded-md border border-slate-300 bg-white p-2 shadow-sm"
@@ -338,7 +368,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({
               <p className="px-1 py-2 text-xs sm:text-sm text-slate-500">選択可能なTodoはありません。</p>
             )}
           </div>
-        )}
+        ) : null}
         <p className="mt-1 text-xs text-slate-500">行を押すと後続タスクを複数選択できます。</p>
       </div>
       <div className="flex flex-wrap justify-end gap-2 mt-2">
