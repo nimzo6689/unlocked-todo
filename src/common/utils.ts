@@ -15,6 +15,7 @@ export const defaultForm: Partial<Todo> = {
   dueDate: '',
   status: 'Unlocked',
   effortMinutes: 30,
+  actualWorkSeconds: 0,
   assignee: '自分',
   dependency: [],
 };
@@ -45,4 +46,13 @@ export function formatDateForInput(isoString?: string) {
   const tzoffset = date.getTimezoneOffset() * 60000;
   const localISOTime = new Date(date.getTime() - tzoffset).toISOString().slice(0, 16);
   return localISOTime;
+}
+
+export function formatDurationFromSeconds(totalSeconds?: number) {
+  const safeSeconds = Math.max(0, totalSeconds || 0);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+
+  return [hours, minutes, seconds].map(value => String(value).padStart(2, '0')).join(':');
 }

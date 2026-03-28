@@ -13,7 +13,6 @@ export const TodoListPage = () => {
     setModal,
     handleDelete,
     handleComplete,
-    decrementEffort,
     currentInProgressId,
     startTodo,
   } = useTodoContext();
@@ -145,7 +144,6 @@ export const TodoListPage = () => {
               onEdit={handleEdit}
               onDelete={() => handleDelete(todo.id)}
               onComplete={() => handleComplete(todo.id)}
-              onEffortDecrement={() => decrementEffort(todo.id)}
               onStartTodo={startTodo}
             />
           ))

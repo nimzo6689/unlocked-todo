@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, type ReactNode } from 'react';
+import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { todoDB } from '../common/db';
 import type { Todo, ModalState, TodoContextType } from '../common/types';
 import { defaultForm, getDependencyIds } from '../common/utils';
@@ -40,11 +40,28 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     }
   });
   const [currentInProgressId, setCurrentInProgressId] = useState<string | null>(null);
+  const [currentInProgressStartedAt, setCurrentInProgressStartedAt] = useState<number | null>(null);
+  const todosRef = useRef<Todo[]>([]);
+  const currentInProgressIdRef = useRef<string | null>(null);
+  const currentInProgressStartedAtRef = useRef<number | null>(null);
+  const trackedElapsedSecondsRef = useRef(0);
 
   const fetchTodos = useCallback(async () => {
     const data = await todoDB.fetch();
-    setTodos(data);
+    setTodos(data.map(todo => ({ ...todo, actualWorkSeconds: todo.actualWorkSeconds || 0 })));
   }, []);
+
+  useEffect(() => {
+    todosRef.current = todos;
+  }, [todos]);
+
+  useEffect(() => {
+    currentInProgressIdRef.current = currentInProgressId;
+  }, [currentInProgressId]);
+
+  useEffect(() => {
+    currentInProgressStartedAtRef.current = currentInProgressStartedAt;
+  }, [currentInProgressStartedAt]);
 
   useEffect(() => {
     fetchTodos();
@@ -147,12 +164,70 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     });
   };
 
+  const syncInProgressActualWork = useCallback(async (stopAfterSync = false) => {
+    const activeId = currentInProgressIdRef.current;
+    const startedAt = currentInProgressStartedAtRef.current;
+
+    if (!activeId || startedAt === null) {
+      if (stopAfterSync) {
+        trackedElapsedSecondsRef.current = 0;
+        currentInProgressIdRef.current = null;
+        currentInProgressStartedAtRef.current = null;
+        setCurrentInProgressId(null);
+        setCurrentInProgressStartedAt(null);
+      }
+      return;
+    }
+
+    const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+    const deltaSeconds = elapsedSeconds - trackedElapsedSecondsRef.current;
+
+    if (deltaSeconds > 0) {
+      const newTodos = todosRef.current.map(todo =>
+        todo.id === activeId
+          ? {
+              ...todo,
+              actualWorkSeconds: (todo.actualWorkSeconds || 0) + deltaSeconds,
+            }
+          : todo,
+      );
+
+      trackedElapsedSecondsRef.current = elapsedSeconds;
+      todosRef.current = newTodos;
+      setTodos(newTodos);
+      await todoDB.save(newTodos);
+    }
+
+    if (stopAfterSync) {
+      trackedElapsedSecondsRef.current = 0;
+      currentInProgressIdRef.current = null;
+      currentInProgressStartedAtRef.current = null;
+      setCurrentInProgressId(null);
+      setCurrentInProgressStartedAt(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!currentInProgressId || currentInProgressStartedAt === null) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      void syncInProgressActualWork();
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [currentInProgressId, currentInProgressStartedAt, syncInProgressActualWork]);
+
   const handleDelete = (id: string) => {
     setModal({
       message: 'このTodoを本当に削除しますか？\nこの操作は取り消せません。',
       onConfirm: async () => {
+        if (currentInProgressIdRef.current === id) {
+          await syncInProgressActualWork(true);
+        }
         const deletedAt = new Date().toISOString();
-        const newTodos = todos.filter((todo) => todo.id !== id);
+        const newTodos = todosRef.current.filter((todo) => todo.id !== id);
         newTodos.forEach((todo) => {
           const originalDeps = getDependencyIds(todo);
           const newDeps = originalDeps.filter((depId) => depId !== id);
@@ -174,8 +249,11 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     setModal({
       message: 'このTodoを完了にしますか？',
       onConfirm: async () => {
+        if (currentInProgressIdRef.current === id) {
+          await syncInProgressActualWork(true);
+        }
         const completedAt = new Date().toISOString();
-        let newTodos = todos.map((todo) =>
+        let newTodos = todosRef.current.map((todo) =>
           todo.id === id ? { ...todo, status: 'Completed' as const, completedAt } : todo
         );
         // 依存関係をチェックして、startableAtを更新
@@ -208,25 +286,22 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     });
   };
 
-  const decrementEffort = async (id: string) => {
-    const newTodos = todos.map((todo) => {
-      if (todo.id !== id) return todo;
-      const nextEffort = Math.max(0, (todo.effortMinutes || 0) - 1);
-      return { ...todo, effortMinutes: nextEffort };
-    });
-    const { todoDB } = await import('../common/db');
-    await todoDB.save(newTodos);
-    setTodos(newTodos);
-  };
-
   const startTodo = async (id: string) => {
     if (currentInProgressId === id) {
-      // 停止
-      setCurrentInProgressId(null);
-    } else {
-      // 現在のを停止、新しいを着手
-      setCurrentInProgressId(id);
+      await syncInProgressActualWork(true);
+      return;
     }
+
+    if (currentInProgressIdRef.current) {
+      await syncInProgressActualWork(true);
+    }
+
+    trackedElapsedSecondsRef.current = 0;
+    const startedAt = Date.now();
+    currentInProgressIdRef.current = id;
+    currentInProgressStartedAtRef.current = startedAt;
+    setCurrentInProgressId(id);
+    setCurrentInProgressStartedAt(startedAt);
   };
 
   const value: TodoContextType = {
@@ -242,7 +317,6 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     requestNotificationPermission,
     handleDelete,
     handleComplete,
-    decrementEffort,
     startTodo,
     setForm,
     setModal,

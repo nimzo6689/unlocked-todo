@@ -7,6 +7,7 @@ export type Todo = {
   dueDate: string;
   status: 'Unlocked' | 'Locked' | 'Completed';
   effortMinutes: number;
+  actualWorkSeconds: number;
   assignee: '自分' | '他人';
   dependency?: string | string[];
   completedAt?: string;
@@ -47,6 +48,5 @@ export type TodoContextType = {
   requestNotificationPermission: () => void;
   handleDelete: (id: string) => void;
   handleComplete: (id: string) => void;
-  decrementEffort: (id: string) => void;
   startTodo: (id: string) => void;
 }

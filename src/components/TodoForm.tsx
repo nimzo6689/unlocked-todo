@@ -1,10 +1,11 @@
 import React from 'react';
 import type { Todo } from '../common/types';
-import { formatDateForInput } from '../common/utils';
+import { formatDateForInput, formatDurationFromSeconds } from '../common/utils';
 
 export type TodoFormProps = {
   form: Partial<Todo>;
   todos: Todo[];
+  actualWorkSeconds: number;
   onChange: (form: Partial<Todo>) => void;
   onSave: (e: React.FormEvent) => void;
   onComplete: (e: React.FormEvent) => void;
@@ -12,7 +13,16 @@ export type TodoFormProps = {
   saving?: boolean;
 };
 
-export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSave, onComplete, onCancel, saving = false }) => {
+export const TodoForm: React.FC<TodoFormProps> = ({
+  form,
+  todos,
+  actualWorkSeconds,
+  onChange,
+  onSave,
+  onComplete,
+  onCancel,
+  saving = false,
+}) => {
   const hasDependency = form.dependency
     ? Array.isArray(form.dependency)
       ? form.dependency.length > 0
@@ -99,14 +109,19 @@ export const TodoForm: React.FC<TodoFormProps> = ({ form, todos, onChange, onSav
           >
             工数 (分)
           </label>
-          <input
-            type="number"
-            id="effortMinutes"
-            min={1}
-            value={form.effortMinutes || 1}
-            onChange={e => onChange({ ...form, effortMinutes: parseInt(e.target.value, 10) || 1 })}
-            className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
-          />
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              id="effortMinutes"
+              min={1}
+              value={form.effortMinutes || 1}
+              onChange={e => onChange({ ...form, effortMinutes: parseInt(e.target.value, 10) || 1 })}
+              className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
+            />
+            <div className="min-w-fit whitespace-nowrap rounded-md bg-slate-100 px-3 py-2 text-xs sm:text-sm text-slate-700">
+              実作業時間: {formatDurationFromSeconds(actualWorkSeconds)}
+            </div>
+          </div>
           <div className="mt-2 flex flex-wrap gap-2">
             {[5, 10, 25, 55, 115].map(value => (
               <button

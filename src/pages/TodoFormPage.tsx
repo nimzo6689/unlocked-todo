@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { TodoForm } from '../components/TodoForm';
 import type { Todo } from '../common/types';
@@ -11,11 +11,26 @@ export const TodoFormPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
+  const initializedFormKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (id) {
-      setForm(getTodo(id) || defaultForm);
+      if (initializedFormKeyRef.current === id) {
+        return;
+      }
+
+      const todo = getTodo(id);
+      if (!todo) {
+        return;
+      }
+
+      setForm(todo);
+      initializedFormKeyRef.current = id;
     } else {
+      if (initializedFormKeyRef.current === 'new') {
+        return;
+      }
+
       const now = new Date();
       const dueDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0, 0);
       if (dueDate <= now) {
@@ -26,6 +41,7 @@ export const TodoFormPage = () => {
         startableAt: new Date().toISOString(),
         dueDate: dueDate.toISOString(),
       });
+      initializedFormKeyRef.current = 'new';
     }
   }, [id, getTodo, setForm]);
 
@@ -42,7 +58,9 @@ export const TodoFormPage = () => {
 
     if (form.id) {
       newTodos = newTodos.map(todo =>
-        todo.id === form.id ? ({ ...todo, ...form } as Todo) : todo,
+        todo.id === form.id
+          ? ({ ...todo, ...form, actualWorkSeconds: todo.actualWorkSeconds || 0 } as Todo)
+          : todo,
       );
     } else {
       const dependency = Array.isArray(form.dependency)
@@ -60,6 +78,7 @@ export const TodoFormPage = () => {
         dueDate: form.dueDate || '',
         status: (form.status as Todo['status']) || 'Unlocked',
         effortMinutes: form.effortMinutes || 0,
+        actualWorkSeconds: 0,
         assignee: (form.assignee as Todo['assignee']) || '自分',
         dependency,
       };
@@ -75,6 +94,7 @@ export const TodoFormPage = () => {
     setSaving(true);
     try {
       await handleSave(e);
+      initializedFormKeyRef.current = null;
       setForm(defaultForm);
       navigate('/');
     } finally {
@@ -83,6 +103,7 @@ export const TodoFormPage = () => {
   }
 
   function handleCancel() {
+    initializedFormKeyRef.current = null;
     setForm(defaultForm);
     navigate('/');
   }
@@ -93,6 +114,7 @@ export const TodoFormPage = () => {
       <TodoForm
         form={form}
         todos={todos}
+        actualWorkSeconds={form.id ? getTodo(form.id)?.actualWorkSeconds || 0 : 0}
         onChange={setForm}
         onSave={handleSave}
         onComplete={handleComplete}

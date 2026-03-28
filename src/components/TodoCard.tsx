@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Todo } from '../common/types';
-import { formatDate } from '../common/utils';
+import { formatDate, formatDurationFromSeconds } from '../common/utils';
 import { marked } from 'marked';
 
 const statusClasses: Record<string, string> = {
@@ -22,7 +22,6 @@ export type TodoCardProps = {
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onComplete: (id: string) => void;
-  onEffortDecrement: (id: string) => void;
   onStartTodo: (id: string) => void;
 };
 
@@ -34,7 +33,6 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   onEdit,
   onDelete,
   onComplete,
-  onEffortDecrement,
   onStartTodo,
 }) => {
   const now = new Date();
@@ -94,16 +92,6 @@ export const TodoCard: React.FC<TodoCardProps> = ({
     }
   }, [todo.description, isLongDescription]);
 
-  // 着手中のタスクの工数を定期的に減らす
-  useEffect(() => {
-    if (currentInProgressId !== todo.id) return;
-    const interval = setInterval(() => {
-      onEffortDecrement(todo.id);
-    }, 60_000);
-
-    return () => clearInterval(interval);
-  }, [currentInProgressId, todo.id, onEffortDecrement]);
-
   return (
     <div
       className={`${cardBgClass} rounded-lg shadow-md p-3 sm:p-4 border flex flex-col justify-between transition-shadow hover:shadow-lg`}
@@ -145,7 +133,14 @@ export const TodoCard: React.FC<TodoCardProps> = ({
             <strong>期限:</strong> {formatDate(todo.dueDate)}
           </div>
           <div>
-            <strong>工数:</strong> {todo.effortMinutes || 0} 分
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span>
+                <strong>工数:</strong> {todo.effortMinutes || 0} 分
+              </span>
+              <span>
+                <strong>実作業時間:</strong> {formatDurationFromSeconds(todo.actualWorkSeconds)}
+              </span>
+            </div>
           </div>
           <div className="col-span-1 sm:col-span-2">
             <strong>担当:</strong>{' '}
