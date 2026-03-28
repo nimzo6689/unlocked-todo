@@ -9,6 +9,7 @@ const WORK_END_HOUR = 17;
 const BREAK_START_HOUR = 12;
 const BREAK_END_HOUR = 13;
 const SLOT_MINUTES = 30;
+const DISPLAY_WINDOW_DAYS = 7;
 const HOUR_MS = 60 * 60 * 1000;
 const SLOT_MS = SLOT_MINUTES * 60 * 1000;
 
@@ -32,6 +33,14 @@ type AggregatedLoad = {
   slotContributors: SlotContributor[][];
 };
 
+type AvailabilityChartData = AggregatedLoad & {
+  option: EChartsOption;
+  hasLoad: boolean;
+  maxLoad: number;
+  overloadedSlots: number;
+  dateLabel: string;
+};
+
 const toDateInputValue = (date: Date) => {
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, '0');
@@ -43,6 +52,40 @@ const formatTimeLabel = (date: Date) => {
   const hours = `${date.getHours()}`.padStart(2, '0');
   const minutes = `${date.getMinutes()}`.padStart(2, '0');
   return `${hours}:${minutes}`;
+};
+
+const formatDateLabel = (dateStr: string) => {
+  const date = new Date(`${dateStr}T00:00:00`);
+  const weekdayJa = ['日', '月', '火', '水', '木', '金', '土'];
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return `${month}/${day}(${weekdayJa[date.getDay()]})`;
+};
+
+const addDays = (date: Date, days: number) => {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+};
+
+const isWorkingDay = (date: Date) => {
+  const day = date.getDay();
+  return day >= 1 && day <= 5;
+};
+
+const buildDisplayDates = (startDateStr: string) => {
+  const startDate = new Date(`${startDateStr}T00:00:00`);
+  const dates: string[] = [];
+
+  for (let offset = 0; offset < DISPLAY_WINDOW_DAYS; offset += 1) {
+    const date = addDays(startDate, offset);
+    if (!isWorkingDay(date)) {
+      continue;
+    }
+    dates.push(toDateInputValue(date));
+  }
+
+  return dates;
 };
 
 const buildTimeSlots = (dateStr: string) => {
@@ -142,6 +185,185 @@ const parseTaskRange = (todo: Todo) => {
   return { start, end };
 };
 
+const buildChartOption = ({
+  taskSeries,
+  slotContributors,
+  slotTotals,
+  slots,
+}: AggregatedLoad): EChartsOption => {
+  const maxLoad = Math.max(...slotTotals, 0);
+  const yAxisMax = Math.max(1.2, Math.ceil(maxLoad * 10) / 10);
+  const overloadBase = slotTotals.map((value) => (value > 1 ? 1 : 0));
+  const overloadOnly = slotTotals.map((value) => (value > 1 ? value - 1 : 0));
+  const displayMask = slots.map((slot) => (slot.isWorking ? 1 : null));
+
+  const palette = [
+    '#0ea5e9',
+    '#22c55e',
+    '#f59e0b',
+    '#6366f1',
+    '#14b8a6',
+    '#ef4444',
+    '#84cc16',
+    '#06b6d4',
+  ];
+
+  const stackedTaskSeries: SeriesOption[] = taskSeries.map((task, index) => ({
+    name: task.title,
+    type: 'line',
+    smooth: false,
+    step: 'end',
+    stack: 'load',
+    showSymbol: false,
+    areaStyle: { opacity: 0.35 },
+    lineStyle: { width: 1.5 },
+    emphasis: { focus: 'series' },
+    color: palette[index % palette.length],
+    data: task.data.map((value, slotIndex) => (slots[slotIndex]?.isWorking ? value : null)),
+  }));
+
+  const totalSeriesIndex = stackedTaskSeries.length;
+
+  return {
+    color: palette,
+    grid: {
+      left: 48,
+      right: 28,
+      top: 52,
+      bottom: 62,
+    },
+    legend: {
+      type: 'scroll',
+      bottom: 0,
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'cross' },
+      formatter: (params) => {
+        const list = Array.isArray(params) ? params : [params];
+        const index = list[0]?.dataIndex ?? 0;
+        const slot = slots[index];
+        if (!slot) {
+          return '';
+        }
+
+        if (!slot.isWorking) {
+          return `${slot.label} - ${formatTimeLabel(slot.end)}<br/>この時間は非稼働（休憩時間）です`;
+        }
+
+        const details = slotContributors[index]
+          .map((item) => `・${item.title}: ${item.load.toFixed(2)} 人時/h`)
+          .join('<br/>');
+        const total = slotTotals[index] ?? 0;
+
+        return [
+          `${slot.label} - ${formatTimeLabel(slot.end)}`,
+          `合計負荷: <b>${total.toFixed(2)} 人時/h</b>`,
+          details || '重なりタスクなし',
+        ].join('<br/>');
+      },
+    },
+    xAxis: {
+      type: 'category',
+      boundaryGap: false,
+      data: slots.map((slot) => slot.label),
+      axisLabel: {
+        interval: 1,
+        hideOverlap: true,
+      },
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: yAxisMax,
+      name: '負荷量 (人時/h)',
+      axisLabel: {
+        formatter: '{value}',
+      },
+      splitLine: {
+        lineStyle: {
+          color: '#e2e8f0',
+          type: 'dashed',
+        },
+      },
+    },
+    visualMap: {
+      type: 'piecewise',
+      show: false,
+      dimension: 1,
+      seriesIndex: totalSeriesIndex,
+      pieces: [
+        { lte: 1, color: '#0f766e' },
+        { gt: 1, color: '#dc2626' },
+      ],
+    },
+    series: [
+      ...stackedTaskSeries,
+      {
+        name: '超過ベース',
+        type: 'line',
+        step: 'end',
+        stack: 'overload',
+        silent: true,
+        showSymbol: false,
+        lineStyle: { opacity: 0 },
+        areaStyle: { opacity: 0 },
+        tooltip: { show: false },
+        data: overloadBase.map((value, index) => (displayMask[index] ? value : null)),
+      },
+      {
+        name: '超過負荷',
+        type: 'line',
+        step: 'end',
+        stack: 'overload',
+        silent: true,
+        showSymbol: false,
+        lineStyle: { opacity: 0 },
+        areaStyle: { color: '#fecaca', opacity: 0.7 },
+        tooltip: { show: false },
+        data: overloadOnly.map((value, index) => (displayMask[index] ? value : null)),
+      },
+      {
+        name: '合計負荷',
+        type: 'line',
+        showSymbol: false,
+        smooth: false,
+        step: 'end',
+        lineStyle: {
+          width: 2,
+        },
+        data: slotTotals.map((value, index) => (displayMask[index] ? value : null)),
+        z: 4,
+        markLine: {
+          symbol: 'none',
+          lineStyle: {
+            color: '#dc2626',
+            width: 2,
+            type: 'dashed',
+          },
+          label: {
+            formatter: '上限 1.0',
+            color: '#b91c1c',
+          },
+          data: [{ yAxis: 1 }],
+        },
+        markArea: {
+          silent: true,
+          itemStyle: {
+            color: '#f1f5f9',
+          },
+          label: {
+            show: true,
+            color: '#475569',
+            formatter: '12:00-13:00 非稼働',
+          },
+          data: [[{ xAxis: '12:00' }, { xAxis: '13:00' }]],
+        },
+      },
+    ],
+  };
+};
+
 export const AvailabilityPage = () => {
   const { todos } = useTodoContext();
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue(new Date()));
@@ -151,201 +373,30 @@ export const AvailabilityPage = () => {
     [todos],
   );
 
-  const { slots, taskSeries, slotTotals, slotContributors } = useMemo(
-    () => aggregateLoadForDate(selfTodos, selectedDate),
-    [selfTodos, selectedDate],
+  const displayDates = useMemo(
+    () => buildDisplayDates(selectedDate),
+    [selectedDate],
   );
 
-  const hasLoad = useMemo(() => slotTotals.some((value) => value > 0), [slotTotals]);
-  const maxLoad = useMemo(() => Math.max(...slotTotals, 0), [slotTotals]);
-  const yAxisMax = useMemo(
-    () => Math.max(1.2, Math.ceil(maxLoad * 10) / 10),
-    [maxLoad],
+  const availabilityCharts = useMemo<AvailabilityChartData[]>(
+    () =>
+      displayDates.map((dateStr) => {
+        const load = aggregateLoadForDate(selfTodos, dateStr);
+        const hasLoad = load.slotTotals.some((value) => value > 0);
+        const maxLoad = Math.max(...load.slotTotals, 0);
+        const overloadedSlots = load.slotTotals.filter((value) => value > 1).length;
+
+        return {
+          ...load,
+          hasLoad,
+          maxLoad,
+          overloadedSlots,
+          dateLabel: formatDateLabel(dateStr),
+          option: buildChartOption(load),
+        };
+      }),
+    [displayDates, selfTodos],
   );
-  const overloadedSlots = useMemo(
-    () => slotTotals.filter((value) => value > 1).length,
-    [slotTotals],
-  );
-  const overloadBase = useMemo(
-    () => slotTotals.map((value) => (value > 1 ? 1 : 0)),
-    [slotTotals],
-  );
-  const overloadOnly = useMemo(
-    () => slotTotals.map((value) => (value > 1 ? value - 1 : 0)),
-    [slotTotals],
-  );
-  const displayMask = useMemo(
-    () => slots.map((slot) => (slot.isWorking ? 1 : null)),
-    [slots],
-  );
-
-  const option = useMemo<EChartsOption>(() => {
-    const palette = [
-      '#0ea5e9',
-      '#22c55e',
-      '#f59e0b',
-      '#6366f1',
-      '#14b8a6',
-      '#ef4444',
-      '#84cc16',
-      '#06b6d4',
-    ];
-
-    const stackedTaskSeries: SeriesOption[] = taskSeries.map((task, index) => ({
-      name: task.title,
-      type: 'line',
-      smooth: false,
-      step: 'end',
-      stack: 'load',
-      showSymbol: false,
-      areaStyle: { opacity: 0.35 },
-      lineStyle: { width: 1.5 },
-      emphasis: { focus: 'series' },
-      color: palette[index % palette.length],
-      data: task.data.map((value, slotIndex) => (slots[slotIndex]?.isWorking ? value : null)),
-    }));
-
-    const totalSeriesIndex = stackedTaskSeries.length;
-
-    return {
-      color: palette,
-      grid: {
-        left: 48,
-        right: 28,
-        top: 52,
-        bottom: 62,
-      },
-      legend: {
-        type: 'scroll',
-        bottom: 0,
-      },
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'cross' },
-        formatter: (params) => {
-          const list = Array.isArray(params) ? params : [params];
-          const index = list[0]?.dataIndex ?? 0;
-          const slot = slots[index];
-          if (!slot) {
-            return '';
-          }
-
-          if (!slot.isWorking) {
-            return `${slot.label} - ${formatTimeLabel(slot.end)}<br/>この時間は非稼働（休憩時間）です`;
-          }
-
-          const details = slotContributors[index]
-            .map((item) => `・${item.title}: ${item.load.toFixed(2)} 人時/h`)
-            .join('<br/>');
-          const total = slotTotals[index] ?? 0;
-
-          return [
-            `${slot.label} - ${formatTimeLabel(slot.end)}`,
-            `合計負荷: <b>${total.toFixed(2)} 人時/h</b>`,
-            details || '重なりタスクなし',
-          ].join('<br/>');
-        },
-      },
-      xAxis: {
-        type: 'category',
-        boundaryGap: false,
-        data: slots.map((slot) => slot.label),
-        axisLabel: {
-          interval: 1,
-          hideOverlap: true,
-        },
-      },
-      yAxis: {
-        type: 'value',
-        min: 0,
-        max: yAxisMax,
-        name: '負荷量 (人時/h)',
-        axisLabel: {
-          formatter: '{value}',
-        },
-        splitLine: {
-          lineStyle: {
-            color: '#e2e8f0',
-            type: 'dashed',
-          },
-        },
-      },
-      visualMap: {
-        type: 'piecewise',
-        show: false,
-        dimension: 1,
-        seriesIndex: totalSeriesIndex,
-        pieces: [
-          { lte: 1, color: '#0f766e' },
-          { gt: 1, color: '#dc2626' },
-        ],
-      },
-      series: [
-        ...stackedTaskSeries,
-        {
-          name: '超過ベース',
-          type: 'line',
-          step: 'end',
-          stack: 'overload',
-          silent: true,
-          showSymbol: false,
-          lineStyle: { opacity: 0 },
-          areaStyle: { opacity: 0 },
-          tooltip: { show: false },
-          data: overloadBase.map((value, index) => (displayMask[index] ? value : null)),
-        },
-        {
-          name: '超過負荷',
-          type: 'line',
-          step: 'end',
-          stack: 'overload',
-          silent: true,
-          showSymbol: false,
-          lineStyle: { opacity: 0 },
-          areaStyle: { color: '#fecaca', opacity: 0.7 },
-          tooltip: { show: false },
-          data: overloadOnly.map((value, index) => (displayMask[index] ? value : null)),
-        },
-        {
-          name: '合計負荷',
-          type: 'line',
-          showSymbol: false,
-          smooth: false,
-          step: 'end',
-          lineStyle: {
-            width: 2,
-          },
-          data: slotTotals.map((value, index) => (displayMask[index] ? value : null)),
-          z: 4,
-          markLine: {
-            symbol: 'none',
-            lineStyle: {
-              color: '#dc2626',
-              width: 2,
-              type: 'dashed',
-            },
-            label: {
-              formatter: '上限 1.0',
-              color: '#b91c1c',
-            },
-            data: [{ yAxis: 1 }],
-          },
-          markArea: {
-            silent: true,
-            itemStyle: {
-              color: '#f1f5f9',
-            },
-            label: {
-              show: true,
-              color: '#475569',
-              formatter: '12:00-13:00 非稼働',
-            },
-            data: [[{ xAxis: '12:00' }, { xAxis: '13:00' }]],
-          },
-        },
-      ],
-    };
-  }, [taskSeries, slotContributors, slotTotals, slots, overloadBase, overloadOnly, displayMask, yAxisMax]);
 
   return (
     <div className="space-y-4">
@@ -369,26 +420,43 @@ export const AvailabilityPage = () => {
       </header>
 
       <div className="bg-white rounded-lg shadow p-4 border border-slate-200 space-y-4">
-        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-700">
-          <span className="rounded-full bg-slate-100 px-3 py-1">
-            最大負荷: {maxLoad.toFixed(2)} 人時/h
-          </span>
-          <span className="rounded-full bg-rose-100 text-rose-700 px-3 py-1">
-            上限超過スロット: {overloadedSlots} 件
-          </span>
-          <span className="text-xs text-slate-500">赤の点線は 1人体制の上限です。</span>
-        </div>
+        <p className="text-sm text-slate-600">
+          表示期間: {formatDateLabel(selectedDate)} から 7 日間（稼働日のみ表示）
+        </p>
 
-        {hasLoad ? (
-          <ReactECharts
-            option={option}
-            notMerge
-            lazyUpdate
-            style={{ width: '100%', height: 420 }}
-          />
+        {availabilityCharts.length > 0 ? (
+          <div className="space-y-6">
+            {availabilityCharts.map((chart) => (
+              <section key={chart.dateLabel} className="space-y-3 rounded-lg border border-slate-200 p-4">
+                <div className="flex flex-wrap items-center gap-3 text-sm text-slate-700">
+                  <h2 className="text-lg font-semibold text-slate-900">{chart.dateLabel}</h2>
+                  <span className="rounded-full bg-slate-100 px-3 py-1">
+                    最大負荷: {chart.maxLoad.toFixed(2)} 人時/h
+                  </span>
+                  <span className="rounded-full bg-rose-100 text-rose-700 px-3 py-1">
+                    上限超過スロット: {chart.overloadedSlots} 件
+                  </span>
+                  <span className="text-xs text-slate-500">赤の点線は 1人体制の上限です。</span>
+                </div>
+
+                {chart.hasLoad ? (
+                  <ReactECharts
+                    option={chart.option}
+                    notMerge
+                    lazyUpdate
+                    style={{ width: '100%', height: 420 }}
+                  />
+                ) : (
+                  <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-500">
+                    {chart.dateLabel} の業務時間帯 (09:00-12:00, 13:00-17:00) に重なる自分のタスクがありません。
+                  </p>
+                )}
+              </section>
+            ))}
+          </div>
         ) : (
           <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-500">
-            指定日の業務時間帯 (09:00-12:00, 13:00-17:00) に重なる自分のタスクがありません。
+            指定期間内に描画対象の稼働日がありません。
           </p>
         )}
       </div>
