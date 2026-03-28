@@ -20,7 +20,7 @@ const AppContent = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex h-screen overflow-hidden bg-slate-50">
       <div className="hidden md:block md:shrink-0">
         <Sidebar
           items={navigationItems}
@@ -37,7 +37,7 @@ const AppContent = () => {
         onSelect={(path) => navigate(path)}
       />
 
-      <main className="flex-1 overflow-auto">
+      <main className="h-screen flex-1 overflow-y-auto">
         <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200 bg-slate-50/95 px-4 py-3 backdrop-blur md:hidden">
           <button
             onClick={() => setDrawerOpen(true)}

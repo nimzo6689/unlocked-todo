@@ -88,7 +88,7 @@ export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
 
   return (
     <aside
-      className={`flex flex-col min-h-screen bg-slate-800 text-white transition-all duration-300 ease-in-out ${
+      className={`sticky top-0 flex h-screen flex-col overflow-y-auto bg-slate-800 text-white transition-all duration-300 ease-in-out ${
         collapsed ? 'w-14' : 'w-48'
       }`}
     >
