@@ -1,4 +1,5 @@
 import React from 'react';
+import { ExternalLink } from 'lucide-react';
 import type { Todo } from '../common/types';
 import { formatDateForInput, formatDurationFromSeconds } from '../common/utils';
 
@@ -10,6 +11,7 @@ export type TodoFormProps = {
   onSave: (e: React.FormEvent) => void;
   onComplete: (e: React.FormEvent) => void;
   onCancel: () => void;
+  onOpenTodo: (id: string) => void;
   saving?: boolean;
 };
 
@@ -21,6 +23,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({
   onSave,
   onComplete,
   onCancel,
+  onOpenTodo,
   saving = false,
 }) => {
   const hasDependency = form.dependency
@@ -28,6 +31,26 @@ export const TodoForm: React.FC<TodoFormProps> = ({
       ? form.dependency.length > 0
       : true
     : false;
+  const availableDependencyTodos = todos.filter(t => t.id !== form.id && t.status !== 'Completed');
+  const currentDeps = Array.isArray(form.dependency)
+    ? form.dependency
+    : form.dependency
+    ? [form.dependency]
+    : [];
+
+  function toggleDependency(todoId: string) {
+    const isSelected = currentDeps.includes(todoId);
+    const newDeps = isSelected
+      ? currentDeps.filter(id => id !== todoId)
+      : [...currentDeps, todoId];
+
+    onChange({
+      ...form,
+      dependency: newDeps,
+      ...(newDeps.length > 0 ? { startableAt: '' } : {}),
+    });
+  }
+
   return (
     <form onSubmit={onSave} className="p-2 sm:p-4">
       <input type="hidden" value={form.id || ''} />
@@ -185,48 +208,55 @@ export const TodoForm: React.FC<TodoFormProps> = ({
         >
           依存Todo
         </label>
-        <select
+        <div
           id="dependency"
-          multiple
-          size={Math.min(6, todos.length)}
-          className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
+          className="max-h-72 space-y-2 overflow-y-auto rounded-md border border-slate-300 bg-white p-2 shadow-sm"
         >
-          {todos
-            .filter(t => t.id !== form.id && t.status !== 'Completed')
-            .map(t => (
-              <option
-                key={t.id}
-                value={t.id}
-                selected={
-                  Array.isArray(form.dependency)
-                    ? form.dependency.includes(t.id)
-                    : form.dependency === t.id
-                }
-                onClick={e => {
-                  e.preventDefault();
-                  const currentDeps = Array.isArray(form.dependency)
-                    ? form.dependency
-                    : form.dependency
-                    ? [form.dependency]
-                    : [];
-                  const isSelected = currentDeps.includes(t.id);
-                  const newDeps = isSelected
-                    ? currentDeps.filter(id => id !== t.id)
-                    : [...currentDeps, t.id];
-                  onChange({
-                    ...form,
-                    dependency: newDeps,
-                    ...(newDeps.length > 0 ? { startableAt: '' } : {}),
-                  });
-                }}
-              >
-                {t.title}
-              </option>
-            ))}
-        </select>
-        <p className="text-xs text-slate-500 mt-1">
-          複数選択するには Ctrl または Command キーを押しながら選択してください。
-        </p>
+          {availableDependencyTodos.length > 0 ? (
+            availableDependencyTodos.map(todo => {
+              const isSelected = currentDeps.includes(todo.id);
+              const checkboxId = `dependency-${todo.id}`;
+
+              return (
+                <div
+                  key={todo.id}
+                  className={`flex items-center gap-2 rounded-md border px-3 py-2 transition-colors ${
+                    isSelected
+                      ? 'border-blue-300 bg-blue-50'
+                      : 'border-slate-200 bg-white hover:bg-slate-50'
+                  }`}
+                >
+                  <label htmlFor={checkboxId} className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                    <input
+                      id={checkboxId}
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleDependency(todo.id)}
+                      className="h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="truncate text-xs sm:text-sm text-slate-700">{todo.title}</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={e => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onOpenTodo(todo.id);
+                    }}
+                    className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-600 hover:bg-slate-100"
+                    aria-label={`${todo.title} のTodoフォームを開く`}
+                  >
+                    <span>開く</span>
+                    <ExternalLink size={14} />
+                  </button>
+                </div>
+              );
+            })
+          ) : (
+            <p className="px-1 py-2 text-xs sm:text-sm text-slate-500">選択可能なTodoはありません。</p>
+          )}
+        </div>
+        <p className="mt-1 text-xs text-slate-500">行を押すと依存Todoを複数選択できます。</p>
       </div>
       <div className="flex flex-wrap justify-end gap-2 mt-2">
         <button

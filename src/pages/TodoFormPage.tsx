@@ -108,6 +108,16 @@ export const TodoFormPage = () => {
     navigate('/');
   }
 
+  function handleOpenTodo(todoId: string) {
+    const nextUrl = new URL(window.location.href);
+    nextUrl.hash = `/edit/${todoId}`;
+
+    const openedWindow = window.open(nextUrl.toString(), '_blank', 'noopener,noreferrer');
+    if (!openedWindow) {
+      navigate(`/edit/${todoId}`);
+    }
+  }
+
   return (
     <div className="bg-white p-4 sm:p-6 md:p-8 rounded-lg shadow-xl max-w-md sm:max-w-2xl md:max-w-3xl mx-auto">
       <h1 className="text-xl sm:text-2xl font-bold mb-6">{id ? 'Todoの編集' : 'Todoの新規作成'}</h1>
@@ -119,6 +129,7 @@ export const TodoFormPage = () => {
         onSave={handleSave}
         onComplete={handleComplete}
         onCancel={handleCancel}
+        onOpenTodo={handleOpenTodo}
         saving={saving}
       />
     </div>
