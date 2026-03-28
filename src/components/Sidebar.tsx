@@ -15,6 +15,9 @@ type SidebarProps = {
 export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
   const [collapsed, setCollapsed] = useState(true);
   const [expandedKeys, setExpandedKeys] = useState<string[]>(() => getExpandedKeysForPath(items, currentPath));
+  const bottomAnchoredItemKey = 'settings-help';
+  const primaryItems = items.filter((item) => item.key !== bottomAnchoredItemKey);
+  const bottomItems = items.filter((item) => item.key === bottomAnchoredItemKey);
 
   useEffect(() => {
     const activeKeys = getExpandedKeysForPath(items, currentPath);
@@ -88,11 +91,11 @@ export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
 
   return (
     <aside
-      className={`sticky top-0 flex h-screen flex-col overflow-y-auto bg-slate-800 text-white transition-all duration-300 ease-in-out ${
+      className={`sticky top-0 flex h-screen flex-col overflow-hidden bg-slate-800 text-white transition-all duration-300 ease-in-out ${
         collapsed ? 'w-14' : 'w-48'
       }`}
     >
-      <nav className="mt-2 flex flex-col gap-1 px-2">
+      <nav className="mt-2 flex min-h-0 flex-1 flex-col gap-1 px-2 pb-2">
         {/* トグルボタン */}
         <button
           onClick={() => setCollapsed(prev => !prev)}
@@ -103,7 +106,15 @@ export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
           {!collapsed && <span className="truncate">Unlocked Todo</span>}
         </button>
 
-        {renderItems(items)}
+        <div className="min-h-0 flex-1 overflow-y-auto space-y-1">
+          {renderItems(primaryItems)}
+        </div>
+
+        {bottomItems.length > 0 && (
+          <div className="mt-auto border-t border-slate-700 pt-2">
+            {renderItems(bottomItems)}
+          </div>
+        )}
       </nav>
     </aside>
   );

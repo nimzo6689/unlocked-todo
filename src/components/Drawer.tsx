@@ -23,6 +23,9 @@ type DrawerProps = {
 
 export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: DrawerProps) => {
   const [expandedKeys, setExpandedKeys] = useState<string[]>(() => getExpandedKeysForPath(items, currentPath));
+  const bottomAnchoredItemKey = 'settings-help';
+  const primaryItems = items.filter((item) => item.key !== bottomAnchoredItemKey);
+  const bottomItems = items.filter((item) => item.key === bottomAnchoredItemKey);
 
   useEffect(() => {
     const activeKeys = getExpandedKeysForPath(items, currentPath);
@@ -84,7 +87,7 @@ export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: Dra
 
   return (
     <UiDrawer open={open} onOpenChange={onOpenChange} direction="left">
-      <DrawerContent className="h-full w-[86vw] max-w-sm border-r border-slate-200 bg-white">
+      <DrawerContent className="flex min-h-screen w-[86vw] max-w-sm flex-col border-r border-slate-200 bg-white sm:min-h-dvh">
         <DrawerHeader className="flex items-center justify-between gap-2 p-4">
           <DrawerTitle>メニュー</DrawerTitle>
           <DrawerClose asChild>
@@ -97,8 +100,16 @@ export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: Dra
           </DrawerClose>
         </DrawerHeader>
 
-        <nav className="px-4 pb-4">
-          <ul className="space-y-2">{renderItems(items)}</ul>
+        <nav className="flex min-h-0 flex-1 flex-col px-4 pb-4">
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <ul className="space-y-2">{renderItems(primaryItems)}</ul>
+          </div>
+
+          {bottomItems.length > 0 && (
+            <div className="mt-auto border-t border-slate-200 pt-3">
+              <ul className="space-y-2">{renderItems(bottomItems)}</ul>
+            </div>
+          )}
         </nav>
       </DrawerContent>
     </UiDrawer>
