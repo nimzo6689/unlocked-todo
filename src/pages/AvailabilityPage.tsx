@@ -2,12 +2,9 @@ import { useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption, SeriesOption } from 'echarts';
 import { useTodoContext } from '../contexts/TodoContext';
-import type { Todo } from '../common/types';
+import type { Todo, WorkSchedule } from '../common/types';
+import { formatHourLabel, WEEKDAY_OPTIONS } from '../common/settings';
 
-const WORK_START_HOUR = 9;
-const WORK_END_HOUR = 17;
-const BREAK_START_HOUR = 12;
-const BREAK_END_HOUR = 13;
 const SLOT_MINUTES = 30;
 const DISPLAY_WINDOW_DAYS = 7;
 const HOUR_MS = 60 * 60 * 1000;
@@ -68,18 +65,15 @@ const addDays = (date: Date, days: number) => {
   return next;
 };
 
-const isWorkingDay = (date: Date) => {
-  const day = date.getDay();
-  return day >= 1 && day <= 5;
-};
+const isWorkingDay = (date: Date, schedule: WorkSchedule) => schedule.workingDays.includes(date.getDay());
 
-const buildDisplayDates = (startDateStr: string) => {
+const buildDisplayDates = (startDateStr: string, schedule: WorkSchedule) => {
   const startDate = new Date(`${startDateStr}T00:00:00`);
   const dates: string[] = [];
 
   for (let offset = 0; offset < DISPLAY_WINDOW_DAYS; offset += 1) {
     const date = addDays(startDate, offset);
-    if (!isWorkingDay(date)) {
+    if (!isWorkingDay(date, schedule)) {
       continue;
     }
     dates.push(toDateInputValue(date));
@@ -88,18 +82,19 @@ const buildDisplayDates = (startDateStr: string) => {
   return dates;
 };
 
-const buildTimeSlots = (dateStr: string) => {
+const buildTimeSlots = (dateStr: string, schedule: WorkSchedule) => {
   const base = new Date(`${dateStr}T00:00:00`);
   const slots: TimeSlot[] = [];
   const dayStart = new Date(base);
   const dayEnd = new Date(base);
-  dayStart.setHours(WORK_START_HOUR, 0, 0, 0);
-  dayEnd.setHours(WORK_END_HOUR, 0, 0, 0);
+  dayStart.setHours(schedule.workStartHour, 0, 0, 0);
+  dayEnd.setHours(schedule.workEndHour, 0, 0, 0);
 
   for (let cursor = dayStart.getTime(); cursor < dayEnd.getTime(); cursor += SLOT_MS) {
     const slotStart = new Date(cursor);
     const slotEnd = new Date(cursor + SLOT_MS);
-    const isWorking = slotStart.getHours() < BREAK_START_HOUR || slotStart.getHours() >= BREAK_END_HOUR;
+    const isWorking =
+      slotStart.getHours() < schedule.breakStartHour || slotStart.getHours() >= schedule.breakEndHour;
 
     slots.push({
       label: formatTimeLabel(slotStart),
@@ -112,8 +107,12 @@ const buildTimeSlots = (dateStr: string) => {
   return slots;
 };
 
-const aggregateLoadForDate = (todos: Todo[], dateStr: string): AggregatedLoad => {
-  const slots = buildTimeSlots(dateStr);
+const aggregateLoadForDate = (
+  todos: Todo[],
+  dateStr: string,
+  schedule: WorkSchedule,
+): AggregatedLoad => {
+  const slots = buildTimeSlots(dateStr, schedule);
   const slotTotals = Array(slots.length).fill(0) as number[];
   const slotContribMap = Array.from({ length: slots.length }, () => new Map<string, SlotContributor>());
   const seriesMap = new Map<string, { id: string; title: string; data: number[] }>();
@@ -190,7 +189,7 @@ const buildChartOption = ({
   slotContributors,
   slotTotals,
   slots,
-}: AggregatedLoad): EChartsOption => {
+}: AggregatedLoad, schedule: WorkSchedule): EChartsOption => {
   const maxLoad = Math.max(...slotTotals, 0);
   const yAxisMax = Math.max(1.2, Math.ceil(maxLoad * 10) / 10);
   const overloadBase = slotTotals.map((value) => (value > 1 ? 1 : 0));
@@ -355,9 +354,9 @@ const buildChartOption = ({
           label: {
             show: true,
             color: '#475569',
-            formatter: '12:00-13:00 非稼働',
+            formatter: `${formatHourLabel(schedule.breakStartHour)}-${formatHourLabel(schedule.breakEndHour)} 非稼働`,
           },
-          data: [[{ xAxis: '12:00' }, { xAxis: '13:00' }]],
+          data: [[{ xAxis: formatHourLabel(schedule.breakStartHour) }, { xAxis: formatHourLabel(schedule.breakEndHour) }]],
         },
       },
     ],
@@ -365,7 +364,7 @@ const buildChartOption = ({
 };
 
 export const AvailabilityPage = () => {
-  const { todos } = useTodoContext();
+  const { todos, workSchedule } = useTodoContext();
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue(new Date()));
 
   const selfTodos = useMemo(
@@ -374,14 +373,14 @@ export const AvailabilityPage = () => {
   );
 
   const displayDates = useMemo(
-    () => buildDisplayDates(selectedDate),
-    [selectedDate],
+    () => buildDisplayDates(selectedDate, workSchedule),
+    [selectedDate, workSchedule],
   );
 
   const availabilityCharts = useMemo<AvailabilityChartData[]>(
     () =>
       displayDates.map((dateStr) => {
-        const load = aggregateLoadForDate(selfTodos, dateStr);
+        const load = aggregateLoadForDate(selfTodos, dateStr, workSchedule);
         const hasLoad = load.slotTotals.some((value) => value > 0);
         const maxLoad = Math.max(...load.slotTotals, 0);
         const overloadedSlots = load.slotTotals.filter((value) => value > 1).length;
@@ -392,11 +391,15 @@ export const AvailabilityPage = () => {
           maxLoad,
           overloadedSlots,
           dateLabel: formatDateLabel(dateStr),
-          option: buildChartOption(load),
+          option: buildChartOption(load, workSchedule),
         };
       }),
-    [displayDates, selfTodos],
+    [displayDates, selfTodos, workSchedule],
   );
+
+  const workingDayLabels = WEEKDAY_OPTIONS.filter((option) => workSchedule.workingDays.includes(option.value))
+    .map((option) => option.label)
+    .join('・');
 
   return (
     <div className="space-y-4">
@@ -448,7 +451,7 @@ export const AvailabilityPage = () => {
                   />
                 ) : (
                   <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-500">
-                    {chart.dateLabel} の業務時間帯 (09:00-12:00, 13:00-17:00) に重なる自分のタスクがありません。
+                    {chart.dateLabel} の業務時間帯 ({formatHourLabel(workSchedule.workStartHour)}-{formatHourLabel(workSchedule.breakStartHour)}, {formatHourLabel(workSchedule.breakEndHour)}-{formatHourLabel(workSchedule.workEndHour)}) に重なる自分のタスクがありません。
                   </p>
                 )}
               </section>
@@ -464,7 +467,8 @@ export const AvailabilityPage = () => {
       <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 space-y-1">
         <p className="font-semibold text-slate-700">稼働時間について</p>
         <ul className="list-disc list-inside space-y-0.5">
-          <li>稼働時間帯は <span className="font-mono">09:00〜12:00</span> と <span className="font-mono">13:00〜17:00</span> の 7 時間を対象としています。</li>
+          <li>稼働日は {workingDayLabels} を対象としています。</li>
+          <li>稼働時間帯は <span className="font-mono">{formatHourLabel(workSchedule.workStartHour)}〜{formatHourLabel(workSchedule.breakStartHour)}</span> と <span className="font-mono">{formatHourLabel(workSchedule.breakEndHour)}〜{formatHourLabel(workSchedule.workEndHour)}</span> です。</li>
           <li>負荷は 30 分単位のスロットに分割して集計しています。</li>
           <li>各タスクの負荷は、開始可能日時〜期限の期間内に均等配分して計算しています。</li>
           <li>担当が「自分」に設定されているタスクのみが集計対象です。</li>

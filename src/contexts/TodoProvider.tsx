@@ -2,6 +2,11 @@ import { useState, useCallback, useEffect, type ReactNode } from 'react';
 import { todoDB } from '../common/db';
 import type { Todo, ModalState, TodoContextType } from '../common/types';
 import { defaultForm, getDependencyIds } from '../common/utils';
+import {
+  DEFAULT_WORK_SCHEDULE,
+  sanitizeWorkSchedule,
+  WORK_SCHEDULE_STORAGE_KEY,
+} from '../common/settings';
 import { TodoContext } from './TodoContext';
 
 // LocalStorage に保存するキー
@@ -18,9 +23,22 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
   const [modal, setModal] = useState<ModalState | null>(null);
   const [notificationEnabled, setNotificationEnabled] = useState(
     () =>
-      Notification.permission &&
+      typeof Notification !== 'undefined' &&
+      Notification.permission === 'granted' &&
       localStorage.getItem(NOTIFICATION_PERMISSION_KEY) === 'granted'
   );
+  const [workSchedule, setWorkSchedule] = useState(() => {
+    const storedValue = localStorage.getItem(WORK_SCHEDULE_STORAGE_KEY);
+    if (!storedValue) {
+      return DEFAULT_WORK_SCHEDULE;
+    }
+
+    try {
+      return sanitizeWorkSchedule(JSON.parse(storedValue));
+    } catch {
+      return DEFAULT_WORK_SCHEDULE;
+    }
+  });
   const [currentInProgressId, setCurrentInProgressId] = useState<string | null>(null);
 
   const fetchTodos = useCallback(async () => {
@@ -51,6 +69,10 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
         });
     }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(WORK_SCHEDULE_STORAGE_KEY, JSON.stringify(workSchedule));
+  }, [workSchedule]);
 
   const getTodo = useCallback(
     (id: string) => todos.find((t) => t.id === id),
@@ -212,6 +234,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     form,
     modal,
     notificationEnabled,
+    workSchedule,
     currentInProgressId,
     fetchTodos,
     getTodo,
@@ -224,6 +247,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     setForm,
     setModal,
     setNotificationEnabled,
+    setWorkSchedule,
   };
 
   return <TodoContext.Provider value={value}>{children}</TodoContext.Provider>;

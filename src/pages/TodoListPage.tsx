@@ -11,7 +11,6 @@ export const TodoListPage = () => {
     getTodo,
     modal,
     setModal,
-    requestNotificationPermission,
     notificationEnabled,
     handleDelete,
     handleComplete,
@@ -92,13 +91,10 @@ export const TodoListPage = () => {
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 sm:mt-0 w-full sm:w-auto">
           <button
-            className={`bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base ${
-              notificationEnabled ? 'bg-slate-400 cursor-not-allowed' : ''
-            }`}
-            disabled={notificationEnabled}
-            onClick={requestNotificationPermission}
+            className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base"
+            onClick={() => navigate('/settings/notifications')}
           >
-            {notificationEnabled ? '通知は有効です' : '通知を有効にする'}
+            {notificationEnabled ? '通知設定' : '通知を設定する'}
           </button>
           <button
             className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base"

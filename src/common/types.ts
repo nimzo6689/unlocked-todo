@@ -22,6 +22,14 @@ export type ModalState = {
   onConfirm: () => void;
 }
 
+export type WorkSchedule = {
+  workingDays: number[];
+  workStartHour: number;
+  workEndHour: number;
+  breakStartHour: number;
+  breakEndHour: number;
+};
+
 export type TodoContextType = {
   todos: Todo[];
   form: Partial<Todo>;
@@ -30,6 +38,8 @@ export type TodoContextType = {
   setModal: (value: ModalState | null) => void;
   notificationEnabled: boolean;
   setNotificationEnabled: (value: boolean) => void;
+  workSchedule: WorkSchedule;
+  setWorkSchedule: (value: WorkSchedule) => void;
   currentInProgressId: string | null;
   fetchTodos: () => Promise<void>;
   getTodo: (id: string) => Todo | undefined;
