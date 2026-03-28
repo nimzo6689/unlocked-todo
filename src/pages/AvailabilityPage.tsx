@@ -5,7 +5,9 @@ import { useTodoContext } from '../contexts/TodoContext';
 import type { Todo } from '../common/types';
 
 const WORK_START_HOUR = 9;
-const WORK_END_HOUR = 21;
+const WORK_END_HOUR = 17;
+const BREAK_START_HOUR = 12;
+const BREAK_END_HOUR = 13;
 const SLOT_MINUTES = 30;
 const HOUR_MS = 60 * 60 * 1000;
 const SLOT_MS = SLOT_MINUTES * 60 * 1000;
@@ -14,6 +16,7 @@ type TimeSlot = {
   label: string;
   start: Date;
   end: Date;
+  isWorking: boolean;
 };
 
 type SlotContributor = {
@@ -42,44 +45,32 @@ const formatTimeLabel = (date: Date) => {
   return `${hours}:${minutes}`;
 };
 
-const getDayWindow = (dateStr: string) => {
+const buildTimeSlots = (dateStr: string) => {
   const base = new Date(`${dateStr}T00:00:00`);
-  const start = new Date(base);
-  const end = new Date(base);
-  start.setHours(WORK_START_HOUR, 0, 0, 0);
-  end.setHours(WORK_END_HOUR, 0, 0, 0);
-  return { start, end };
-};
-
-const buildTimeSlots = (start: Date, end: Date) => {
   const slots: TimeSlot[] = [];
-  for (let cursor = start.getTime(); cursor < end.getTime(); cursor += SLOT_MS) {
+  const dayStart = new Date(base);
+  const dayEnd = new Date(base);
+  dayStart.setHours(WORK_START_HOUR, 0, 0, 0);
+  dayEnd.setHours(WORK_END_HOUR, 0, 0, 0);
+
+  for (let cursor = dayStart.getTime(); cursor < dayEnd.getTime(); cursor += SLOT_MS) {
     const slotStart = new Date(cursor);
     const slotEnd = new Date(cursor + SLOT_MS);
+    const isWorking = slotStart.getHours() < BREAK_START_HOUR || slotStart.getHours() >= BREAK_END_HOUR;
+
     slots.push({
       label: formatTimeLabel(slotStart),
       start: slotStart,
       end: slotEnd,
+      isWorking,
     });
   }
+
   return slots;
 };
 
-const parseTaskRange = (todo: Todo) => {
-  const start = new Date(todo.startableAt || todo.createdAt);
-  const end = new Date(todo.dueDate);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return null;
-  }
-  if (end.getTime() <= start.getTime() || todo.effortMinutes <= 0) {
-    return null;
-  }
-  return { start, end };
-};
-
 const aggregateLoadForDate = (todos: Todo[], dateStr: string): AggregatedLoad => {
-  const { start: dayStart, end: dayEnd } = getDayWindow(dateStr);
-  const slots = buildTimeSlots(dayStart, dayEnd);
+  const slots = buildTimeSlots(dateStr);
   const slotTotals = Array(slots.length).fill(0) as number[];
   const slotContribMap = Array.from({ length: slots.length }, () => new Map<string, SlotContributor>());
   const seriesMap = new Map<string, { id: string; title: string; data: number[] }>();
@@ -93,6 +84,8 @@ const aggregateLoadForDate = (todos: Todo[], dateStr: string): AggregatedLoad =>
     const perSlot = seriesMap.get(todo.id)?.data ?? Array(slots.length).fill(0);
 
     slots.forEach((slot, index) => {
+      if (!slot.isWorking) return;
+
       const overlapStartMs = Math.max(slot.start.getTime(), range.start.getTime());
       const overlapEndMs = Math.min(slot.end.getTime(), range.end.getTime());
       const overlapMs = overlapEndMs - overlapStartMs;
@@ -137,6 +130,18 @@ const aggregateLoadForDate = (todos: Todo[], dateStr: string): AggregatedLoad =>
   };
 };
 
+const parseTaskRange = (todo: Todo) => {
+  const start = new Date(todo.startableAt || todo.createdAt);
+  const end = new Date(todo.dueDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return null;
+  }
+  if (end.getTime() <= start.getTime() || todo.effortMinutes <= 0) {
+    return null;
+  }
+  return { start, end };
+};
+
 export const AvailabilityPage = () => {
   const { todos } = useTodoContext();
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue(new Date()));
@@ -165,6 +170,10 @@ export const AvailabilityPage = () => {
     () => slotTotals.map((value) => (value > 1 ? value - 1 : 0)),
     [slotTotals],
   );
+  const displayMask = useMemo(
+    () => slots.map((slot) => (slot.isWorking ? 1 : null)),
+    [slots],
+  );
 
   const option = useMemo<EChartsOption>(() => {
     const palette = [
@@ -181,14 +190,15 @@ export const AvailabilityPage = () => {
     const stackedTaskSeries: SeriesOption[] = taskSeries.map((task, index) => ({
       name: task.title,
       type: 'line',
-      smooth: 0.2,
+      smooth: false,
+      step: 'end',
       stack: 'load',
       showSymbol: false,
       areaStyle: { opacity: 0.35 },
       lineStyle: { width: 1.5 },
       emphasis: { focus: 'series' },
       color: palette[index % palette.length],
-      data: task.data,
+      data: task.data.map((value, slotIndex) => (slots[slotIndex]?.isWorking ? value : null)),
     }));
 
     const totalSeriesIndex = stackedTaskSeries.length;
@@ -214,6 +224,10 @@ export const AvailabilityPage = () => {
           const slot = slots[index];
           if (!slot) {
             return '';
+          }
+
+          if (!slot.isWorking) {
+            return `${slot.label} - ${formatTimeLabel(slot.end)}<br/>この時間は非稼働（休憩時間）です`;
           }
 
           const details = slotContributors[index]
@@ -265,34 +279,37 @@ export const AvailabilityPage = () => {
         {
           name: '超過ベース',
           type: 'line',
+          step: 'end',
           stack: 'overload',
           silent: true,
           showSymbol: false,
           lineStyle: { opacity: 0 },
           areaStyle: { opacity: 0 },
           tooltip: { show: false },
-          data: overloadBase,
+          data: overloadBase.map((value, index) => (displayMask[index] ? value : null)),
         },
         {
           name: '超過負荷',
           type: 'line',
+          step: 'end',
           stack: 'overload',
           silent: true,
           showSymbol: false,
           lineStyle: { opacity: 0 },
           areaStyle: { color: '#fecaca', opacity: 0.7 },
           tooltip: { show: false },
-          data: overloadOnly,
+          data: overloadOnly.map((value, index) => (displayMask[index] ? value : null)),
         },
         {
           name: '合計負荷',
           type: 'line',
           showSymbol: false,
-          smooth: 0.1,
+          smooth: false,
+          step: 'end',
           lineStyle: {
             width: 2,
           },
-          data: slotTotals,
+          data: slotTotals.map((value, index) => (displayMask[index] ? value : null)),
           z: 4,
           markLine: {
             symbol: 'none',
@@ -307,10 +324,22 @@ export const AvailabilityPage = () => {
             },
             data: [{ yAxis: 1 }],
           },
+          markArea: {
+            silent: true,
+            itemStyle: {
+              color: '#f1f5f9',
+            },
+            label: {
+              show: true,
+              color: '#475569',
+              formatter: '12:00-13:00 非稼働',
+            },
+            data: [[{ xAxis: '12:00' }, { xAxis: '13:00' }]],
+          },
         },
       ],
     };
-  }, [taskSeries, slotContributors, slotTotals, slots, overloadBase, overloadOnly]);
+  }, [taskSeries, slotContributors, slotTotals, slots, overloadBase, overloadOnly, displayMask]);
 
   return (
     <div className="space-y-4">
@@ -353,9 +382,19 @@ export const AvailabilityPage = () => {
           />
         ) : (
           <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-500">
-            指定日の業務時間帯 (09:00-21:00) に重なる自分のタスクがありません。
+            指定日の業務時間帯 (09:00-12:00, 13:00-17:00) に重なる自分のタスクがありません。
           </p>
         )}
+      </div>
+
+      <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 space-y-1">
+        <p className="font-semibold text-slate-700">稼働時間について</p>
+        <ul className="list-disc list-inside space-y-0.5">
+          <li>稼働時間帯は <span className="font-mono">09:00〜12:00</span> と <span className="font-mono">13:00〜17:00</span> の 7 時間を対象としています。</li>
+          <li>負荷は 30 分単位のスロットに分割して集計しています。</li>
+          <li>各タスクの負荷は、開始可能日時〜期限の期間内に均等配分して計算しています。</li>
+          <li>担当が「自分」に設定されているタスクのみが集計対象です。</li>
+        </ul>
       </div>
     </div>
   );
