@@ -137,12 +137,14 @@ export const TodoCard: React.FC<TodoCardProps> = ({
               <span>
                 <strong>工数:</strong> {todo.effortMinutes || 0} 分
               </span>
+            </div>
+            <div className="mt-1">
               <span>
                 <strong>実作業時間:</strong> {formatDurationFromSeconds(todo.actualWorkSeconds)}
               </span>
             </div>
           </div>
-          <div className="col-span-1 sm:col-span-2">
+          <div>
             <strong>担当:</strong>{' '}
             <span
               className={`font-semibold px-2 py-0.5 rounded-full ${assigneeClasses[todo.assignee]}`}
