@@ -158,6 +158,10 @@ export const AvailabilityPage = () => {
 
   const hasLoad = useMemo(() => slotTotals.some((value) => value > 0), [slotTotals]);
   const maxLoad = useMemo(() => Math.max(...slotTotals, 0), [slotTotals]);
+  const yAxisMax = useMemo(
+    () => Math.max(1.2, Math.ceil(maxLoad * 10) / 10),
+    [maxLoad],
+  );
   const overloadedSlots = useMemo(
     () => slotTotals.filter((value) => value > 1).length,
     [slotTotals],
@@ -253,6 +257,8 @@ export const AvailabilityPage = () => {
       },
       yAxis: {
         type: 'value',
+        min: 0,
+        max: yAxisMax,
         name: '負荷量 (人時/h)',
         axisLabel: {
           formatter: '{value}',
@@ -339,7 +345,7 @@ export const AvailabilityPage = () => {
         },
       ],
     };
-  }, [taskSeries, slotContributors, slotTotals, slots, overloadBase, overloadOnly, displayMask]);
+  }, [taskSeries, slotContributors, slotTotals, slots, overloadBase, overloadOnly, displayMask, yAxisMax]);
 
   return (
     <div className="space-y-4">
