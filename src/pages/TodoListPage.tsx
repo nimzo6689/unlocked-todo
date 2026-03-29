@@ -1,5 +1,6 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
+import { MoreVertical } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Todo } from '../common/types';
 import { TodoCard } from '../components/TodoCard';
@@ -22,6 +23,7 @@ export const TodoListPage = () => {
   } = useTodoContext();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [menuOpen, setMenuOpen] = useState(false);
   const filter = searchParams.get('filter') || 'unlocked';
   const sortBy = (searchParams.get('sortBy') as 'dueDate' | 'createdAt') || 'dueDate';
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -126,23 +128,41 @@ export const TodoListPage = () => {
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 sm:mt-0 w-full sm:w-auto">
           <button
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base"
+            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base h-10 flex items-center justify-center"
             onClick={handleNew}
           >
             新規作成
           </button>
-          <button
-            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base"
-            onClick={handleExport}
-          >
-            エクスポート
-          </button>
-          <button
-            className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base"
-            onClick={handleImport}
-          >
-            インポート
-          </button>
+          <div className="relative">
+            <button
+              className="bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base h-10 flex items-center justify-center"
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              <MoreVertical size={20} />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-50">
+                <button
+                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 border-b border-slate-100 transition-colors"
+                  onClick={() => {
+                    handleExport();
+                    setMenuOpen(false);
+                  }}
+                >
+                  エクスポート
+                </button>
+                <button
+                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors"
+                  onClick={() => {
+                    handleImport();
+                    setMenuOpen(false);
+                  }}
+                >
+                  インポート
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
       <div className="bg-white rounded-lg shadow p-3 sm:p-4 mb-6 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4">
