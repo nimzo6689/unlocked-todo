@@ -241,6 +241,11 @@ const buildChartOption = ({
   slotTotals,
   slots,
 }: AggregatedLoad, schedule: WorkSchedule): EChartsOption => {
+  const xAxisLabels = slots.map((slot) => slot.label);
+  if (slots.length > 0) {
+    xAxisLabels.push(formatTimeLabel(slots[slots.length - 1].end));
+  }
+
   const maxLoad = Math.max(...slotTotals, 0);
   const yAxisMax = Math.max(1.2, Math.ceil(maxLoad * 10) / 10);
   const overloadBase = slotTotals.map((value) => (value > 1 ? 1 : 0));
@@ -269,7 +274,13 @@ const buildChartOption = ({
     lineStyle: { width: 1.5 },
     emphasis: { focus: 'series' },
     color: palette[index % palette.length],
-    data: task.data.map((value, slotIndex) => (slots[slotIndex]?.isWorking ? value : null)),
+    data: (() => {
+      const values = task.data.map((value, slotIndex) => (slots[slotIndex]?.isWorking ? value : null));
+      if (values.length === 0) {
+        return values;
+      }
+      return [...values, values[values.length - 1]];
+    })(),
   }));
 
   const totalSeriesIndex = stackedTaskSeries.length;
@@ -294,6 +305,9 @@ const buildChartOption = ({
         const index = list[0]?.dataIndex ?? 0;
         const slot = slots[index];
         if (!slot) {
+          if (index === slots.length && slots.length > 0) {
+            return `${formatTimeLabel(slots[slots.length - 1].end)}<br/>終了時刻`;
+          }
           return '';
         }
 
@@ -316,7 +330,7 @@ const buildChartOption = ({
     xAxis: {
       type: 'category',
       boundaryGap: false,
-      data: slots.map((slot) => slot.label),
+      data: xAxisLabels,
       axisLabel: {
         interval: 1,
         hideOverlap: true,
@@ -359,7 +373,13 @@ const buildChartOption = ({
         lineStyle: { opacity: 0 },
         areaStyle: { opacity: 0 },
         tooltip: { show: false },
-        data: overloadBase.map((value, index) => (displayMask[index] ? value : null)),
+        data: (() => {
+          const values = overloadBase.map((value, index) => (displayMask[index] ? value : null));
+          if (values.length === 0) {
+            return values;
+          }
+          return [...values, values[values.length - 1]];
+        })(),
       },
       {
         name: '超過負荷',
@@ -371,7 +391,13 @@ const buildChartOption = ({
         lineStyle: { opacity: 0 },
         areaStyle: { color: '#fecaca', opacity: 0.7 },
         tooltip: { show: false },
-        data: overloadOnly.map((value, index) => (displayMask[index] ? value : null)),
+        data: (() => {
+          const values = overloadOnly.map((value, index) => (displayMask[index] ? value : null));
+          if (values.length === 0) {
+            return values;
+          }
+          return [...values, values[values.length - 1]];
+        })(),
       },
       {
         name: '合計負荷',
@@ -382,7 +408,13 @@ const buildChartOption = ({
         lineStyle: {
           width: 2,
         },
-        data: slotTotals.map((value, index) => (displayMask[index] ? value : null)),
+        data: (() => {
+          const values = slotTotals.map((value, index) => (displayMask[index] ? value : null));
+          if (values.length === 0) {
+            return values;
+          }
+          return [...values, values[values.length - 1]];
+        })(),
         z: 4,
         markLine: {
           symbol: 'none',
