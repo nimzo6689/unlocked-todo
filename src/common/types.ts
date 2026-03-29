@@ -3,6 +3,7 @@ export type Todo = {
   title: string;
   description: string;
   createdAt: string;
+  startedAt?: string;
   startableAt: string;
   dueDate: string;
   status: 'Unlocked' | 'Locked' | 'Completed';

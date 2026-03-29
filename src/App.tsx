@@ -4,6 +4,7 @@ import { Menu } from 'lucide-react';
 import { TodoFormPage } from './pages/TodoFormPage';
 import { TodoListPage } from './pages/TodoListPage';
 import { AvailabilityPage } from './pages/AvailabilityPage';
+import { PlanActualPage } from './pages/PlanActualPage';
 import { NotificationsSettingsPage } from './pages/NotificationsSettingsPage';
 import { WorkHoursPage } from './pages/WorkHoursPage';
 import { AboutPage } from './pages/AboutPage';
@@ -58,6 +59,7 @@ const AppContent = () => {
             <Route path="/new" element={<TodoFormPage />} />
             <Route path="/edit/:id" element={<TodoFormPage />} />
             <Route path="/availability" element={<AvailabilityPage />} />
+            <Route path="/plan-actual" element={<PlanActualPage />} />
             <Route path="/settings/notifications" element={<NotificationsSettingsPage />} />
             <Route path="/settings/work-hours" element={<WorkHoursPage />} />
             <Route path="/help/about" element={<AboutPage />} />

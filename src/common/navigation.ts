@@ -1,4 +1,5 @@
 import {
+  BarChart3,
   Bell,
   BookOpen,
   CalendarDays,
@@ -20,6 +21,7 @@ export type NavigationItem = {
 export const navigationItems: NavigationItem[] = [
   { key: 'todos', label: 'タスク一覧', path: '/', icon: ListTodo },
   { key: 'availability', label: '空き状況', path: '/availability', icon: CalendarDays },
+  { key: 'plan-actual', label: '予実管理', path: '/plan-actual', icon: BarChart3 },
   {
     key: 'settings-help',
     label: '設定とヘルプ',

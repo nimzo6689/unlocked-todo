@@ -296,6 +296,17 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
       await syncInProgressActualWork(true);
     }
 
+    const targetTodo = todosRef.current.find((todo) => todo.id === id);
+    if (targetTodo && !targetTodo.startedAt) {
+      const firstStartedAt = new Date().toISOString();
+      const updatedTodos = todosRef.current.map((todo) =>
+        todo.id === id ? { ...todo, startedAt: firstStartedAt } : todo,
+      );
+      todosRef.current = updatedTodos;
+      setTodos(updatedTodos);
+      await todoDB.save(updatedTodos);
+    }
+
     trackedElapsedSecondsRef.current = 0;
     const startedAt = Date.now();
     currentInProgressIdRef.current = id;
