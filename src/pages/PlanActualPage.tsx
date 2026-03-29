@@ -6,13 +6,21 @@ import type { Todo } from '../common/types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+const toNonNegativeNumber = (value: unknown) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric < 0) {
+    return 0;
+  }
+  return numeric;
+};
+
 type PlanActualRow = {
   id: string;
   title: string;
   startedAt: Date;
-  plannedHours: number;
-  actualHours: number;
-  diffHours: number;
+  plannedMinutes: number;
+  actualMinutes: number;
+  diffMinutes: number;
 };
 
 const toDateInputValue = (date: Date) => {
@@ -72,17 +80,17 @@ const buildRows = (todos: Todo[], baseDateInput: string): PlanActualRow[] => {
         return null;
       }
 
-      const plannedHours = Math.max(0, todo.effortMinutes) / 60;
-      const actualHours = Math.max(0, todo.actualWorkSeconds) / 3600;
-      const diffHours = actualHours - plannedHours;
+      const plannedMinutes = toNonNegativeNumber(todo.effortMinutes);
+      const actualMinutes = toNonNegativeNumber(todo.actualWorkSeconds) / 60;
+      const diffMinutes = actualMinutes - plannedMinutes;
 
       return {
         id: todo.id,
         title: todo.title,
         startedAt,
-        plannedHours,
-        actualHours,
-        diffHours,
+        plannedMinutes,
+        actualMinutes,
+        diffMinutes,
       };
     })
     .filter((row): row is PlanActualRow => Boolean(row))
@@ -92,17 +100,17 @@ const buildRows = (todos: Todo[], baseDateInput: string): PlanActualRow[] => {
 const buildChartOption = (
   rows: PlanActualRow[],
   baseDateInput: string,
-  totalActualHours: number,
+  totalActualMinutes: number,
 ): EChartsOption => {
   const categories = rows.map((row) => row.title);
-  const planned = rows.map((row) => Number(row.plannedHours.toFixed(2)));
-  const actual = rows.map((row) => Number(row.actualHours.toFixed(2)));
-  const diff = rows.map((row) => Number(row.diffHours.toFixed(2)));
+  const planned = rows.map((row) => Number(row.plannedMinutes.toFixed(1)));
+  const actual = rows.map((row) => Number(row.actualMinutes.toFixed(1)));
+  const diff = rows.map((row) => Number(row.diffMinutes.toFixed(1)));
 
   return {
     title: {
       text: '予実管理',
-      subtext: `${formatDateLabel(new Date(`${baseDateInput}T00:00:00`))} 起点7日間 | 完了タスク ${rows.length} 件 | 実績合計 ${totalActualHours.toFixed(2)} h`,
+      subtext: `${formatDateLabel(new Date(`${baseDateInput}T00:00:00`))} 起点7日間 | 完了タスク ${rows.length} 件 | 実績合計 ${totalActualMinutes.toFixed(1)} 分`,
       left: 'center',
       top: 0,
       textStyle: {
@@ -138,14 +146,14 @@ const buildChartOption = (
           return '';
         }
 
-        const statusLabel = row.diffHours > 0 ? '超過' : '予定内';
+        const statusLabel = row.diffMinutes > 0 ? '超過' : '予定内';
 
         return [
           `<b>${row.title}</b>`,
           `実作業開始: ${formatDateTime(row.startedAt)}`,
-          `予定工数: ${row.plannedHours.toFixed(2)} h`,
-          `実績時間: ${row.actualHours.toFixed(2)} h`,
-          `乖離: ${row.diffHours > 0 ? '+' : ''}${row.diffHours.toFixed(2)} h`,
+          `予定工数: ${row.plannedMinutes.toFixed(1)} 分`,
+          `実績時間: ${row.actualMinutes.toFixed(1)} 分`,
+          `乖離: ${row.diffMinutes > 0 ? '+' : ''}${row.diffMinutes.toFixed(1)} 分`,
           `判定: ${statusLabel}`,
         ].join('<br/>');
       },
@@ -161,7 +169,7 @@ const buildChartOption = (
     },
     yAxis: {
       type: 'value',
-      name: '時間 (h)',
+      name: '時間 (分)',
       splitLine: {
         lineStyle: {
           color: '#e2e8f0',
@@ -244,14 +252,14 @@ export const PlanActualPage = () => {
 
   const rows = useMemo(() => buildRows(todos, selectedDate), [todos, selectedDate]);
 
-  const totalActualHours = useMemo(
-    () => rows.reduce((sum, row) => sum + row.actualHours, 0),
+  const totalActualMinutes = useMemo(
+    () => rows.reduce((sum, row) => sum + row.actualMinutes, 0),
     [rows],
   );
 
   const option = useMemo(
-    () => buildChartOption(rows, selectedDate, totalActualHours),
-    [rows, selectedDate, totalActualHours],
+    () => buildChartOption(rows, selectedDate, totalActualMinutes),
+    [rows, selectedDate, totalActualMinutes],
   );
 
   return (

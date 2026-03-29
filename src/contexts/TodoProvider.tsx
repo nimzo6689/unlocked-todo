@@ -48,7 +48,17 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
 
   const fetchTodos = useCallback(async () => {
     const data = await todoDB.fetch();
-    setTodos(data.map(todo => ({ ...todo, actualWorkSeconds: todo.actualWorkSeconds || 0 })));
+    setTodos(
+      data.map((todo) => ({
+        ...todo,
+        effortMinutes: Number.isFinite(Number(todo.effortMinutes))
+          ? Math.max(0, Number(todo.effortMinutes))
+          : 0,
+        actualWorkSeconds: Number.isFinite(Number(todo.actualWorkSeconds))
+          ? Math.max(0, Number(todo.actualWorkSeconds))
+          : 0,
+      })),
+    );
   }, []);
 
   useEffect(() => {
