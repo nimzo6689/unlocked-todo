@@ -32,6 +32,13 @@ export type WorkSchedule = {
   breakEndHour: number;
 };
 
+export type ImportResult = {
+  success: boolean;
+  addedCount: number;
+  updatedCount: number;
+  message: string;
+};
+
 export type TodoContextType = {
   todos: Todo[];
   form: Partial<Todo>;
@@ -50,4 +57,6 @@ export type TodoContextType = {
   handleDelete: (id: string) => void;
   handleComplete: (id: string) => void;
   startTodo: (id: string) => void;
+  exportTodos: () => Promise<void>;
+  importTodos: (file: File) => Promise<ImportResult>;
 }

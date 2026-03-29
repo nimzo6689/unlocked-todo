@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { todoDB } from '../common/db';
-import type { Todo, ModalState, TodoContextType } from '../common/types';
-import { defaultForm, getDependencyIds } from '../common/utils';
+import type { Todo, ModalState, TodoContextType, ImportResult } from '../common/types';
+import { defaultForm, getDependencyIds, todosToJSON, todosFromJSON } from '../common/utils';
 import {
   DEFAULT_WORK_SCHEDULE,
   sanitizeWorkSchedule,
@@ -325,6 +325,113 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     setCurrentInProgressStartedAt(startedAt);
   };
 
+  const exportTodos = async () => {
+    const json = todosToJSON(todosRef.current);
+    const fileName = `todos-${new Date().toISOString().split('T')[0]}.json`;
+
+    // showSaveFilePicker が利用可能かチェック
+    if ('showSaveFilePicker' in window) {
+      try {
+        const handle = await (
+          window as unknown as {
+            showSaveFilePicker: (opts: {
+              suggestedName: string;
+              types: Array<{ description: string; accept: Record<string, string[]> }>;
+            }) => Promise<FileSystemFileHandle>;
+          }
+        ).showSaveFilePicker({
+          suggestedName: fileName,
+          types: [
+            {
+              description: 'JSON File',
+              accept: { 'application/json': ['.json'] },
+            },
+          ],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(json);
+        await writable.close();
+        return;
+      } catch (err) {
+        // ユーザーがキャンセルした場合はスルー、その他エラーもフォールバック
+        if ((err as Error).name !== 'AbortError') {
+          console.error('Save file error:', err);
+        }
+      }
+    }
+
+    // フォールバック: Blob + ダウンロード属性
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const importTodos = async (file: File): Promise<ImportResult> => {
+    try {
+      const fileContent = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(file);
+      });
+
+      const importedTodos = todosFromJSON(fileContent);
+
+      // 既存 todos と id で突合して upsert を実行
+      const existingIds = new Set(todosRef.current.map(t => t.id));
+      let addedCount = 0;
+      let updatedCount = 0;
+
+      const mergedTodos = [...todosRef.current];
+      for (const importedTodo of importedTodos) {
+        const index = mergedTodos.findIndex(t => t.id === importedTodo.id);
+        if (index >= 0) {
+          // UPDATE: 既存IDは上書き
+          mergedTodos[index] = importedTodo;
+          updatedCount++;
+        } else {
+          // INSERT: 新規IDは追加
+          mergedTodos.push(importedTodo);
+          addedCount++;
+        }
+      }
+
+      // 進行中タスクと衝突する場合、計測を同期停止
+      if (currentInProgressIdRef.current && !existingIds.has(currentInProgressIdRef.current)) {
+        const importedId = importedTodos.find(
+          t => t.id === currentInProgressIdRef.current
+        );
+        if (!importedId) {
+          // 進行中タスクが削除された場合も同期停止
+          await syncInProgressActualWork(true);
+        }
+      }
+
+      await todoDB.save(mergedTodos);
+      await fetchTodos();
+
+      return {
+        success: true,
+        addedCount,
+        updatedCount,
+        message: `${addedCount}件追加, ${updatedCount}件更新`,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        addedCount: 0,
+        updatedCount: 0,
+        message: (err as Error).message,
+      };
+    }
+  };
+
   const value: TodoContextType = {
     todos,
     form,
@@ -339,6 +446,8 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     handleDelete,
     handleComplete,
     startTodo,
+    exportTodos,
+    importTodos,
     setForm,
     setModal,
     setNotificationEnabled,

@@ -1,4 +1,6 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useRef } from 'react';
+import toast from 'react-hot-toast';
 import type { Todo } from '../common/types';
 import { TodoCard } from '../components/TodoCard';
 import { Modal } from '../components/Modal';
@@ -15,11 +17,14 @@ export const TodoListPage = () => {
     handleComplete,
     currentInProgressId,
     startTodo,
+    exportTodos,
+    importTodos,
   } = useTodoContext();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const filter = searchParams.get('filter') || 'unlocked';
   const sortBy = (searchParams.get('sortBy') as 'dueDate' | 'createdAt') || 'dueDate';
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleEdit(id: string) {
     navigate(`/edit/${id}`);
@@ -27,6 +32,38 @@ export const TodoListPage = () => {
 
   function handleNew() {
     navigate('/new');
+  }
+
+  async function handleExport() {
+    try {
+      await exportTodos();
+      toast.success('タスクをエクスポートしました');
+    } catch (err) {
+      toast.error('エクスポートに失敗しました');
+    }
+  }
+
+  function handleImport() {
+    fileInputRef.current?.click();
+  }
+
+  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const result = await importTodos(file);
+    if (result.success) {
+      if (result.addedCount === 0 && result.updatedCount === 0) {
+        toast.success('ファイルを読み込みましたが、取り込むタスクはありませんでした');
+      } else {
+        toast.success(`${result.addedCount}件追加、${result.updatedCount}件更新しました`);
+      }
+    } else {
+      toast.error(`インポートに失敗しました: ${result.message}`);
+    }
+
+    // 同じファイルを再選択できるよう value をクリア
+    e.target.value = '';
   }
 
   function handleFilterChange(f: string) {
@@ -94,6 +131,18 @@ export const TodoListPage = () => {
           >
             新規作成
           </button>
+          <button
+            className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base"
+            onClick={handleExport}
+          >
+            エクスポート
+          </button>
+          <button
+            className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base"
+            onClick={handleImport}
+          >
+            インポート
+          </button>
         </div>
       </header>
       <div className="bg-white rounded-lg shadow p-3 sm:p-4 mb-6 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4">
@@ -151,6 +200,13 @@ export const TodoListPage = () => {
           <p className="text-slate-500 col-span-full text-center py-10">タスクはありません。</p>
         )}
       </main>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        onChange={handleFileSelected}
+        style={{ display: 'none' }}
+      />
     </>
   );
 };

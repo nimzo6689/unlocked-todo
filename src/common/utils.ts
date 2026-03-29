@@ -56,3 +56,111 @@ export function formatDurationFromSeconds(totalSeconds?: number) {
 
   return [hours, minutes, seconds].map(value => String(value).padStart(2, '0')).join(':');
 }
+
+/**
+ * Todo配列をJSON文字列に変換する。
+ */
+export function todosToJSON(todos: Todo[]): string {
+  return JSON.stringify(todos, null, 2);
+}
+
+/**
+ * JSON文字列をTodo配列に変換し、型とフィールドを検証・正規化する。
+ */
+export function todosFromJSON(jsonString: string): Todo[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonString);
+  } catch (e) {
+    throw new Error('JSONの解析に失敗しました');
+  }
+
+  if (!Array.isArray(parsed)) {
+    throw new Error('JSONはTodo配列である必要があります');
+  }
+
+  return parsed.map((item, index) => {
+    try {
+      return validateAndNormalizeTodo(item);
+    } catch (e) {
+      throw new Error(`行${index + 1}のTodoが不正です: ${(e as Error).message}`);
+    }
+  });
+}
+
+/**
+ * オブジェクトをTodo型として検証・正規化する。
+ */
+function validateAndNormalizeTodo(obj: unknown): Todo {
+  if (typeof obj !== 'object' || obj === null) {
+    throw new Error('オブジェクトが必須です');
+  }
+
+  const item = obj as Record<string, unknown>;
+
+  // 必須フィールドの確認
+  if (typeof item.id !== 'string' || !item.id) {
+    throw new Error('idは空でない文字列である必要があります');
+  }
+  if (typeof item.title !== 'string') {
+    throw new Error('titleは文字列である必要があります');
+  }
+  if (typeof item.createdAt !== 'string') {
+    throw new Error('createdAtはISO 8601文字列である必要があります');
+  }
+  if (typeof item.startableAt !== 'string') {
+    throw new Error('startableAtはISO 8601文字列である必要があります');
+  }
+  if (typeof item.dueDate !== 'string') {
+    throw new Error('dueDateはISO 8601文字列である必要があります');
+  }
+
+  const status = item.status as string;
+  if (!['Unlocked', 'Locked', 'Completed'].includes(status)) {
+    throw new Error('statusは "Unlocked", "Locked", "Completed" のいずれかである必要があります');
+  }
+
+  const assignee = item.assignee as string;
+  if (!['自分', '他人'].includes(assignee)) {
+    throw new Error('assigneeは "自分" または "他人" である必要があります');
+  }
+
+  // 数値フィールドの正規化
+  const effortMinutes = Number(item.effortMinutes);
+  const actualWorkSeconds = Number(item.actualWorkSeconds);
+  if (!Number.isFinite(effortMinutes) || effortMinutes < 0) {
+    throw new Error('effortMinutesは0以上の数値である必要があります');
+  }
+  if (!Number.isFinite(actualWorkSeconds) || actualWorkSeconds < 0) {
+    throw new Error('actualWorkSecondsは0以上の数値である必要があります');
+  }
+
+  // dependency の正規化
+  let dependency: string | string[] | undefined;
+  if (item.dependency !== undefined) {
+    if (typeof item.dependency === 'string') {
+      dependency = item.dependency || undefined;
+    } else if (Array.isArray(item.dependency)) {
+      const filtered = item.dependency.filter(d => typeof d === 'string' && d);
+      dependency = filtered.length > 0 ? filtered : undefined;
+    } else {
+      throw new Error('dependencyは文字列または文字列配列である必要があります');
+    }
+  }
+
+  return {
+    id: item.id,
+    title: item.title,
+    description: typeof item.description === 'string' ? item.description : '',
+    createdAt: item.createdAt,
+    startedAt: typeof item.startedAt === 'string' ? item.startedAt : undefined,
+    startableAt: item.startableAt,
+    dueDate: item.dueDate,
+    status: status as Todo['status'],
+    effortMinutes: Math.max(0, effortMinutes),
+    actualWorkSeconds: Math.max(0, actualWorkSeconds),
+    assignee: assignee as Todo['assignee'],
+    dependency,
+    completedAt: typeof item.completedAt === 'string' ? item.completedAt : undefined,
+  };
+}
