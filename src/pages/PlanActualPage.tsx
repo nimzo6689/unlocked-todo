@@ -108,6 +108,9 @@ const buildChartOption = (
   const diff = rows.map((row) => Number(row.diffMinutes.toFixed(1)));
 
   return {
+    axisPointer: {
+      show: false,
+    },
     title: {
       text: '予実管理',
       subtext: `${formatDateLabel(new Date(`${baseDateInput}T00:00:00`))} 起点7日間 | 完了タスク ${rows.length} 件 | 実績合計 ${totalActualMinutes.toFixed(1)} 分`,
@@ -136,7 +139,7 @@ const buildChartOption = (
     tooltip: {
       trigger: 'axis',
       axisPointer: {
-        type: 'shadow',
+        show: false,
       },
       formatter: (params) => {
         const list = Array.isArray(params) ? params : [params];
@@ -161,6 +164,9 @@ const buildChartOption = (
     xAxis: {
       type: 'category',
       data: categories,
+      axisPointer: {
+        show: false,
+      },
       axisLabel: {
         interval: 0,
         rotate: 18,
