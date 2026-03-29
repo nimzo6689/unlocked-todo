@@ -131,7 +131,7 @@ const buildChartOption = (
       top: 100,
       left: 52,
       right: 28,
-      bottom: 92,
+      bottom: 68,
     },
     tooltip: {
       trigger: 'axis',
@@ -235,12 +235,6 @@ const buildChartOption = (
       {
         type: 'inside',
         xAxisIndex: 0,
-      },
-      {
-        type: 'slider',
-        xAxisIndex: 0,
-        bottom: 30,
-        height: 18,
       },
     ],
   };
