@@ -107,6 +107,55 @@ const buildTimeSlots = (dateStr: string, schedule: WorkSchedule) => {
   return slots;
 };
 
+const calculateWorkingDurationMsInRange = (
+  range: { start: Date; end: Date },
+  schedule: WorkSchedule,
+) => {
+  const startDay = new Date(range.start);
+  const endDay = new Date(range.end);
+  startDay.setHours(0, 0, 0, 0);
+  endDay.setHours(0, 0, 0, 0);
+
+  let totalMs = 0;
+
+  for (let day = startDay; day.getTime() <= endDay.getTime(); day = addDays(day, 1)) {
+    if (!isWorkingDay(day, schedule)) {
+      continue;
+    }
+
+    const workStart = new Date(day);
+    const breakStart = new Date(day);
+    const breakEnd = new Date(day);
+    const workEnd = new Date(day);
+
+    workStart.setHours(schedule.workStartHour, 0, 0, 0);
+    breakStart.setHours(schedule.breakStartHour, 0, 0, 0);
+    breakEnd.setHours(schedule.breakEndHour, 0, 0, 0);
+    workEnd.setHours(schedule.workEndHour, 0, 0, 0);
+
+    const workingIntervals = [
+      { startMs: workStart.getTime(), endMs: breakStart.getTime() },
+      { startMs: breakEnd.getTime(), endMs: workEnd.getTime() },
+    ];
+
+    workingIntervals.forEach((interval) => {
+      if (interval.endMs <= interval.startMs) {
+        return;
+      }
+
+      const overlapStartMs = Math.max(interval.startMs, range.start.getTime());
+      const overlapEndMs = Math.min(interval.endMs, range.end.getTime());
+      const overlapMs = overlapEndMs - overlapStartMs;
+
+      if (overlapMs > 0) {
+        totalMs += overlapMs;
+      }
+    });
+  }
+
+  return totalMs;
+};
+
 const aggregateLoadForDate = (
   todos: Todo[],
   dateStr: string,
@@ -121,8 +170,10 @@ const aggregateLoadForDate = (
     const range = parseTaskRange(todo);
     if (!range) return;
 
-    const taskDurationHours = (range.end.getTime() - range.start.getTime()) / HOUR_MS;
-    const hourlyLoad = todo.effortMinutes / 60 / taskDurationHours;
+    const effectiveWorkingDurationMs = calculateWorkingDurationMsInRange(range, schedule);
+    if (effectiveWorkingDurationMs <= 0) return;
+
+    const hourlyLoad = todo.effortMinutes / (effectiveWorkingDurationMs / (60 * 1000));
     const perSlot = seriesMap.get(todo.id)?.data ?? Array(slots.length).fill(0);
 
     slots.forEach((slot, index) => {
@@ -470,7 +521,7 @@ export const AvailabilityPage = () => {
           <li>稼働日は {workingDayLabels} を対象としています。</li>
           <li>稼働時間帯は <span className="font-mono">{formatHourLabel(workSchedule.workStartHour)}〜{formatHourLabel(workSchedule.breakStartHour)}</span> と <span className="font-mono">{formatHourLabel(workSchedule.breakEndHour)}〜{formatHourLabel(workSchedule.workEndHour)}</span> です。</li>
           <li>負荷は 30 分単位のスロットに分割して集計しています。</li>
-          <li>各タスクの負荷は、開始可能日時〜期限の期間内に均等配分して計算しています。</li>
+          <li>各タスクの負荷は、開始可能日時〜期限のうち稼働可能な時間帯に均等配分して計算しています。</li>
           <li>担当が「自分」に設定されているタスクのみが集計対象です。</li>
         </ul>
       </div>
