@@ -193,16 +193,6 @@ const buildChartOption = (
         splitLine: { show: false },
       },
     ],
-    visualMap: {
-      type: 'piecewise',
-      show: false,
-      seriesIndex: 2,
-      dimension: 1,
-      pieces: [
-        { gt: 0, color: '#dc2626' },
-        { lte: 0, color: '#2563eb' },
-      ],
-    },
     series: [
       {
         name: '予定工数',
@@ -228,10 +218,16 @@ const buildChartOption = (
         name: '乖離(実績-予定)',
         type: 'line',
         yAxisIndex: 1,
-        data: diff,
+        data: diff.map((value) => ({
+          value,
+          itemStyle: {
+            color: value > 0 ? '#dc2626' : '#2563eb',
+          },
+        })),
         symbolSize: 9,
         lineStyle: {
           width: 2,
+          color: '#334155',
         },
         markLine: {
           symbol: 'none',
