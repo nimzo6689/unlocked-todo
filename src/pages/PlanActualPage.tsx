@@ -241,7 +241,7 @@ const buildChartOption = (
             width: 1.5,
           },
           label: {
-            formatter: '差異 0',
+            show: false,
             color: '#475569',
           },
           data: [{ yAxis: 0 }],
