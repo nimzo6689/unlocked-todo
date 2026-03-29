@@ -133,7 +133,7 @@ const buildChartOption = (
     grid: {
       top: 100,
       left: 52,
-      right: 28,
+      right: 64,
       bottom: 68,
     },
     tooltip: {
@@ -173,16 +173,26 @@ const buildChartOption = (
         formatter: (value: string) => (value.length > 14 ? `${value.slice(0, 14)}...` : value),
       },
     },
-    yAxis: {
-      type: 'value',
-      name: '時間 (分)',
-      splitLine: {
-        lineStyle: {
-          color: '#e2e8f0',
-          type: 'dashed',
+    yAxis: [
+      {
+        type: 'value',
+        name: '時間 (分)',
+        splitLine: {
+          lineStyle: {
+            color: '#e2e8f0',
+            type: 'dashed',
+          },
         },
       },
-    },
+      {
+        type: 'value',
+        name: '差異 (分)',
+        nameTextStyle: { color: '#475569' },
+        position: 'right',
+        axisLine: { show: true, lineStyle: { color: '#475569' } },
+        splitLine: { show: false },
+      },
+    ],
     visualMap: {
       type: 'piecewise',
       show: false,
@@ -217,6 +227,7 @@ const buildChartOption = (
       {
         name: '乖離(実績-予定)',
         type: 'line',
+        yAxisIndex: 1,
         data: diff,
         symbolSize: 9,
         lineStyle: {
