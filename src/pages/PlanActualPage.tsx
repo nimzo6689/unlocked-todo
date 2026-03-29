@@ -101,6 +101,7 @@ const buildChartOption = (
   rows: PlanActualRow[],
   baseDateInput: string,
   totalActualMinutes: number,
+  totalDiffMinutes: number,
 ): EChartsOption => {
   const categories = rows.map((row) => row.title);
   const planned = rows.map((row) => Number(row.plannedMinutes.toFixed(1)));
@@ -113,7 +114,7 @@ const buildChartOption = (
     },
     title: {
       text: '予実管理',
-      subtext: `${formatDateLabel(new Date(`${baseDateInput}T00:00:00`))} 起点7日間 | 完了タスク ${rows.length} 件 | 実績合計 ${totalActualMinutes.toFixed(1)} 分`,
+      subtext: `${formatDateLabel(new Date(`${baseDateInput}T00:00:00`))} 起点7日間 | 完了タスク ${rows.length} 件 | 実績合計 ${totalActualMinutes.toFixed(1)} 分 | 合計差異 ${totalDiffMinutes > 0 ? '+' : ''}${totalDiffMinutes.toFixed(1)} 分`,
       left: 'center',
       top: 0,
       textStyle: {
@@ -264,9 +265,14 @@ export const PlanActualPage = () => {
     [rows],
   );
 
+  const totalDiffMinutes = useMemo(
+    () => rows.reduce((sum, row) => sum + row.diffMinutes, 0),
+    [rows],
+  );
+
   const option = useMemo(
-    () => buildChartOption(rows, selectedDate, totalActualMinutes),
-    [rows, selectedDate, totalActualMinutes],
+    () => buildChartOption(rows, selectedDate, totalActualMinutes, totalDiffMinutes),
+    [rows, selectedDate, totalActualMinutes, totalDiffMinutes],
   );
 
   return (
