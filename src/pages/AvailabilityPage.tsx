@@ -4,6 +4,7 @@ import type { EChartsOption, SeriesOption } from 'echarts';
 import { useTodoContext } from '../contexts/TodoContext';
 import type { Todo, WorkSchedule } from '../common/types';
 import { formatHourLabel, WEEKDAY_OPTIONS } from '../common/settings';
+import { isMeetingTodo } from '../common/utils';
 
 const SLOT_MINUTES = 30;
 const DISPLAY_WINDOW_DAYS = 7;
@@ -15,6 +16,11 @@ type TimeSlot = {
   start: Date;
   end: Date;
   isWorking: boolean;
+};
+
+type Interval = {
+  startMs: number;
+  endMs: number;
 };
 
 type SlotContributor = {
@@ -107,9 +113,93 @@ const buildTimeSlots = (dateStr: string, schedule: WorkSchedule) => {
   return slots;
 };
 
+const getWorkingIntervalsForDay = (day: Date, schedule: WorkSchedule): Interval[] => {
+  const workStart = new Date(day);
+  const breakStart = new Date(day);
+  const breakEnd = new Date(day);
+  const workEnd = new Date(day);
+
+  workStart.setHours(schedule.workStartHour, 0, 0, 0);
+  breakStart.setHours(schedule.breakStartHour, 0, 0, 0);
+  breakEnd.setHours(schedule.breakEndHour, 0, 0, 0);
+  workEnd.setHours(schedule.workEndHour, 0, 0, 0);
+
+  return [
+    { startMs: workStart.getTime(), endMs: breakStart.getTime() },
+    { startMs: breakEnd.getTime(), endMs: workEnd.getTime() },
+  ].filter((interval) => interval.endMs > interval.startMs);
+};
+
+const mergeIntervals = (intervals: Interval[]) => {
+  if (intervals.length === 0) {
+    return [] as Interval[];
+  }
+
+  const sorted = [...intervals].sort((a, b) => a.startMs - b.startMs);
+  return sorted.reduce<Interval[]>((merged, interval) => {
+    const last = merged[merged.length - 1];
+    if (!last || interval.startMs > last.endMs) {
+      merged.push({ ...interval });
+      return merged;
+    }
+
+    last.endMs = Math.max(last.endMs, interval.endMs);
+    return merged;
+  }, []);
+};
+
+const subtractIntervals = (base: Interval, blocked: Interval[]) => {
+  if (base.endMs <= base.startMs) {
+    return [] as Interval[];
+  }
+
+  let segments: Interval[] = [base];
+
+  blocked.forEach((block) => {
+    segments = segments.flatMap((segment) => {
+      if (block.endMs <= segment.startMs || block.startMs >= segment.endMs) {
+        return [segment];
+      }
+
+      const nextSegments: Interval[] = [];
+      if (block.startMs > segment.startMs) {
+        nextSegments.push({ startMs: segment.startMs, endMs: block.startMs });
+      }
+      if (block.endMs < segment.endMs) {
+        nextSegments.push({ startMs: block.endMs, endMs: segment.endMs });
+      }
+      return nextSegments;
+    });
+  });
+
+  return segments.filter((segment) => segment.endMs > segment.startMs);
+};
+
+const getMeetingIntervalsForDay = (day: Date, meetings: Todo[]) => {
+  const dayStart = new Date(day);
+  const dayEnd = new Date(day);
+  dayStart.setHours(0, 0, 0, 0);
+  dayEnd.setHours(23, 59, 59, 999);
+
+  const dayStartMs = dayStart.getTime();
+  const dayEndMs = dayEnd.getTime();
+
+  return mergeIntervals(
+    meetings
+      .map((meeting) => parseTaskRange(meeting))
+      .filter((range): range is { start: Date; end: Date } => Boolean(range))
+      .map((range) => ({
+        startMs: Math.max(range.start.getTime(), dayStartMs),
+        endMs: Math.min(range.end.getTime(), dayEndMs),
+      }))
+      .filter((interval) => interval.endMs > interval.startMs),
+  );
+};
+
 const calculateWorkingDurationMsInRange = (
   range: { start: Date; end: Date },
   schedule: WorkSchedule,
+  meetings: Todo[],
 ) => {
   const startDay = new Date(range.start);
   const endDay = new Date(range.end);
@@ -123,33 +213,21 @@ const calculateWorkingDurationMsInRange = (
       continue;
     }
 
-    const workStart = new Date(day);
-    const breakStart = new Date(day);
-    const breakEnd = new Date(day);
-    const workEnd = new Date(day);
-
-    workStart.setHours(schedule.workStartHour, 0, 0, 0);
-    breakStart.setHours(schedule.breakStartHour, 0, 0, 0);
-    breakEnd.setHours(schedule.breakEndHour, 0, 0, 0);
-    workEnd.setHours(schedule.workEndHour, 0, 0, 0);
-
-    const workingIntervals = [
-      { startMs: workStart.getTime(), endMs: breakStart.getTime() },
-      { startMs: breakEnd.getTime(), endMs: workEnd.getTime() },
-    ];
+    const meetingIntervals = getMeetingIntervalsForDay(day, meetings);
+    const workingIntervals = getWorkingIntervalsForDay(day, schedule);
 
     workingIntervals.forEach((interval) => {
-      if (interval.endMs <= interval.startMs) {
-        return;
-      }
+      const availableIntervals = subtractIntervals(interval, meetingIntervals);
 
-      const overlapStartMs = Math.max(interval.startMs, range.start.getTime());
-      const overlapEndMs = Math.min(interval.endMs, range.end.getTime());
-      const overlapMs = overlapEndMs - overlapStartMs;
+      availableIntervals.forEach((availableInterval) => {
+        const overlapStartMs = Math.max(availableInterval.startMs, range.start.getTime());
+        const overlapEndMs = Math.min(availableInterval.endMs, range.end.getTime());
+        const overlapMs = overlapEndMs - overlapStartMs;
 
-      if (overlapMs > 0) {
-        totalMs += overlapMs;
-      }
+        if (overlapMs > 0) {
+          totalMs += overlapMs;
+        }
+      });
     });
   }
 
@@ -158,10 +236,13 @@ const calculateWorkingDurationMsInRange = (
 
 const aggregateLoadForDate = (
   todos: Todo[],
+  meetings: Todo[],
   dateStr: string,
   schedule: WorkSchedule,
 ): AggregatedLoad => {
   const slots = buildTimeSlots(dateStr, schedule);
+  const dateBase = new Date(`${dateStr}T00:00:00`);
+  const meetingIntervals = getMeetingIntervalsForDay(dateBase, meetings);
   const slotTotals = Array(slots.length).fill(0) as number[];
   const slotContribMap = Array.from({ length: slots.length }, () => new Map<string, SlotContributor>());
   const seriesMap = new Map<string, { id: string; title: string; data: number[] }>();
@@ -170,7 +251,7 @@ const aggregateLoadForDate = (
     const range = parseTaskRange(todo);
     if (!range) return;
 
-    const effectiveWorkingDurationMs = calculateWorkingDurationMsInRange(range, schedule);
+    const effectiveWorkingDurationMs = calculateWorkingDurationMsInRange(range, schedule, meetings);
     if (effectiveWorkingDurationMs <= 0) return;
 
     const hourlyLoad = todo.effortMinutes / (effectiveWorkingDurationMs / (60 * 1000));
@@ -181,7 +262,14 @@ const aggregateLoadForDate = (
 
       const overlapStartMs = Math.max(slot.start.getTime(), range.start.getTime());
       const overlapEndMs = Math.min(slot.end.getTime(), range.end.getTime());
-      const overlapMs = overlapEndMs - overlapStartMs;
+      const availableIntervals = subtractIntervals(
+        { startMs: overlapStartMs, endMs: overlapEndMs },
+        meetingIntervals,
+      );
+      const overlapMs = availableIntervals.reduce(
+        (total, interval) => total + (interval.endMs - interval.startMs),
+        0,
+      );
       if (overlapMs <= 0) return;
 
       const overlapHours = overlapMs / HOUR_MS;
@@ -450,8 +538,13 @@ export const AvailabilityPage = () => {
   const { todos, workSchedule } = useTodoContext();
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue(new Date()));
 
-  const selfTodos = useMemo(
-    () => todos.filter((todo) => todo.assignee === '自分'),
+  const selfNormalTodos = useMemo(
+    () => todos.filter((todo) => todo.assignee === '自分' && !isMeetingTodo(todo)),
+    [todos],
+  );
+
+  const selfMeetings = useMemo(
+    () => todos.filter((todo) => todo.assignee === '自分' && isMeetingTodo(todo) && todo.status !== 'Completed'),
     [todos],
   );
 
@@ -463,7 +556,7 @@ export const AvailabilityPage = () => {
   const availabilityCharts = useMemo<AvailabilityChartData[]>(
     () =>
       displayDates.map((dateStr) => {
-        const load = aggregateLoadForDate(selfTodos, dateStr, workSchedule);
+        const load = aggregateLoadForDate(selfNormalTodos, selfMeetings, dateStr, workSchedule);
         const hasLoad = load.slotTotals.some((value) => value > 0);
         const maxLoad = Math.max(...load.slotTotals, 0);
         const overloadedSlots = load.slotTotals.filter((value) => value > 1).length;
@@ -477,7 +570,7 @@ export const AvailabilityPage = () => {
           option: buildChartOption(load, workSchedule),
         };
       }),
-    [displayDates, selfTodos, workSchedule],
+    [displayDates, selfMeetings, selfNormalTodos, workSchedule],
   );
 
   const workingDayLabels = WEEKDAY_OPTIONS.filter((option) => workSchedule.workingDays.includes(option.value))
@@ -554,7 +647,8 @@ export const AvailabilityPage = () => {
           <li>稼働時間帯は <span className="font-mono">{formatHourLabel(workSchedule.workStartHour)}〜{formatHourLabel(workSchedule.breakStartHour)}</span> と <span className="font-mono">{formatHourLabel(workSchedule.breakEndHour)}〜{formatHourLabel(workSchedule.workEndHour)}</span> です。</li>
           <li>負荷は 30 分単位のスロットに分割して集計しています。</li>
           <li>各タスクの負荷は、開始可能日時〜期限のうち稼働可能な時間帯に均等配分して計算しています。</li>
-          <li>担当が「自分」に設定されているタスクのみが集計対象です。</li>
+          <li>Meeting は休憩時間と同様に非稼働時間として除外しています。</li>
+          <li>担当が「自分」に設定されている通常タスクのみが負荷集計対象です。</li>
         </ul>
       </div>
     </div>

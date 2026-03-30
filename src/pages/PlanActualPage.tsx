@@ -3,6 +3,7 @@ import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { useTodoContext } from '../contexts/TodoContext';
 import type { Todo } from '../common/types';
+import { isMeetingTodo } from '../common/utils';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -69,7 +70,7 @@ const withinOneWeek = (target: Date, baseDateInput: string) => {
 
 const buildRows = (todos: Todo[], baseDateInput: string): PlanActualRow[] => {
   return todos
-    .filter((todo) => todo.status === 'Completed')
+    .filter((todo) => todo.status === 'Completed' && !isMeetingTodo(todo))
     .map((todo) => {
       const startedAt = parseStartedAt(todo);
       if (!startedAt) {

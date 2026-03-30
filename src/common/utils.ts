@@ -1,9 +1,28 @@
-import type { Todo } from './types';
-import type { FilterButton } from './types';
+import type { FilterButton, Todo, TodoTaskType } from './types';
+
+export const DEFAULT_TASK_TYPE: TodoTaskType = 'Normal';
+
+export const isMeetingTodo = (todo: Pick<Todo, 'taskType'>) => todo.taskType === 'Meeting';
+
+export const isNormalTodo = (todo: Pick<Todo, 'taskType'>) => todo.taskType === 'Normal';
+
+export const getMeetingStatus = (dueDate: string, currentStatus?: Todo['status']): Todo['status'] => {
+  if (currentStatus === 'Completed') {
+    return 'Completed';
+  }
+
+  const end = new Date(dueDate);
+  if (Number.isNaN(end.getTime())) {
+    return 'Unlocked';
+  }
+
+  return end.getTime() <= Date.now() ? 'Completed' : 'Unlocked';
+};
 
 export const filterButtons: FilterButton[] = [
   { key: 'unlocked', label: 'Unlocked' },
   { key: 'locked', label: 'Locked' },
+  { key: 'meeting', label: 'Meeting' },
   { key: 'completed', label: 'Completed' },
   { key: 'all', label: 'All' },
 ];
@@ -11,6 +30,7 @@ export const filterButtons: FilterButton[] = [
 export const defaultForm: Partial<Todo> = {
   title: '',
   description: '',
+  taskType: DEFAULT_TASK_TYPE,
   startableAt: '',
   dueDate: '',
   status: 'Unlocked',
@@ -97,6 +117,7 @@ function validateAndNormalizeTodo(obj: unknown): Todo {
   }
 
   const item = obj as Record<string, unknown>;
+  const taskType = normalizeTaskType(item.taskType);
 
   // 必須フィールドの確認
   if (typeof item.id !== 'string' || !item.id) {
@@ -152,6 +173,7 @@ function validateAndNormalizeTodo(obj: unknown): Todo {
     id: item.id,
     title: item.title,
     description: typeof item.description === 'string' ? item.description : '',
+    taskType,
     createdAt: item.createdAt,
     startedAt: typeof item.startedAt === 'string' ? item.startedAt : undefined,
     startableAt: item.startableAt,
@@ -162,5 +184,39 @@ function validateAndNormalizeTodo(obj: unknown): Todo {
     assignee: assignee as Todo['assignee'],
     dependency,
     completedAt: typeof item.completedAt === 'string' ? item.completedAt : undefined,
+  };
+}
+
+export function normalizeTaskType(value: unknown): TodoTaskType {
+  if (value === undefined || value === null || value === '') {
+    return DEFAULT_TASK_TYPE;
+  }
+
+  if (value === 'Normal' || value === 'Meeting') {
+    return value;
+  }
+
+  throw new Error('taskTypeは "Normal" または "Meeting" である必要があります');
+}
+
+export function normalizeTodo(todo: Todo): Todo {
+  const taskType = normalizeTaskType(todo.taskType);
+  const isMeeting = taskType === 'Meeting';
+
+  return {
+    ...todo,
+    taskType,
+    status: isMeeting ? getMeetingStatus(todo.dueDate, todo.status) : todo.status,
+    effortMinutes: isMeeting
+      ? 0
+      : Number.isFinite(Number(todo.effortMinutes))
+      ? Math.max(0, Number(todo.effortMinutes))
+      : 0,
+    actualWorkSeconds: isMeeting
+      ? 0
+      : Number.isFinite(Number(todo.actualWorkSeconds))
+      ? Math.max(0, Number(todo.actualWorkSeconds))
+      : 0,
+    dependency: isMeeting ? undefined : todo.dependency,
   };
 }

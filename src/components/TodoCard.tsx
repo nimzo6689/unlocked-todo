@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { Todo } from '../common/types';
-import { formatDate, formatDurationFromSeconds } from '../common/utils';
+import { formatDate, formatDurationFromSeconds, isMeetingTodo } from '../common/utils';
 import { marked } from 'marked';
 
 const statusClasses: Record<string, string> = {
@@ -35,10 +35,11 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   onComplete,
   onStartTodo,
 }) => {
+  const isMeeting = isMeetingTodo(todo);
   const now = new Date();
   const dueDate = new Date(todo.dueDate);
   const startableAt = new Date(todo.startableAt || todo.createdAt);
-  const isOverdue = new Date(dueDate.getTime() - (todo.effortMinutes || 0) * 60 * 1000) < now;
+  const isOverdue = isMeeting ? dueDate < now : new Date(dueDate.getTime() - (todo.effortMinutes || 0) * 60 * 1000) < now;
   const isDueToday = dueDate.toDateString() === now.toDateString();
   const isInProgress = todo.id === currentInProgressId;
   let cardBgClass = 'bg-white';
@@ -56,9 +57,9 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   const dependencyList = dependentTodos ?? [];
   const incompleteDependencies = dependencyList.filter((t: Todo) => t.status !== 'Completed');
   const isDependencyIncomplete = incompleteDependencies.length > 0;
-  const isLockedOnTime = todo.status === 'Unlocked' && startableAt > now;
+  const isLockedOnTime = !isMeeting && todo.status === 'Unlocked' && startableAt > now;
   let lockedReasonHtml = '';
-  if (filter === 'locked' && (isDependencyIncomplete || isLockedOnTime)) {
+  if (!isMeeting && filter === 'locked' && (isDependencyIncomplete || isLockedOnTime)) {
     if (isDependencyIncomplete) {
       const titles = incompleteDependencies.map((t: Todo) => t.title).join('、');
       lockedReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'>依存タスク「${titles}」が未完了です。</div>`;
@@ -130,12 +131,12 @@ export const TodoCard: React.FC<TodoCardProps> = ({
       <div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm text-slate-500 mt-4 pt-4 border-t">
           <div>
-            <strong>着手可能日時:</strong> {formatDate(todo.startableAt)}
+            <strong>{isMeeting ? '開始日時' : '着手可能日時'}:</strong> {formatDate(todo.startableAt)}
           </div>
           <div>
-            <strong>期限:</strong> {formatDate(todo.dueDate)}
+            <strong>{isMeeting ? '終了日時' : '期限'}:</strong> {formatDate(todo.dueDate)}
           </div>
-          <div>
+          {!isMeeting && <div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <span>
                 <strong>工数:</strong> {todo.effortMinutes || 0} 分
@@ -146,16 +147,16 @@ export const TodoCard: React.FC<TodoCardProps> = ({
                 <strong>実作業時間:</strong> {formatDurationFromSeconds(todo.actualWorkSeconds)}
               </span>
             </div>
-          </div>
-          <div>
+          </div>}
+          {!isMeeting && <div>
             <strong>担当:</strong>{' '}
             <span
               className={`font-semibold px-2 py-0.5 rounded-full ${assigneeClasses[todo.assignee]}`}
             >
               {todo.assignee}
             </span>
-          </div>
-          {dependencyList.length > 0 && (
+          </div>}
+          {!isMeeting && dependencyList.length > 0 && (
             <div className="col-span-1 sm:col-span-2">
               <strong>依存Todo:</strong>
               <div className="mt-1 space-y-1">
@@ -185,7 +186,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
           )}
         </div>
         <div className="flex flex-wrap justify-end gap-2 mt-4">
-          {filter === 'unlocked' && todo.status === 'Unlocked' && (
+          {!isMeeting && filter === 'unlocked' && todo.status === 'Unlocked' && (
             <button
               onClick={() => onStartTodo(todo.id)}
               className={`text-xs sm:text-sm ${
@@ -197,7 +198,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
               {currentInProgressId === todo.id ? '中断' : '着手'}
             </button>
           )}
-          {todo.status !== 'Completed' && (
+          {!isMeeting && todo.status !== 'Completed' && (
             <button
               onClick={() => onComplete(todo.id)}
               className="text-xs sm:text-sm bg-green-500 hover:bg-green-600 text-white font-semibold py-1 px-2 sm:px-3 rounded-md"

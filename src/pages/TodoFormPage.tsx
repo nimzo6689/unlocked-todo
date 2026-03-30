@@ -2,7 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { TodoForm } from '../components/TodoForm';
 import type { Todo } from '../common/types';
-import { defaultForm, getDependencyIds } from '../common/utils';
+import {
+  defaultForm,
+  DEFAULT_TASK_TYPE,
+  getDependencyIds,
+  getMeetingStatus,
+  isMeetingTodo,
+} from '../common/utils';
 import { useTodoContext } from '../contexts/TodoContext';
 import toast from 'react-hot-toast';
 
@@ -43,6 +49,7 @@ export const TodoFormPage = () => {
       }
       setForm({
         ...defaultForm,
+        taskType: DEFAULT_TASK_TYPE,
         startableAt: new Date().toISOString(),
         dueDate: dueDate.toISOString(),
       });
@@ -55,26 +62,37 @@ export const TodoFormPage = () => {
     e.preventDefault();
     const now = new Date().toISOString();
     let newTodos = [...todos];
+    const taskType = form.taskType || DEFAULT_TASK_TYPE;
+    const isMeeting = isMeetingTodo({ taskType });
 
     const dependency = Array.isArray(form.dependency)
       ? form.dependency.filter(Boolean)
       : form.dependency
       ? [form.dependency]
       : [];
-    const hasDependency = dependency.length > 0;
+    const normalizedDependency = isMeeting ? [] : dependency;
+    const hasDependency = normalizedDependency.length > 0;
 
     if (form.id) {
       const currentTodoId = form.id;
-      const safeSuccessorIds = successorIds.filter(todoId => todoId !== currentTodoId);
+      const safeSuccessorIds = isMeeting
+        ? []
+        : successorIds.filter(todoId => todoId !== currentTodoId);
 
       newTodos = newTodos.map(todo => {
         if (todo.id === currentTodoId) {
           return {
             ...todo,
             ...form,
-            dependency,
+            taskType,
+            dependency: normalizedDependency,
             startableAt: hasDependency ? (form.startableAt || '') : (form.startableAt || todo.startableAt),
-            actualWorkSeconds: todo.actualWorkSeconds || 0,
+            status: isMeeting
+              ? getMeetingStatus(form.dueDate || todo.dueDate, todo.status)
+              : ((form.status as Todo['status']) || todo.status),
+            effortMinutes: isMeeting ? 0 : (form.effortMinutes || 0),
+            actualWorkSeconds: isMeeting ? 0 : (todo.actualWorkSeconds || 0),
+            assignee: isMeeting ? todo.assignee : ((form.assignee as Todo['assignee']) || todo.assignee),
           } as Todo;
         }
 
@@ -111,12 +129,15 @@ export const TodoFormPage = () => {
         startableAt: hasDependency ? (form.startableAt || '') : (form.startableAt || now),
         title: form.title || '',
         description: form.description || '',
+        taskType,
         dueDate: form.dueDate || '',
-        status: (form.status as Todo['status']) || 'Unlocked',
-        effortMinutes: form.effortMinutes || 0,
+        status: isMeeting
+          ? getMeetingStatus(form.dueDate || '')
+          : ((form.status as Todo['status']) || 'Unlocked'),
+        effortMinutes: isMeeting ? 0 : (form.effortMinutes || 0),
         actualWorkSeconds: 0,
         assignee: (form.assignee as Todo['assignee']) || '自分',
-        dependency,
+        dependency: normalizedDependency,
       };
       newTodos.push(newTodo);
     }

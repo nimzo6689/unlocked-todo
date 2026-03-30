@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import type { Todo } from '../common/types';
 import { TodoCard } from '../components/TodoCard';
 import { Modal } from '../components/Modal';
-import { filterButtons, getDependencyIds } from '../common/utils';
+import { filterButtons, getDependencyIds, isMeetingTodo } from '../common/utils';
 import { useTodoContext } from '../contexts/TodoContext';
 
 export const TodoListPage = () => {
@@ -127,6 +127,7 @@ export const TodoListPage = () => {
   const filteredTodos = todos
     .filter(todo => {
       const now = new Date();
+      const isMeeting = isMeetingTodo(todo);
       const startableAt = new Date(todo.startableAt || todo.createdAt);
       const dependentTodos = getDependencyIds(todo)
         .map(getTodo)
@@ -134,6 +135,12 @@ export const TodoListPage = () => {
       const isDependencyIncomplete = dependentTodos.some(t => t.status !== 'Completed');
       if (filter === 'all') return true;
       if (filter === 'completed') return todo.status === 'Completed';
+      if (filter === 'meeting') {
+        return isMeeting && todo.status !== 'Completed';
+      }
+      if (isMeeting) {
+        return false;
+      }
       if (filter === 'unlocked') {
         return todo.status === 'Unlocked' && startableAt <= now && !isDependencyIncomplete;
       }
@@ -148,6 +155,9 @@ export const TodoListPage = () => {
     .sort((a, b) => {
       const dueDiff = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
       if (dueDiff !== 0) return dueDiff;
+      if (isMeetingTodo(a) || isMeetingTodo(b)) {
+        return a.title.localeCompare(b.title, 'ja');
+      }
       return (a.effortMinutes ?? 0) - (b.effortMinutes ?? 0);
     });
 

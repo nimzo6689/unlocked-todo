@@ -1,7 +1,14 @@
 import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { todoDB } from '../common/db';
 import type { Todo, ModalState, TodoContextType, ImportResult } from '../common/types';
-import { defaultForm, getDependencyIds, todosToJSON, todosFromJSON } from '../common/utils';
+import {
+  defaultForm,
+  getDependencyIds,
+  isMeetingTodo,
+  normalizeTodo,
+  todosToJSON,
+  todosFromJSON,
+} from '../common/utils';
 import {
   DEFAULT_WORK_SCHEDULE,
   sanitizeWorkSchedule,
@@ -12,6 +19,7 @@ import { TodoContext } from './TodoContext';
 // LocalStorage に保存するキー
 const NOTIFIED_TODOS_KEY = 'notified-todos';
 const NOTIFICATION_PERMISSION_KEY = 'notificationPermission';
+const MEETING_AUTOCOMPLETE_INTERVAL_MS = 30_000;
 
 interface TodoProviderProps {
   children: ReactNode;
@@ -48,18 +56,69 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
 
   const fetchTodos = useCallback(async () => {
     const data = await todoDB.fetch();
-    setTodos(
-      data.map((todo) => ({
-        ...todo,
-        effortMinutes: Number.isFinite(Number(todo.effortMinutes))
-          ? Math.max(0, Number(todo.effortMinutes))
-          : 0,
-        actualWorkSeconds: Number.isFinite(Number(todo.actualWorkSeconds))
-          ? Math.max(0, Number(todo.actualWorkSeconds))
-          : 0,
-      })),
-    );
+    setTodos(data.map(normalizeTodo));
   }, []);
+  const completeTodos = useCallback(async (ids: string[]) => {
+    const targetIds = new Set(ids);
+    if (targetIds.size === 0) {
+      return false;
+    }
+
+    const completedAt = new Date().toISOString();
+    let changed = false;
+
+    let newTodos = todosRef.current.map((todo) => {
+      if (!targetIds.has(todo.id) || todo.status === 'Completed') {
+        return todo;
+      }
+
+      changed = true;
+      return { ...todo, status: 'Completed' as const, completedAt };
+    });
+
+    newTodos = newTodos.map((todo) => {
+      if (!todo.dependency) {
+        return todo;
+      }
+
+      const depIds = getDependencyIds(todo);
+      if (!depIds.some((depId) => targetIds.has(depId))) {
+        return todo;
+      }
+
+      const allDepsCompleted = depIds.every((depId) => {
+        const depTodo = newTodos.find((item) => item.id === depId);
+        return depTodo?.status === 'Completed';
+      });
+
+      if (!allDepsCompleted) {
+        return todo;
+      }
+
+      const maxCompletedAt = depIds
+        .map((depId) => newTodos.find((item) => item.id === depId)?.completedAt)
+        .filter(Boolean)
+        .sort()
+        .pop();
+
+      if (maxCompletedAt && maxCompletedAt !== todo.startableAt) {
+        changed = true;
+        return { ...todo, startableAt: maxCompletedAt };
+      }
+
+      return todo;
+    });
+
+    if (!changed) {
+      return false;
+    }
+
+    todosRef.current = newTodos;
+    setTodos(newTodos);
+    await todoDB.save(newTodos);
+    return true;
+  }, []);
+
 
   useEffect(() => {
     todosRef.current = todos;
@@ -126,6 +185,10 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
       const now = new Date();
 
       todos.forEach((todo) => {
+        if (isMeetingTodo(todo)) {
+          return;
+        }
+
         const startableAt = new Date(todo.startableAt || todo.createdAt);
         const dependentTodos = getDependencyIds(todo)
           .map(getTodo)
@@ -150,9 +213,33 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
       localStorage.setItem(NOTIFIED_TODOS_KEY, JSON.stringify(notifiedTodoIds));
     };
 
-    const interval = setInterval(() => checkForNotifications(), 30_000);
+    const interval = setInterval(() => checkForNotifications(), MEETING_AUTOCOMPLETE_INTERVAL_MS);
     return () => clearInterval(interval);
   }, [todos, getTodo]);
+
+  useEffect(() => {
+    const syncCompletedMeetings = () => {
+      const now = Date.now();
+      const targetIds = todosRef.current
+        .filter((todo) => {
+          if (!isMeetingTodo(todo) || todo.status === 'Completed') {
+            return false;
+          }
+
+          const end = new Date(todo.dueDate);
+          return !Number.isNaN(end.getTime()) && end.getTime() <= now;
+        })
+        .map((todo) => todo.id);
+
+      if (targetIds.length > 0) {
+        void completeTodos(targetIds);
+      }
+    };
+
+    syncCompletedMeetings();
+    const interval = window.setInterval(syncCompletedMeetings, MEETING_AUTOCOMPLETE_INTERVAL_MS);
+    return () => window.clearInterval(interval);
+  }, [completeTodos]);
 
   const requestNotificationPermission = () => {
     if (!('Notification' in window)) {
@@ -262,41 +349,18 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
         if (currentInProgressIdRef.current === id) {
           await syncInProgressActualWork(true);
         }
-        const completedAt = new Date().toISOString();
-        let newTodos = todosRef.current.map((todo) =>
-          todo.id === id ? { ...todo, status: 'Completed' as const, completedAt } : todo
-        );
-        // 依存関係をチェックして、startableAtを更新
-        newTodos = newTodos.map((todo) => {
-          if (!todo.dependency) return todo;
-          const depIds = getDependencyIds(todo);
-          if (depIds.includes(id)) {
-            // この完了が依存に含まれている場合、全ての依存が完了しているかチェック
-            const allDepsCompleted = depIds.every((depId) => {
-              const depTodo = newTodos.find((t) => t.id === depId);
-              return depTodo?.status === 'Completed';
-            });
-            if (allDepsCompleted) {
-              // 全て完了したら、最も遅いcompletedAtをstartableAtに
-              const maxCompletedAt = depIds
-                .map((depId) => newTodos.find((t) => t.id === depId)?.completedAt)
-                .filter(Boolean)
-                .sort()
-                .pop();
-              return { ...todo, startableAt: maxCompletedAt || todo.startableAt };
-            }
-          }
-          return todo;
-        });
-        const { todoDB } = await import('../common/db');
-        await todoDB.save(newTodos);
-        setTodos(newTodos);
+        await completeTodos([id]);
         setModal(null);
       },
     });
   };
 
   const startTodo = async (id: string) => {
+    const targetTodo = todosRef.current.find((todo) => todo.id === id);
+    if (!targetTodo || isMeetingTodo(targetTodo)) {
+      return;
+    }
+
     if (currentInProgressId === id) {
       await syncInProgressActualWork(true);
       return;
@@ -306,7 +370,6 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
       await syncInProgressActualWork(true);
     }
 
-    const targetTodo = todosRef.current.find((todo) => todo.id === id);
     if (targetTodo && !targetTodo.startedAt) {
       const firstStartedAt = new Date().toISOString();
       const updatedTodos = todosRef.current.map((todo) =>

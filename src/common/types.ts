@@ -1,7 +1,10 @@
+export type TodoTaskType = 'Normal' | 'Meeting';
+
 export type Todo = {
   id: string;
   title: string;
   description: string;
+  taskType: TodoTaskType;
   createdAt: string;
   startedAt?: string;
   startableAt: string;

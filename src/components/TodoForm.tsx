@@ -1,7 +1,11 @@
 import React from 'react';
 import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 import type { Todo } from '../common/types';
-import { formatDateForInput, formatDurationFromSeconds } from '../common/utils';
+import {
+  formatDateForInput,
+  formatDurationFromSeconds,
+  isMeetingTodo,
+} from '../common/utils';
 
 export type TodoFormProps = {
   form: Partial<Todo>;
@@ -30,6 +34,8 @@ export const TodoForm: React.FC<TodoFormProps> = ({
   onOpenTodo,
   saving = false,
 }) => {
+  const taskType = form.taskType || 'Normal';
+  const isMeeting = isMeetingTodo({ taskType });
   const hasDependency = form.dependency
     ? Array.isArray(form.dependency)
       ? form.dependency.length > 0
@@ -101,6 +107,32 @@ export const TodoForm: React.FC<TodoFormProps> = ({
         />
       </div>
       <div className="mb-4">
+        <label htmlFor="taskType" className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
+          タスク種別
+        </label>
+        <select
+          id="taskType"
+          value={taskType}
+          onChange={e =>
+            onChange({
+              ...form,
+              taskType: e.target.value as Todo['taskType'],
+              ...(e.target.value === 'Meeting'
+                ? {
+                    effortMinutes: 0,
+                    actualWorkSeconds: 0,
+                    dependency: [],
+                  }
+                : {}),
+            })
+          }
+          className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
+        >
+          <option value="Normal">Normal</option>
+          <option value="Meeting">Meeting</option>
+        </select>
+      </div>
+      <div className="mb-4">
         <label
           htmlFor="description"
           className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
@@ -121,7 +153,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({
             htmlFor="startableAt"
             className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
           >
-            着手可能日時
+            {isMeeting ? '開始日時' : '着手可能日時'}
           </label>
           <input
             type="datetime-local"
@@ -142,7 +174,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({
             htmlFor="dueDate"
             className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
           >
-            期限 <span className="text-red-500">*</span>
+            {isMeeting ? '終了日時' : '期限'} <span className="text-red-500">*</span>
           </label>
           <input
             type="datetime-local"
@@ -158,83 +190,87 @@ export const TodoForm: React.FC<TodoFormProps> = ({
             className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
           />
         </div>
-        <div>
-          <label
-            htmlFor="effortMinutes"
-            className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
-          >
-            工数 (分)
-          </label>
-          <div className="flex items-center gap-3">
-            <input
-              type="number"
-              id="effortMinutes"
-              min={1}
-              value={form.effortMinutes || 1}
-              onChange={e => onChange({ ...form, effortMinutes: parseInt(e.target.value, 10) || 1 })}
-              className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
-            />
-            <div className="min-w-fit whitespace-nowrap rounded-md bg-slate-100 px-3 py-2 text-xs sm:text-sm text-slate-700">
-              実作業時間: {formatDurationFromSeconds(actualWorkSeconds)}
+        {!isMeeting && (
+          <div>
+            <label
+              htmlFor="effortMinutes"
+              className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
+            >
+              工数 (分)
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="number"
+                id="effortMinutes"
+                min={1}
+                value={form.effortMinutes || 1}
+                onChange={e => onChange({ ...form, effortMinutes: parseInt(e.target.value, 10) || 1 })}
+                className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
+              />
+              <div className="min-w-fit whitespace-nowrap rounded-md bg-slate-100 px-3 py-2 text-xs sm:text-sm text-slate-700">
+                実作業時間: {formatDurationFromSeconds(actualWorkSeconds)}
+              </div>
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {[5, 10, 25, 55, 115].map(value => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => onChange({ ...form, effortMinutes: value })}
+                  className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100"
+                >
+                  {value}
+                </button>
+              ))}
             </div>
           </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {[5, 10, 25, 55, 115].map(value => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => onChange({ ...form, effortMinutes: value })}
-                className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100"
-              >
-                {value}
-              </button>
-            ))}
+        )}
+      </div>
+      {!isMeeting && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-6">
+          <div>
+            <label
+              htmlFor="status"
+              className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
+            >
+              ステータス
+            </label>
+            <select
+              id="status"
+              value={form.status || 'Unlocked'}
+              onChange={e => onChange({ ...form, status: e.target.value as Todo['status'] })}
+              className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
+            >
+              <option value="Unlocked">Unlocked</option>
+              <option value="Locked">Locked</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+          <div>
+            <label
+              htmlFor="assignee"
+              className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
+            >
+              担当
+            </label>
+            <select
+              id="assignee"
+              value={form.assignee || '自分'}
+              onChange={e =>
+                onChange({
+                  ...form,
+                  assignee: e.target.value as Todo['assignee'],
+                })
+              }
+              className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
+            >
+              <option value="自分">自分</option>
+              <option value="他人">他人</option>
+            </select>
           </div>
         </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-6">
-        <div>
-          <label
-            htmlFor="status"
-            className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
-          >
-            ステータス
-          </label>
-          <select
-            id="status"
-            value={form.status || 'Unlocked'}
-            onChange={e => onChange({ ...form, status: e.target.value as Todo['status'] })}
-            className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
-          >
-            <option value="Unlocked">Unlocked</option>
-            <option value="Locked">Locked</option>
-            <option value="Completed">Completed</option>
-          </select>
-        </div>
-        <div>
-          <label
-            htmlFor="assignee"
-            className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
-          >
-            担当
-          </label>
-          <select
-            id="assignee"
-            value={form.assignee || '自分'}
-            onChange={e =>
-              onChange({
-                ...form,
-                assignee: e.target.value as Todo['assignee'],
-              })
-            }
-            className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
-          >
-            <option value="自分">自分</option>
-            <option value="他人">他人</option>
-          </select>
-        </div>
-      </div>
-      <div className="mb-6">
+      )}
+      {!isMeeting && <div className="mb-6">
         <button
           type="button"
           onClick={() => setIsPredecessorExpanded(prev => !prev)}
@@ -298,8 +334,8 @@ export const TodoForm: React.FC<TodoFormProps> = ({
           </div>
         )}
         <p className="mt-1 text-xs text-slate-500">行を押すと先行タスクを複数選択できます。</p>
-      </div>
-      <div className="mb-6">
+      </div>}
+      {!isMeeting && <div className="mb-6">
         <button
           type="button"
           onClick={() => setIsSuccessorExpanded(prev => !prev)}
@@ -370,7 +406,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({
           </div>
         ) : null}
         <p className="mt-1 text-xs text-slate-500">行を押すと後続タスクを複数選択できます。</p>
-      </div>
+      </div>}
       <div className="flex flex-wrap justify-end gap-2 mt-2">
         <button
           type="button"
