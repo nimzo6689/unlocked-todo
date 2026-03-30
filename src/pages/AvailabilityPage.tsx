@@ -530,7 +530,7 @@ export const AvailabilityPage = () => {
                     option={chart.option}
                     notMerge
                     lazyUpdate
-                    style={{ width: '100%', height: 420 }}
+                    style={{ width: '100%', height: 400 }}
                   />
                 ) : (
                   <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-500">

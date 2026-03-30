@@ -296,7 +296,7 @@ export const PlanActualPage = () => {
 
       <section className="rounded-lg border border-slate-200 bg-white p-4 shadow">
         {rows.length > 0 ? (
-          <ReactECharts option={option} notMerge lazyUpdate style={{ width: '100%', height: 520 }} />
+          <ReactECharts option={option} notMerge lazyUpdate style={{ width: '100%', height: 400 }} />
         ) : (
           <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-500">
             指定期間内に、表示対象の完了タスクがありません。
