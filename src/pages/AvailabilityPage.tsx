@@ -32,6 +32,7 @@ type SlotContributor = {
 type AggregatedLoad = {
   slots: TimeSlot[];
   taskSeries: Array<{ id: string; title: string; data: number[] }>;
+  meetingSeries: number[];
   slotTotals: number[];
   slotContributors: SlotContributor[][];
 };
@@ -186,7 +187,7 @@ const getMeetingIntervalsForDay = (day: Date, meetings: Todo[]) => {
 
   return mergeIntervals(
     meetings
-      .map((meeting) => parseTaskRange(meeting))
+      .map((meeting) => parseTaskRange(meeting, { allowZeroEffort: true }))
       .filter((range): range is { start: Date; end: Date } => Boolean(range))
       .map((range) => ({
         startMs: Math.max(range.start.getTime(), dayStartMs),
@@ -244,6 +245,22 @@ const aggregateLoadForDate = (
   const dateBase = new Date(`${dateStr}T00:00:00`);
   const meetingIntervals = getMeetingIntervalsForDay(dateBase, meetings);
   const slotTotals = Array(slots.length).fill(0) as number[];
+  const meetingSeries = slots.map((slot) => {
+    if (!slot.isWorking) {
+      return 0;
+    }
+
+    const slotStartMs = slot.start.getTime();
+    const slotEndMs = slot.end.getTime();
+    const overlapMs = meetingIntervals.reduce((total, meetingInterval) => {
+      const overlapStart = Math.max(slotStartMs, meetingInterval.startMs);
+      const overlapEnd = Math.min(slotEndMs, meetingInterval.endMs);
+      const duration = overlapEnd - overlapStart;
+      return duration > 0 ? total + duration : total;
+    }, 0);
+
+    return overlapMs > 0 ? 1 : 0;
+  });
   const slotContribMap = Array.from({ length: slots.length }, () => new Map<string, SlotContributor>());
   const seriesMap = new Map<string, { id: string; title: string; data: number[] }>();
 
@@ -306,18 +323,20 @@ const aggregateLoadForDate = (
   return {
     slots,
     taskSeries: [...seriesMap.values()],
+    meetingSeries,
     slotTotals,
     slotContributors,
   };
 };
 
-const parseTaskRange = (todo: Todo) => {
+const parseTaskRange = (todo: Todo, options?: { allowZeroEffort?: boolean }) => {
   const start = new Date(todo.startableAt || todo.createdAt);
   const end = new Date(todo.dueDate);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     return null;
   }
-  if (end.getTime() <= start.getTime() || todo.effortMinutes <= 0) {
+  const shouldCheckEffort = !options?.allowZeroEffort;
+  if (end.getTime() <= start.getTime() || (shouldCheckEffort && todo.effortMinutes <= 0)) {
     return null;
   }
   return { start, end };
@@ -325,6 +344,7 @@ const parseTaskRange = (todo: Todo) => {
 
 const buildChartOption = ({
   taskSeries,
+  meetingSeries,
   slotContributors,
   slotTotals,
   slots,
@@ -371,7 +391,7 @@ const buildChartOption = ({
     })(),
   }));
 
-  const totalSeriesIndex = stackedTaskSeries.length;
+  const totalSeriesIndex = stackedTaskSeries.length + 3;
 
   return {
     color: palette,
@@ -407,23 +427,33 @@ const buildChartOption = ({
           .map((item) => `・${item.title}: ${item.load.toFixed(2)} 人時/h`)
           .join('<br/>');
         const total = slotTotals[index] ?? 0;
+        const hasMeeting = (meetingSeries[index] ?? 0) > 0;
 
         return [
           `${slot.label} - ${formatTimeLabel(slot.end)}`,
           `合計負荷: <b>${total.toFixed(2)} 人時/h</b>`,
+          hasMeeting ? 'Meeting: <b>1.00</b> (非稼働)' : 'Meeting: なし',
           details || '重なりタスクなし',
         ].join('<br/>');
       },
     },
-    xAxis: {
-      type: 'category',
-      boundaryGap: false,
-      data: xAxisLabels,
-      axisLabel: {
-        interval: 1,
-        hideOverlap: true,
+    xAxis: [
+      {
+        type: 'category',
+        boundaryGap: false,
+        data: xAxisLabels,
+        axisLabel: {
+          interval: 1,
+          hideOverlap: true,
+        },
       },
-    },
+      {
+        type: 'category',
+        boundaryGap: true,
+        data: slots.map((slot) => slot.label),
+        show: false,
+      },
+    ],
     yAxis: {
       type: 'value',
       min: 0,
@@ -451,6 +481,18 @@ const buildChartOption = ({
     },
     series: [
       ...stackedTaskSeries,
+      {
+        name: 'Meeting',
+        type: 'bar',
+        xAxisIndex: 1,
+        barWidth: '100%',
+        itemStyle: {
+          color: '#9ca3af',
+          opacity: 0.75,
+        },
+        data: meetingSeries.map((value, index) => (displayMask[index] ? value : null)),
+        z: 2,
+      },
       {
         name: '超過ベース',
         type: 'line',
@@ -557,7 +599,9 @@ export const AvailabilityPage = () => {
     () =>
       displayDates.map((dateStr) => {
         const load = aggregateLoadForDate(selfNormalTodos, selfMeetings, dateStr, workSchedule);
-        const hasLoad = load.slotTotals.some((value) => value > 0);
+        const hasLoad =
+          load.slotTotals.some((value) => value > 0) ||
+          load.meetingSeries.some((value) => value > 0);
         const maxLoad = Math.max(...load.slotTotals, 0);
         const overloadedSlots = load.slotTotals.filter((value) => value > 1).length;
 
