@@ -372,6 +372,8 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     URL.revokeObjectURL(url);
   };
 
+  const exportTodosToText = () => todosToJSON(todosRef.current);
+
   const importTodosFromText = async (fileContent: string): Promise<ImportResult> => {
     try {
       const importedTodos = todosFromJSON(fileContent);
@@ -460,6 +462,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     handleComplete,
     startTodo,
     exportTodos,
+    exportTodosToText,
     importTodos,
     importTodosFromText,
     setForm,

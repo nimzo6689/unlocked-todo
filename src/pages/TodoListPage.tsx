@@ -19,13 +19,16 @@ export const TodoListPage = () => {
     currentInProgressId,
     startTodo,
     exportTodos,
+    exportTodosToText,
     importTodos,
     importTodosFromText,
   } = useTodoContext();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [exportText, setExportText] = useState('');
   const [importText, setImportText] = useState('');
   const filter = searchParams.get('filter') || 'unlocked';
   const sortBy = (searchParams.get('sortBy') as 'dueDate' | 'createdAt') || 'dueDate';
@@ -38,12 +41,35 @@ export const TodoListPage = () => {
     navigate('/new');
   }
 
-  async function handleExport() {
+  function handleExport() {
+    setIsExportDialogOpen(true);
+  }
+
+  async function handleFileExport() {
     try {
       await exportTodos();
       toast.success('タスクをエクスポートしました');
+      setIsExportDialogOpen(false);
     } catch (err) {
       toast.error('エクスポートに失敗しました');
+    }
+  }
+
+  function handleTextExport() {
+    setExportText(exportTodosToText());
+  }
+
+  async function handleCopyExportText() {
+    if (!exportText) {
+      toast.error('出力するテキストがありません');
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(exportText);
+      toast.success('エクスポートテキストをコピーしました');
+    } catch {
+      toast.error('コピーに失敗しました');
     }
   }
 
@@ -185,6 +211,66 @@ export const TodoListPage = () => {
                 onClick={handleTextImport}
               >
                 インポート
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {isExportDialogOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-xl mx-4">
+            <h2 className="text-lg font-bold text-slate-900 mb-3">エクスポート</h2>
+            <p className="text-sm text-slate-600 mb-4">
+              出力方法を選択してください。ファイル出力またはテキスト出力が利用できます。
+            </p>
+
+            <div className="mb-4">
+              <p className="text-sm font-semibold text-slate-700 mb-2">ファイル出力</p>
+              <button
+                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg text-sm"
+                onClick={handleFileExport}
+              >
+                JSONファイルとして保存
+              </button>
+            </div>
+
+            <div className="border-t border-slate-200 pt-4">
+              <p className="text-sm font-semibold text-slate-700 mb-2">テキスト出力</p>
+              <p className="text-xs text-slate-500 mb-2">
+                ボタンを押すとJSONテキストを表示します。必要に応じてコピーしてください。
+              </p>
+              <div className="flex gap-2 mb-2">
+                <button
+                  className="bg-slate-700 hover:bg-slate-800 text-white font-semibold py-2 px-4 rounded-lg text-sm"
+                  onClick={handleTextExport}
+                >
+                  テキストを表示
+                </button>
+                <button
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg text-sm"
+                  onClick={handleCopyExportText}
+                  disabled={!exportText}
+                >
+                  コピー
+                </button>
+              </div>
+              <textarea
+                value={exportText}
+                readOnly
+                placeholder='ここにエクスポート用JSONが表示されます'
+                className="w-full h-56 border border-slate-300 rounded-md p-3 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg text-sm"
+                onClick={() => {
+                  setIsExportDialogOpen(false);
+                  setExportText('');
+                }}
+              >
+                閉じる
               </button>
             </div>
           </div>
