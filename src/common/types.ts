@@ -59,4 +59,5 @@ export type TodoContextType = {
   startTodo: (id: string) => void;
   exportTodos: () => Promise<void>;
   importTodos: (file: File) => Promise<ImportResult>;
+  importTodosFromText: (text: string) => Promise<ImportResult>;
 }

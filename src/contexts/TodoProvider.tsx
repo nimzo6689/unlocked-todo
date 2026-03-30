@@ -372,15 +372,8 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     URL.revokeObjectURL(url);
   };
 
-  const importTodos = async (file: File): Promise<ImportResult> => {
+  const importTodosFromText = async (fileContent: string): Promise<ImportResult> => {
     try {
-      const fileContent = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(reader.error);
-        reader.readAsText(file);
-      });
-
       const importedTodos = todosFromJSON(fileContent);
 
       // 既存 todos と id で突合して upsert を実行
@@ -432,6 +425,26 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     }
   };
 
+  const importTodos = async (file: File): Promise<ImportResult> => {
+    try {
+      const fileContent = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(file);
+      });
+
+      return importTodosFromText(fileContent);
+    } catch (err) {
+      return {
+        success: false,
+        addedCount: 0,
+        updatedCount: 0,
+        message: (err as Error).message,
+      };
+    }
+  };
+
   const value: TodoContextType = {
     todos,
     form,
@@ -448,6 +461,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     startTodo,
     exportTodos,
     importTodos,
+    importTodosFromText,
     setForm,
     setModal,
     setNotificationEnabled,

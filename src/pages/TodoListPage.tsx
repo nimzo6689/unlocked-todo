@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { MoreVertical } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Todo } from '../common/types';
@@ -20,13 +20,15 @@ export const TodoListPage = () => {
     startTodo,
     exportTodos,
     importTodos,
+    importTodosFromText,
   } = useTodoContext();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [importText, setImportText] = useState('');
   const filter = searchParams.get('filter') || 'unlocked';
   const sortBy = (searchParams.get('sortBy') as 'dueDate' | 'createdAt') || 'dueDate';
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleEdit(id: string) {
     navigate(`/edit/${id}`);
@@ -46,7 +48,7 @@ export const TodoListPage = () => {
   }
 
   function handleImport() {
-    fileInputRef.current?.click();
+    setIsImportDialogOpen(true);
   }
 
   async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
@@ -60,12 +62,34 @@ export const TodoListPage = () => {
       } else {
         toast.success(`${result.addedCount}件追加、${result.updatedCount}件更新しました`);
       }
+      setIsImportDialogOpen(false);
+      setImportText('');
     } else {
       toast.error(`インポートに失敗しました: ${result.message}`);
     }
 
     // 同じファイルを再選択できるよう value をクリア
     e.target.value = '';
+  }
+
+  async function handleTextImport() {
+    if (!importText.trim()) {
+      toast.error('インポートするJSONテキストを入力してください');
+      return;
+    }
+
+    const result = await importTodosFromText(importText);
+    if (result.success) {
+      if (result.addedCount === 0 && result.updatedCount === 0) {
+        toast.success('テキストを読み込みましたが、取り込むタスクはありませんでした');
+      } else {
+        toast.success(`${result.addedCount}件追加、${result.updatedCount}件更新しました`);
+      }
+      setImportText('');
+      setIsImportDialogOpen(false);
+    } else {
+      toast.error(`インポートに失敗しました: ${result.message}`);
+    }
   }
 
   function handleFilterChange(f: string) {
@@ -118,6 +142,53 @@ export const TodoListPage = () => {
           onConfirm={modal.onConfirm}
           onCancel={() => setModal(null)}
         />
+      )}
+      {isImportDialogOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-xl mx-4">
+            <h2 className="text-lg font-bold text-slate-900 mb-3">インポート</h2>
+            <p className="text-sm text-slate-600 mb-4">
+              JSONファイルを選択するか、JSONテキストを貼り付けて取り込めます。
+            </p>
+
+            <div className="mb-4">
+              <p className="text-sm font-semibold text-slate-700 mb-2">ファイルからインポート</p>
+              <input
+                type="file"
+                accept=".json,application/json"
+                onChange={handleFileSelected}
+                className="w-full text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200"
+              />
+            </div>
+
+            <div className="border-t border-slate-200 pt-4">
+              <p className="text-sm font-semibold text-slate-700 mb-2">テキストからインポート</p>
+              <p className="text-xs text-slate-500 mb-2">
+                エクスポート済みJSONをそのまま貼り付けてください。
+              </p>
+              <textarea
+                value={importText}
+                onChange={e => setImportText(e.target.value)}
+                placeholder='[{"id":"...","title":"..."}]'
+                className="w-full h-56 border border-slate-300 rounded-md p-3 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg text-sm"
+                onClick={() => setIsImportDialogOpen(false)}
+              >
+                キャンセル
+              </button>
+              <button
+                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg text-sm"
+                onClick={handleTextImport}
+              >
+                インポート
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
         <div className="text-left w-full sm:w-auto">
@@ -220,13 +291,6 @@ export const TodoListPage = () => {
           <p className="text-slate-500 col-span-full text-center py-10">タスクはありません。</p>
         )}
       </main>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json"
-        onChange={handleFileSelected}
-        style={{ display: 'none' }}
-      />
     </>
   );
 };
