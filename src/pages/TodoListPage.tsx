@@ -31,7 +31,6 @@ export const TodoListPage = () => {
   const [exportText, setExportText] = useState('');
   const [importText, setImportText] = useState('');
   const filter = searchParams.get('filter') || 'unlocked';
-  const sortBy = (searchParams.get('sortBy') as 'dueDate' | 'createdAt') || 'dueDate';
 
   function handleEdit(id: string) {
     navigate(`/edit/${id}`);
@@ -125,13 +124,6 @@ export const TodoListPage = () => {
     });
   }
 
-  function handleSortChange(s: 'dueDate' | 'createdAt') {
-    setSearchParams({
-      ...Object.fromEntries(searchParams.entries()),
-      sortBy: s,
-    });
-  }
-
   const filteredTodos = todos
     .filter(todo => {
       const now = new Date();
@@ -154,10 +146,9 @@ export const TodoListPage = () => {
       return false;
     })
     .sort((a, b) => {
-      if (sortBy === 'dueDate' && a.dueDate && b.dueDate) {
-        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-      }
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      const dueDiff = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      if (dueDiff !== 0) return dueDiff;
+      return (a.effortMinutes ?? 0) - (b.effortMinutes ?? 0);
     });
 
   return (
@@ -341,17 +332,9 @@ export const TodoListPage = () => {
             ))}
           </div>
         </div>
-        <div className="flex items-center gap-1 sm:gap-2">
-          <span className="text-xs sm:text-sm font-medium text-slate-600">ソート:</span>
-          <select
-            value={sortBy}
-            onChange={e => handleSortChange(e.target.value as 'dueDate' | 'createdAt')}
-            className="border border-slate-300 rounded-md text-xs sm:text-sm p-1 sm:p-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            <option value="dueDate">期限順</option>
-            <option value="createdAt">作成日順</option>
-          </select>
-        </div>
+        <p className="text-xs text-slate-500">
+          並び順: 期限（昇順）→ 工数（昇順）
+        </p>
       </div>
       <main
         id="todo-list"
