@@ -42,8 +42,9 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   const isOverdue = isMeeting ? dueDate < now : new Date(dueDate.getTime() - (todo.effortMinutes || 0) * 60 * 1000) < now;
   const isDueToday = dueDate.toDateString() === now.toDateString();
   const isInProgress = todo.id === currentInProgressId;
+  const isMeetingInProgress = isMeeting && todo.status !== 'Completed' && startableAt <= now && dueDate > now;
   let cardBgClass = 'bg-white';
-  if (isInProgress) {
+  if (isInProgress || isMeetingInProgress) {
     cardBgClass = 'bg-blue-50 border-blue-500 border-2 shadow-blue-200';
   } else if (todo.status !== 'Completed') {
     if (isOverdue) {

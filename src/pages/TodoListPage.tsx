@@ -139,6 +139,11 @@ export const TodoListPage = () => {
         return isMeeting && todo.status !== 'Completed';
       }
       if (isMeeting) {
+        // Meeting が開始済みかつ終了前（進行中）であれば unlocked タブにも表示
+        if (filter === 'unlocked') {
+          const dueDate = new Date(todo.dueDate);
+          return todo.status !== 'Completed' && startableAt <= now && dueDate > now;
+        }
         return false;
       }
       if (filter === 'unlocked') {
