@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MoreVertical } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Todo } from '../common/types';
@@ -30,7 +30,14 @@ export const TodoListPage = () => {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [exportText, setExportText] = useState('');
   const [importText, setImportText] = useState('');
+  const [, setTick] = useState(0);
   const filter = searchParams.get('filter') || 'unlocked';
+
+  // 時刻経過による Locked→Unlocked / Meeting→Unlocked 等の遷移を自動反映するため定期再レンダリング
+  useEffect(() => {
+    const interval = window.setInterval(() => setTick(t => t + 1), 30_000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   function handleEdit(id: string) {
     navigate(`/edit/${id}`);
