@@ -18,7 +18,9 @@ export type TodoCardProps = {
   todo: Todo;
   dependentTodos?: Todo[];
   filter: string;
+  selected: boolean;
   currentInProgressId: string | null;
+  onSelect: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onComplete: (id: string) => void;
@@ -29,7 +31,9 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   todo,
   dependentTodos,
   filter,
+  selected,
   currentInProgressId,
+  onSelect,
   onEdit,
   onDelete,
   onComplete,
@@ -99,7 +103,13 @@ export const TodoCard: React.FC<TodoCardProps> = ({
 
   return (
     <div
-      className={`${cardBgClass} rounded-lg shadow-md p-3 sm:p-4 border flex flex-col justify-between transition-shadow hover:shadow-lg`}
+      id={`todo-card-${todo.id}`}
+      role="option"
+      aria-selected={selected}
+      tabIndex={selected ? 0 : -1}
+      onClick={() => onSelect(todo.id)}
+      onFocus={() => onSelect(todo.id)}
+      className={`${cardBgClass} ${selected ? 'ring-2 ring-slate-400 ring-offset-2' : ''} rounded-lg shadow-md p-3 sm:p-4 border flex flex-col justify-between transition-shadow hover:shadow-lg`}
     >
       <div>
         <div className="flex flex-col sm:flex-row justify-between items-start gap-1 sm:gap-0">

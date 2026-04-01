@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { TodoForm } from '../components/TodoForm';
 import type { Todo } from '../common/types';
@@ -12,6 +12,9 @@ import {
 } from '../common/utils';
 import { useTodoContext } from '../contexts/TodoContext';
 import toast from 'react-hot-toast';
+import { useRegisterShortcuts } from '../contexts/ShortcutContext';
+
+const QUICK_EFFORT_VALUES = [5, 10, 25, 55, 115];
 
 export const TodoFormPage = () => {
   const { todos, form, setForm, getTodo, fetchTodos } = useTodoContext();
@@ -59,8 +62,7 @@ export const TodoFormPage = () => {
     }
   }, [id, getTodo, setForm, todos]);
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSave() {
     const now = new Date().toISOString();
     let newTodos = [...todos];
     const taskType = form.taskType || DEFAULT_TASK_TYPE;
@@ -149,10 +151,10 @@ export const TodoFormPage = () => {
     toast.success("保存しました");
   }
 
-  async function handleComplete(e: React.FormEvent) {
+  async function handleComplete() {
     setSaving(true);
     try {
-      await handleSave(e);
+      await handleSave();
       initializedFormKeyRef.current = null;
       setForm(defaultForm);
       setSuccessorIds([]);
@@ -178,6 +180,54 @@ export const TodoFormPage = () => {
       navigate(`/edit/${todoId}`);
     }
   }
+
+  const shortcutRegistration = useMemo(() => {
+    const isMeeting = isMeetingTodo({ taskType: form.taskType || DEFAULT_TASK_TYPE });
+
+    return {
+      pageLabel: id ? 'Todo 編集' : 'Todo 新規作成',
+      shortcuts: [
+        {
+          id: 'form-save',
+          description: 'フォームを保存する',
+          category: 'フォーム操作' as const,
+          bindings: ['mod+enter'],
+          action: () => {
+            void handleSave();
+          },
+          allowInInput: true,
+        },
+        {
+          id: 'form-complete',
+          description: '保存して一覧へ戻る',
+          category: 'フォーム操作' as const,
+          bindings: ['mod+shift+enter'],
+          action: () => {
+            void handleComplete();
+          },
+          allowInInput: true,
+        },
+        {
+          id: 'form-cancel',
+          description: '編集をキャンセルする',
+          category: 'フォーム操作' as const,
+          bindings: ['escape'],
+          action: handleCancel,
+          allowInInput: true,
+        },
+        ...QUICK_EFFORT_VALUES.map((value, index) => ({
+          id: `form-effort-${value}`,
+          description: `工数を ${value} 分に設定する`,
+          category: 'ページ操作' as const,
+          bindings: [`alt+${index + 1}`],
+          action: () => setForm({ ...form, effortMinutes: value }),
+          enabled: !isMeeting,
+        })),
+      ],
+    };
+  }, [form, id, setForm]);
+
+  useRegisterShortcuts(shortcutRegistration);
 
   return (
     <div className="bg-white p-4 sm:p-6 md:p-8 rounded-lg shadow-xl max-w-md sm:max-w-2xl md:max-w-3xl mx-auto">

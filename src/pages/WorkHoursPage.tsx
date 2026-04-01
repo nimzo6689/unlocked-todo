@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Clock3, Save } from 'lucide-react';
 import { useTodoContext } from '../contexts/TodoContext';
@@ -8,6 +8,7 @@ import {
   WEEKDAY_OPTIONS,
 } from '../common/settings';
 import type { WorkSchedule } from '../common/types';
+import { useRegisterShortcuts } from '../contexts/ShortcutContext';
 
 const HOUR_OPTIONS = Array.from({ length: 25 }, (_, index) => index);
 
@@ -83,6 +84,36 @@ export const WorkHoursPage = () => {
     setWorkSchedule(draft);
     toast.success('稼働設定を保存しました');
   };
+
+  const shortcutRegistration = useMemo(() => ({
+    pageLabel: '稼働設定',
+    shortcuts: [
+      {
+        id: 'work-hours-save',
+        description: '稼働設定を保存する',
+        category: 'ページ操作' as const,
+        bindings: ['mod+enter'],
+        action: handleSave,
+        allowInInput: true,
+      },
+      {
+        id: 'work-hours-toggle-break',
+        description: '休憩時間なしを切り替える',
+        category: 'ページ操作' as const,
+        bindings: ['b'],
+        action: () => toggleNoBreak(!hasNoBreak),
+      },
+      ...WEEKDAY_OPTIONS.map((option, index) => ({
+        id: `work-hours-day-${option.value}`,
+        description: `${option.label} を稼働日に切り替える`,
+        category: 'ページ操作' as const,
+        bindings: [`${index + 1}`],
+        action: () => toggleWorkingDay(option.value),
+      })),
+    ],
+  }), [hasNoBreak, draft]);
+
+  useRegisterShortcuts(shortcutRegistration);
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">

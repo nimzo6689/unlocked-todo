@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { useTodoContext } from '../contexts/TodoContext';
 import type { Todo } from '../common/types';
 import { isMeetingTodo } from '../common/utils';
+import { useRegisterShortcuts } from '../contexts/ShortcutContext';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -259,6 +260,16 @@ export const PlanActualPage = () => {
   const { todos } = useTodoContext();
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue(new Date()));
 
+  const moveSelectedDate = useCallback((deltaDays: number) => {
+    const base = new Date(`${selectedDate}T00:00:00`);
+    if (Number.isNaN(base.getTime())) {
+      return;
+    }
+
+    base.setDate(base.getDate() + deltaDays);
+    setSelectedDate(toDateInputValue(base));
+  }, [selectedDate]);
+
   const rows = useMemo(() => buildRows(todos, selectedDate), [todos, selectedDate]);
 
   const totalActualMinutes = useMemo(
@@ -275,6 +286,35 @@ export const PlanActualPage = () => {
     () => buildChartOption(rows, selectedDate, totalActualMinutes, totalDiffMinutes),
     [rows, selectedDate, totalActualMinutes, totalDiffMinutes],
   );
+
+  const shortcutRegistration = useMemo(() => ({
+    pageLabel: '予実管理',
+    shortcuts: [
+      {
+        id: 'plan-actual-prev-day',
+        description: '集計開始日を前日に移動する',
+        category: 'ページ操作' as const,
+        bindings: ['h'],
+        action: () => moveSelectedDate(-1),
+      },
+      {
+        id: 'plan-actual-next-day',
+        description: '集計開始日を翌日に移動する',
+        category: 'ページ操作' as const,
+        bindings: ['l'],
+        action: () => moveSelectedDate(1),
+      },
+      {
+        id: 'plan-actual-today',
+        description: '集計開始日を今日に戻す',
+        category: 'ページ操作' as const,
+        bindings: ['t'],
+        action: () => setSelectedDate(toDateInputValue(new Date())),
+      },
+    ],
+  }), [moveSelectedDate]);
+
+  useRegisterShortcuts(shortcutRegistration);
 
   return (
     <div className="space-y-4">

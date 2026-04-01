@@ -1,9 +1,27 @@
 import { Bell, BellRing, Settings2 } from 'lucide-react';
+import { useMemo } from 'react';
 import { useTodoContext } from '../contexts/TodoContext';
+import { useRegisterShortcuts } from '../contexts/ShortcutContext';
 
 export const NotificationsSettingsPage = () => {
   const { notificationEnabled, requestNotificationPermission } = useTodoContext();
   const browserSupportsNotifications = typeof Notification !== 'undefined';
+
+  const shortcutRegistration = useMemo(() => ({
+    pageLabel: '通知設定',
+    shortcuts: [
+      {
+        id: 'notifications-enable',
+        description: '通知を有効にする',
+        category: 'ページ操作' as const,
+        bindings: ['e'],
+        action: requestNotificationPermission,
+        enabled: browserSupportsNotifications && !notificationEnabled,
+      },
+    ],
+  }), [browserSupportsNotifications, notificationEnabled, requestNotificationPermission]);
+
+  useRegisterShortcuts(shortcutRegistration);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">

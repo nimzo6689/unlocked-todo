@@ -15,8 +15,8 @@ export type TodoFormProps = {
   onChange: (form: Partial<Todo>) => void;
   successorIds: string[];
   onSuccessorChange: (successorIds: string[]) => void;
-  onSave: (e: React.FormEvent) => void;
-  onComplete: (e: React.FormEvent) => void;
+  onSave: () => void;
+  onComplete: () => void;
   onCancel: () => void;
   onOpenTodo: (id: string) => void;
   saving?: boolean;
@@ -92,7 +92,13 @@ export const TodoForm: React.FC<TodoFormProps> = ({
   }
 
   return (
-    <form onSubmit={onSave} className="p-2 sm:p-4">
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSave();
+      }}
+      className="p-2 sm:p-4"
+    >
       <input type="hidden" value={form.id || ''} />
       <div className="mb-4">
         <label htmlFor="title" className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">

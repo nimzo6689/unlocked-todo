@@ -1,5 +1,5 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MoreVertical } from 'lucide-react';
 import toast from 'react-hot-toast';
 import type { Todo } from '../common/types';
@@ -7,6 +7,7 @@ import { TodoCard } from '../components/TodoCard';
 import { Modal } from '../components/Modal';
 import { filterButtons, getDependencyIds, isMeetingTodo } from '../common/utils';
 import { useTodoContext } from '../contexts/TodoContext';
+import { useRegisterShortcuts } from '../contexts/ShortcutContext';
 
 export const TodoListPage = () => {
   const {
@@ -30,6 +31,7 @@ export const TodoListPage = () => {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [exportText, setExportText] = useState('');
   const [importText, setImportText] = useState('');
+  const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   const [, setTick] = useState(0);
   const filter = searchParams.get('filter') || 'unlocked';
 
@@ -172,6 +174,247 @@ export const TodoListPage = () => {
       }
       return (a.effortMinutes ?? 0) - (b.effortMinutes ?? 0);
     });
+
+  const selectedTodo = selectedTodoId
+    ? filteredTodos.find((todo) => todo.id === selectedTodoId) || null
+    : filteredTodos[0] || null;
+  const isOverlayOpen = Boolean(modal || isExportDialogOpen || isImportDialogOpen || menuOpen);
+
+  useEffect(() => {
+    if (filteredTodos.length === 0) {
+      setSelectedTodoId(null);
+      return;
+    }
+
+    if (!selectedTodoId || !filteredTodos.some((todo) => todo.id === selectedTodoId)) {
+      setSelectedTodoId(filteredTodos[0].id);
+    }
+  }, [filteredTodos, selectedTodoId]);
+
+  useEffect(() => {
+    if (!selectedTodo?.id) {
+      return;
+    }
+
+    const element = document.getElementById(`todo-card-${selectedTodo.id}`);
+    element?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [selectedTodo?.id]);
+
+  const selectRelativeTodo = (delta: number) => {
+    if (filteredTodos.length === 0) {
+      return;
+    }
+
+    const currentIndex = selectedTodo
+      ? filteredTodos.findIndex((todo) => todo.id === selectedTodo.id)
+      : 0;
+    const safeIndex = currentIndex === -1 ? 0 : currentIndex;
+    const nextIndex = (safeIndex + delta + filteredTodos.length) % filteredTodos.length;
+    setSelectedTodoId(filteredTodos[nextIndex].id);
+  };
+
+  const shortcutRegistration = useMemo(() => {
+    const canStartSelected = Boolean(
+      selectedTodo
+      && !isMeetingTodo(selectedTodo)
+      && (currentInProgressId === selectedTodo.id || selectedTodo.status === 'Unlocked'),
+    );
+
+    return {
+      pageLabel: 'タスク一覧',
+      overlayOpen: isOverlayOpen,
+      shortcuts: [
+        {
+          id: 'list-next',
+          description: '次のタスクを選択',
+          category: '一覧操作' as const,
+          bindings: ['j'],
+          action: () => selectRelativeTodo(1),
+          enabled: filteredTodos.length > 0,
+        },
+        {
+          id: 'list-previous',
+          description: '前のタスクを選択',
+          category: '一覧操作' as const,
+          bindings: ['k'],
+          action: () => selectRelativeTodo(-1),
+          enabled: filteredTodos.length > 0,
+        },
+        {
+          id: 'list-edit-enter',
+          description: '選択中タスクを開く',
+          category: '一覧操作' as const,
+          bindings: ['enter', 'o'],
+          action: () => selectedTodo && handleEdit(selectedTodo.id),
+          enabled: Boolean(selectedTodo),
+        },
+        {
+          id: 'list-new',
+          description: '新規タスクを作成',
+          category: '一覧操作' as const,
+          bindings: ['n'],
+          action: handleNew,
+        },
+        {
+          id: 'list-start',
+          description: '選択中タスクを着手または中断',
+          category: '一覧操作' as const,
+          bindings: ['x'],
+          action: () => selectedTodo && startTodo(selectedTodo.id),
+          enabled: canStartSelected,
+        },
+        {
+          id: 'list-complete',
+          description: '選択中タスクを完了にする',
+          category: '一覧操作' as const,
+          bindings: ['c'],
+          action: () => selectedTodo && handleComplete(selectedTodo.id),
+          enabled: Boolean(selectedTodo && selectedTodo.status !== 'Completed'),
+        },
+        {
+          id: 'list-delete',
+          description: '選択中タスクを削除する',
+          category: '一覧操作' as const,
+          bindings: ['d'],
+          action: () => selectedTodo && handleDelete(selectedTodo.id),
+          enabled: Boolean(selectedTodo),
+        },
+        {
+          id: 'list-export-open',
+          description: 'エクスポートダイアログを開く',
+          category: '一覧操作' as const,
+          bindings: ['e'],
+          action: handleExport,
+        },
+        {
+          id: 'list-import-open',
+          description: 'インポートダイアログを開く',
+          category: '一覧操作' as const,
+          bindings: ['i'],
+          action: handleImport,
+        },
+        ...filterButtons.map((button, index) => ({
+          id: `list-filter-${button.key}`,
+          description: `${button.label} フィルターに切り替える`,
+          category: '一覧操作' as const,
+          bindings: [`${index + 1}`],
+          action: () => handleFilterChange(button.key),
+        })),
+        {
+          id: 'dialog-confirm-modal',
+          description: '確認ダイアログで実行する',
+          category: 'ダイアログ' as const,
+          bindings: ['enter', 'y'],
+          action: () => modal?.onConfirm(),
+          enabled: Boolean(modal),
+          allowInDialog: true,
+        },
+        {
+          id: 'dialog-close-modal',
+          description: '確認ダイアログを閉じる',
+          category: 'ダイアログ' as const,
+          bindings: ['escape'],
+          action: () => setModal(null),
+          enabled: Boolean(modal),
+          allowInDialog: true,
+          allowInInput: true,
+        },
+        {
+          id: 'dialog-export-file',
+          description: 'エクスポートをファイル保存する',
+          category: 'ダイアログ' as const,
+          bindings: ['f'],
+          action: () => {
+            void handleFileExport();
+          },
+          enabled: isExportDialogOpen,
+          allowInDialog: true,
+        },
+        {
+          id: 'dialog-export-text',
+          description: 'エクスポートテキストを表示する',
+          category: 'ダイアログ' as const,
+          bindings: ['t'],
+          action: handleTextExport,
+          enabled: isExportDialogOpen,
+          allowInDialog: true,
+        },
+        {
+          id: 'dialog-export-copy',
+          description: 'エクスポートテキストをコピーする',
+          category: 'ダイアログ' as const,
+          bindings: ['y'],
+          action: () => {
+            void handleCopyExportText();
+          },
+          enabled: isExportDialogOpen && Boolean(exportText),
+          allowInDialog: true,
+        },
+        {
+          id: 'dialog-import-submit',
+          description: 'インポートを実行する',
+          category: 'ダイアログ' as const,
+          bindings: ['enter'],
+          action: () => {
+            void handleTextImport();
+          },
+          enabled: isImportDialogOpen,
+          allowInDialog: true,
+          allowInInput: true,
+        },
+        {
+          id: 'dialog-close-export',
+          description: 'エクスポートダイアログを閉じる',
+          category: 'ダイアログ' as const,
+          bindings: ['escape'],
+          action: () => {
+            setIsExportDialogOpen(false);
+            setExportText('');
+          },
+          enabled: isExportDialogOpen,
+          allowInDialog: true,
+          allowInInput: true,
+        },
+        {
+          id: 'dialog-close-import',
+          description: 'インポートダイアログを閉じる',
+          category: 'ダイアログ' as const,
+          bindings: ['escape'],
+          action: () => {
+            setIsImportDialogOpen(false);
+            setImportText('');
+          },
+          enabled: isImportDialogOpen,
+          allowInDialog: true,
+          allowInInput: true,
+        },
+        {
+          id: 'dialog-close-menu',
+          description: 'メニューを閉じる',
+          category: 'ダイアログ' as const,
+          bindings: ['escape'],
+          action: () => setMenuOpen(false),
+          enabled: menuOpen,
+          allowInDialog: true,
+        },
+      ],
+    };
+  }, [
+    currentInProgressId,
+    exportText,
+    filteredTodos.length,
+    handleDelete,
+    handleComplete,
+    isExportDialogOpen,
+    isImportDialogOpen,
+    isOverlayOpen,
+    menuOpen,
+    modal,
+    selectedTodo,
+    startTodo,
+  ]);
+
+  useRegisterShortcuts(shortcutRegistration);
 
   return (
     <>
@@ -360,6 +603,8 @@ export const TodoListPage = () => {
       </div>
       <main
         id="todo-list"
+        role="listbox"
+        aria-label="タスク一覧"
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
       >
         {filteredTodos.length > 0 ? (
@@ -371,7 +616,9 @@ export const TodoListPage = () => {
                 .map(getTodo)
                 .filter((t): t is Todo => Boolean(t))}
               filter={filter}
+              selected={selectedTodo?.id === todo.id}
               currentInProgressId={currentInProgressId}
+              onSelect={setSelectedTodoId}
               onEdit={handleEdit}
               onDelete={() => handleDelete(todo.id)}
               onComplete={() => handleComplete(todo.id)}

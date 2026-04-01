@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption, SeriesOption } from 'echarts';
 import { useTodoContext } from '../contexts/TodoContext';
 import type { Todo, WorkSchedule } from '../common/types';
 import { formatHourLabel, hasBreakTime, WEEKDAY_OPTIONS } from '../common/settings';
 import { isMeetingTodo } from '../common/utils';
+import { useRegisterShortcuts } from '../contexts/ShortcutContext';
 
 const SLOT_MINUTES = 30;
 const LOAD_BUFFER_MINUTES = 5;
@@ -584,6 +585,15 @@ const buildChartOption = ({
 export const AvailabilityPage = () => {
   const { todos, workSchedule } = useTodoContext();
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue(new Date()));
+  const moveSelectedDate = useCallback((deltaDays: number) => {
+    const base = new Date(`${selectedDate}T00:00:00`);
+    if (Number.isNaN(base.getTime())) {
+      return;
+    }
+
+    base.setDate(base.getDate() + deltaDays);
+    setSelectedDate(toDateInputValue(base));
+  }, [selectedDate]);
   const hasBreak = hasBreakTime(workSchedule);
   const businessHourText = hasBreak
     ? `${formatHourLabel(workSchedule.workStartHour)}-${formatHourLabel(workSchedule.breakStartHour)}, ${formatHourLabel(workSchedule.breakEndHour)}-${formatHourLabel(workSchedule.workEndHour)}`
@@ -625,6 +635,35 @@ export const AvailabilityPage = () => {
       }),
     [displayDates, selfMeetings, selfNormalTodos, workSchedule],
   );
+
+  const shortcutRegistration = useMemo(() => ({
+    pageLabel: '空き状況',
+    shortcuts: [
+      {
+        id: 'availability-prev-day',
+        description: '表示開始日を前日に移動する',
+        category: 'ページ操作' as const,
+        bindings: ['h'],
+        action: () => moveSelectedDate(-1),
+      },
+      {
+        id: 'availability-next-day',
+        description: '表示開始日を翌日に移動する',
+        category: 'ページ操作' as const,
+        bindings: ['l'],
+        action: () => moveSelectedDate(1),
+      },
+      {
+        id: 'availability-today',
+        description: '表示開始日を今日に戻す',
+        category: 'ページ操作' as const,
+        bindings: ['t'],
+        action: () => setSelectedDate(toDateInputValue(new Date())),
+      },
+    ],
+  }), [moveSelectedDate]);
+
+  useRegisterShortcuts(shortcutRegistration);
 
   const workingDayLabels = WEEKDAY_OPTIONS.filter((option) => workSchedule.workingDays.includes(option.value))
     .map((option) => option.label)
