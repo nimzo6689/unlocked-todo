@@ -206,6 +206,9 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
           showNotification('タスクが開始可能です！', {
             body: `「${todo.title}」に着手できます。`,
             icon: 'https://placehold.co/192x192/0ea5e9/ffffff?text=Todo',
+            data: {
+              url: `${import.meta.env.BASE_URL}#/?filter=unlocked`,
+            },
           });
           notifiedTodoIds.push(todo.id);
         }

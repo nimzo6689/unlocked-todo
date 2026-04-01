@@ -22,6 +22,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        importScripts: ['sw-custom.js'],
       },
       manifest: {
         name: 'Unlocked Todo',
