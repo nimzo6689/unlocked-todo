@@ -4,6 +4,7 @@ import { TodoForm } from '../components/TodoForm';
 import type { Todo } from '../common/types';
 import {
   defaultForm,
+  DEFAULT_EFFORT_MINUTES,
   DEFAULT_TASK_TYPE,
   getDependencyIds,
   getMeetingStatus,
@@ -90,7 +91,7 @@ export const TodoFormPage = () => {
             status: isMeeting
               ? getMeetingStatus(form.dueDate || todo.dueDate, todo.status)
               : ((form.status as Todo['status']) || todo.status),
-            effortMinutes: isMeeting ? 0 : (form.effortMinutes || 0),
+            effortMinutes: isMeeting ? 0 : (form.effortMinutes || todo.effortMinutes),
             actualWorkSeconds: isMeeting ? 0 : (todo.actualWorkSeconds || 0),
             assignee: isMeeting ? todo.assignee : ((form.assignee as Todo['assignee']) || todo.assignee),
           } as Todo;
@@ -134,7 +135,7 @@ export const TodoFormPage = () => {
         status: isMeeting
           ? getMeetingStatus(form.dueDate || '')
           : ((form.status as Todo['status']) || 'Unlocked'),
-        effortMinutes: isMeeting ? 0 : (form.effortMinutes || 0),
+        effortMinutes: isMeeting ? 0 : (form.effortMinutes || DEFAULT_EFFORT_MINUTES),
         actualWorkSeconds: 0,
         assignee: (form.assignee as Todo['assignee']) || '自分',
         dependency: normalizedDependency,

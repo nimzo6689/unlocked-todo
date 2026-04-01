@@ -2,6 +2,7 @@ import React from 'react';
 import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
 import type { Todo } from '../common/types';
 import {
+  DEFAULT_EFFORT_MINUTES,
   formatDateForInput,
   formatDurationFromSeconds,
   isMeetingTodo,
@@ -203,8 +204,13 @@ export const TodoForm: React.FC<TodoFormProps> = ({
                 type="number"
                 id="effortMinutes"
                 min={1}
-                value={form.effortMinutes || 1}
-                onChange={e => onChange({ ...form, effortMinutes: parseInt(e.target.value, 10) || 1 })}
+                value={form.effortMinutes || DEFAULT_EFFORT_MINUTES}
+                onChange={e =>
+                  onChange({
+                    ...form,
+                    effortMinutes: parseInt(e.target.value, 10) || DEFAULT_EFFORT_MINUTES,
+                  })
+                }
                 className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
               />
               <div className="min-w-fit whitespace-nowrap rounded-md bg-slate-100 px-3 py-2 text-xs sm:text-sm text-slate-700">

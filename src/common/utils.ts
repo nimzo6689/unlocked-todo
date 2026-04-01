@@ -1,6 +1,7 @@
 import type { FilterButton, Todo, TodoTaskType } from './types';
 
 export const DEFAULT_TASK_TYPE: TodoTaskType = 'Normal';
+export const DEFAULT_EFFORT_MINUTES = 25;
 
 export const isMeetingTodo = (todo: Pick<Todo, 'taskType'>) => todo.taskType === 'Meeting';
 
@@ -34,7 +35,7 @@ export const defaultForm: Partial<Todo> = {
   startableAt: '',
   dueDate: '',
   status: 'Unlocked',
-  effortMinutes: 30,
+  effortMinutes: DEFAULT_EFFORT_MINUTES,
   actualWorkSeconds: 0,
   assignee: '自分',
   dependency: [],
