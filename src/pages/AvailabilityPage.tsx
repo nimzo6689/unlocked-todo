@@ -7,6 +7,7 @@ import { formatHourLabel, WEEKDAY_OPTIONS } from '../common/settings';
 import { isMeetingTodo } from '../common/utils';
 
 const SLOT_MINUTES = 30;
+const LOAD_BUFFER_MINUTES = 5;
 const DISPLAY_WINDOW_DAYS = 7;
 const HOUR_MS = 60 * 60 * 1000;
 const SLOT_MS = SLOT_MINUTES * 60 * 1000;
@@ -271,7 +272,8 @@ const aggregateLoadForDate = (
     const effectiveWorkingDurationMs = calculateWorkingDurationMsInRange(range, schedule, meetings);
     if (effectiveWorkingDurationMs <= 0) return;
 
-    const hourlyLoad = todo.effortMinutes / (effectiveWorkingDurationMs / (60 * 1000));
+    const bufferedEffortMinutes = todo.effortMinutes + LOAD_BUFFER_MINUTES;
+    const hourlyLoad = bufferedEffortMinutes / (effectiveWorkingDurationMs / (60 * 1000));
     const perSlot = seriesMap.get(todo.id)?.data ?? Array(slots.length).fill(0);
 
     slots.forEach((slot, index) => {
