@@ -22,10 +22,16 @@ export const WEEKDAY_OPTIONS = [
 
 export const formatHourLabel = (hour: number) => `${`${hour}`.padStart(2, '0')}:00`;
 
+export const hasBreakTime = (schedule: WorkSchedule) => schedule.breakStartHour < schedule.breakEndHour;
+
 export const formatWorkScheduleSummary = (schedule: WorkSchedule) => {
   const dayLabels = WEEKDAY_OPTIONS.filter((option) => schedule.workingDays.includes(option.value)).map(
     (option) => option.label,
   );
+
+  if (!hasBreakTime(schedule)) {
+    return `${dayLabels.join('・')} ${formatHourLabel(schedule.workStartHour)}-${formatHourLabel(schedule.workEndHour)} (休憩なし)`;
+  }
 
   return `${dayLabels.join('・')} ${formatHourLabel(schedule.workStartHour)}-${formatHourLabel(schedule.breakStartHour)} / ${formatHourLabel(schedule.breakEndHour)}-${formatHourLabel(schedule.workEndHour)}`;
 };
@@ -58,7 +64,7 @@ export const sanitizeWorkSchedule = (value: unknown): WorkSchedule => {
     workStartHour < workEndHour &&
     workEndHour <= 24 &&
     breakStartHour >= workStartHour &&
-    breakStartHour < breakEndHour &&
+    breakStartHour <= breakEndHour &&
     breakEndHour <= workEndHour;
 
   if (workingDays.length === 0 || !hasValidHours) {

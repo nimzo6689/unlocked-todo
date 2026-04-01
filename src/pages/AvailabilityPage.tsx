@@ -3,7 +3,7 @@ import ReactECharts from 'echarts-for-react';
 import type { EChartsOption, SeriesOption } from 'echarts';
 import { useTodoContext } from '../contexts/TodoContext';
 import type { Todo, WorkSchedule } from '../common/types';
-import { formatHourLabel, WEEKDAY_OPTIONS } from '../common/settings';
+import { formatHourLabel, hasBreakTime, WEEKDAY_OPTIONS } from '../common/settings';
 import { isMeetingTodo } from '../common/utils';
 
 const SLOT_MINUTES = 30;
@@ -351,6 +351,7 @@ const buildChartOption = ({
   slotTotals,
   slots,
 }: AggregatedLoad, schedule: WorkSchedule): EChartsOption => {
+  const hasBreak = hasBreakTime(schedule);
   const xAxisLabels = slots.map((slot) => slot.label);
   if (slots.length > 0) {
     xAxisLabels.push(formatTimeLabel(slots[slots.length - 1].end));
@@ -561,18 +562,20 @@ const buildChartOption = ({
           },
           data: [{ yAxis: 1 }],
         },
-        markArea: {
-          silent: true,
-          itemStyle: {
-            color: '#f1f5f9',
-          },
-          label: {
-            show: true,
-            color: '#475569',
-            formatter: `${formatHourLabel(schedule.breakStartHour)}-${formatHourLabel(schedule.breakEndHour)} 非稼働`,
-          },
-          data: [[{ xAxis: formatHourLabel(schedule.breakStartHour) }, { xAxis: formatHourLabel(schedule.breakEndHour) }]],
-        },
+        markArea: hasBreak
+          ? {
+              silent: true,
+              itemStyle: {
+                color: '#f1f5f9',
+              },
+              label: {
+                show: true,
+                color: '#475569',
+                formatter: `${formatHourLabel(schedule.breakStartHour)}-${formatHourLabel(schedule.breakEndHour)} 非稼働`,
+              },
+              data: [[{ xAxis: formatHourLabel(schedule.breakStartHour) }, { xAxis: formatHourLabel(schedule.breakEndHour) }]],
+            }
+          : undefined,
       },
     ],
   };
@@ -581,6 +584,10 @@ const buildChartOption = ({
 export const AvailabilityPage = () => {
   const { todos, workSchedule } = useTodoContext();
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue(new Date()));
+  const hasBreak = hasBreakTime(workSchedule);
+  const businessHourText = hasBreak
+    ? `${formatHourLabel(workSchedule.workStartHour)}-${formatHourLabel(workSchedule.breakStartHour)}, ${formatHourLabel(workSchedule.breakEndHour)}-${formatHourLabel(workSchedule.workEndHour)}`
+    : `${formatHourLabel(workSchedule.workStartHour)}-${formatHourLabel(workSchedule.workEndHour)} (休憩なし)`;
 
   const selfNormalTodos = useMemo(
     () => todos.filter((todo) => todo.assignee === '自分' && !isMeetingTodo(todo)),
@@ -673,7 +680,7 @@ export const AvailabilityPage = () => {
                   />
                 ) : (
                   <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-500">
-                    {chart.dateLabel} の業務時間帯 ({formatHourLabel(workSchedule.workStartHour)}-{formatHourLabel(workSchedule.breakStartHour)}, {formatHourLabel(workSchedule.breakEndHour)}-{formatHourLabel(workSchedule.workEndHour)}) に重なる自分のタスクがありません。
+                    {chart.dateLabel} の業務時間帯 ({businessHourText}) に重なる自分のタスクがありません。
                   </p>
                 )}
               </section>
@@ -690,7 +697,13 @@ export const AvailabilityPage = () => {
         <p className="font-semibold text-slate-700">稼働時間について</p>
         <ul className="list-disc list-inside space-y-0.5">
           <li>稼働日は {workingDayLabels} を対象としています。</li>
-          <li>稼働時間帯は <span className="font-mono">{formatHourLabel(workSchedule.workStartHour)}〜{formatHourLabel(workSchedule.breakStartHour)}</span> と <span className="font-mono">{formatHourLabel(workSchedule.breakEndHour)}〜{formatHourLabel(workSchedule.workEndHour)}</span> です。</li>
+          <li>
+            稼働時間帯は
+            {' '}
+            <span className="font-mono">{businessHourText.replace(',', ' /')}</span>
+            {' '}
+            です。
+          </li>
           <li>負荷は 30 分単位のスロットに分割して集計しています。</li>
           <li>各タスクの負荷は、開始可能日時〜期限のうち稼働可能な時間帯に均等配分して計算しています。</li>
           <li>Meeting は休憩時間と同様に非稼働時間として除外しています。</li>
