@@ -19,6 +19,7 @@ import { TodoContext } from './TodoContext';
 // LocalStorage に保存するキー
 const NOTIFIED_TODOS_KEY = 'notified-todos';
 const NOTIFICATION_PERMISSION_KEY = 'notificationPermission';
+const IN_PROGRESS_TODO_KEY = 'in-progress-todo';
 const MEETING_AUTOCOMPLETE_INTERVAL_MS = 30_000;
 
 interface TodoProviderProps {
@@ -27,6 +28,8 @@ interface TodoProviderProps {
 
 export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [isTodosLoaded, setIsTodosLoaded] = useState(false);
+  const [isInProgressRestoreDone, setIsInProgressRestoreDone] = useState(false);
   const [form, setForm] = useState<Partial<Todo>>(defaultForm);
   const [modal, setModal] = useState<ModalState | null>(null);
   const [notificationEnabled, setNotificationEnabled] = useState(
@@ -53,10 +56,14 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
   const currentInProgressIdRef = useRef<string | null>(null);
   const currentInProgressStartedAtRef = useRef<number | null>(null);
   const trackedElapsedSecondsRef = useRef(0);
+  const hasRestoredInProgressRef = useRef(false);
 
   const fetchTodos = useCallback(async () => {
     const data = await todoDB.fetch();
-    setTodos(data.map(normalizeTodo));
+    const normalizedTodos = data.map(normalizeTodo);
+    todosRef.current = normalizedTodos;
+    setTodos(normalizedTodos);
+    setIsTodosLoaded(true);
   }, []);
   const completeTodos = useCallback(async (ids: string[]) => {
     const targetIds = new Set(ids);
@@ -131,6 +138,22 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
   useEffect(() => {
     currentInProgressStartedAtRef.current = currentInProgressStartedAt;
   }, [currentInProgressStartedAt]);
+
+  useEffect(() => {
+    if (!isTodosLoaded || !isInProgressRestoreDone) {
+      return;
+    }
+
+    if (currentInProgressId && currentInProgressStartedAt !== null) {
+      localStorage.setItem(
+        IN_PROGRESS_TODO_KEY,
+        JSON.stringify({ id: currentInProgressId, startedAt: currentInProgressStartedAt }),
+      );
+      return;
+    }
+
+    localStorage.removeItem(IN_PROGRESS_TODO_KEY);
+  }, [currentInProgressId, currentInProgressStartedAt, isTodosLoaded, isInProgressRestoreDone]);
 
   useEffect(() => {
     fetchTodos();
@@ -306,6 +329,75 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
       setCurrentInProgressStartedAt(null);
     }
   }, []);
+
+  useEffect(() => {
+    if (!isTodosLoaded || hasRestoredInProgressRef.current) {
+      return;
+    }
+
+    hasRestoredInProgressRef.current = true;
+
+    let parsedState: { id: string; startedAt: number } | null = null;
+    const savedState = localStorage.getItem(IN_PROGRESS_TODO_KEY);
+
+    if (!savedState) {
+      setIsInProgressRestoreDone(true);
+      return;
+    }
+
+    try {
+      const state = JSON.parse(savedState) as { id?: unknown; startedAt?: unknown };
+      if (
+        typeof state.id === 'string' &&
+        state.id &&
+        typeof state.startedAt === 'number' &&
+        Number.isFinite(state.startedAt)
+      ) {
+        parsedState = { id: state.id, startedAt: state.startedAt };
+      }
+    } catch {
+      parsedState = null;
+    }
+
+    if (!parsedState) {
+      localStorage.removeItem(IN_PROGRESS_TODO_KEY);
+      setIsInProgressRestoreDone(true);
+      return;
+    }
+
+    const targetTodo = todosRef.current.find((todo) => todo.id === parsedState.id);
+    if (!targetTodo || targetTodo.status === 'Completed' || isMeetingTodo(targetTodo)) {
+      localStorage.removeItem(IN_PROGRESS_TODO_KEY);
+      setIsInProgressRestoreDone(true);
+      return;
+    }
+
+    const now = Date.now();
+    const restoreDeltaSeconds = Math.max(0, Math.floor((now - parsedState.startedAt) / 1000));
+
+    if (restoreDeltaSeconds > 0) {
+      const updatedTodos = todosRef.current.map((todo) =>
+        todo.id === parsedState.id
+          ? {
+              ...todo,
+              actualWorkSeconds: (todo.actualWorkSeconds || 0) + restoreDeltaSeconds,
+            }
+          : todo,
+      );
+      todosRef.current = updatedTodos;
+      setTodos(updatedTodos);
+      void todoDB.save(updatedTodos);
+    }
+
+    trackedElapsedSecondsRef.current = 0;
+    currentInProgressIdRef.current = parsedState.id;
+    currentInProgressStartedAtRef.current = now;
+    setCurrentInProgressId(parsedState.id);
+    setCurrentInProgressStartedAt(now);
+
+    localStorage.setItem(IN_PROGRESS_TODO_KEY, JSON.stringify({ id: parsedState.id, startedAt: now }));
+    setIsInProgressRestoreDone(true);
+  }, [isTodosLoaded]);
 
   useEffect(() => {
     if (!currentInProgressId || currentInProgressStartedAt === null) {
