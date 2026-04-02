@@ -80,16 +80,14 @@ const matchesStroke = (bindingStroke: string, event: KeyboardEvent) => {
     if (!(event.ctrlKey || event.metaKey)) {
       return false;
     }
-  } else if (event.ctrlKey || event.metaKey) {
-    return false;
-  }
+  } else {
+    if (wantsCtrl !== event.ctrlKey) {
+      return false;
+    }
 
-  if (wantsCtrl !== event.ctrlKey) {
-    return false;
-  }
-
-  if (wantsMeta !== event.metaKey) {
-    return false;
+    if (wantsMeta !== event.metaKey) {
+      return false;
+    }
   }
 
   if (wantsShift !== event.shiftKey && keyPart !== '?') {
