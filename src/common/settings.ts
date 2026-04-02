@@ -6,7 +6,7 @@ export const DEFAULT_WORK_SCHEDULE: WorkSchedule = {
   workingDays: [1, 2, 3, 4, 5],
   workStartHour: 9,
   workEndHour: 17,
-  breakPeriods: [{ startHour: 12, endHour: 13 }],
+  breakPeriods: [{ startMinute: 12 * 60, endMinute: 13 * 60 }],
 };
 
 export const WEEKDAY_OPTIONS = [
@@ -21,38 +21,48 @@ export const WEEKDAY_OPTIONS = [
 
 export const formatHourLabel = (hour: number) => `${`${hour}`.padStart(2, '0')}:00`;
 
+export const formatMinuteLabel = (minuteOfDay: number) => {
+  const clamped = Math.max(0, Math.min(24 * 60, Math.trunc(minuteOfDay)));
+  const hour = Math.floor(clamped / 60);
+  const minute = clamped % 60;
+  return `${`${hour}`.padStart(2, '0')}:${`${minute}`.padStart(2, '0')}`;
+};
+
 export const normalizeBreakPeriods = (
   breakPeriods: BreakPeriod[],
   workStartHour: number,
   workEndHour: number,
 ): BreakPeriod[] => {
+  const workStartMinute = workStartHour * 60;
+  const workEndMinute = workEndHour * 60;
+
   const sanitized = breakPeriods
     .filter(
       (period) =>
-        Number.isInteger(period.startHour) &&
-        Number.isInteger(period.endHour) &&
-        period.startHour >= workStartHour &&
-        period.endHour <= workEndHour &&
-        period.startHour < period.endHour,
+        Number.isInteger(period.startMinute) &&
+        Number.isInteger(period.endMinute) &&
+        period.startMinute >= workStartMinute &&
+        period.endMinute <= workEndMinute &&
+        period.startMinute < period.endMinute,
     )
     .map((period) => ({
-      startHour: Number(period.startHour),
-      endHour: Number(period.endHour),
+      startMinute: Number(period.startMinute),
+      endMinute: Number(period.endMinute),
     }))
     .sort((left, right) =>
-      left.startHour === right.startHour
-        ? left.endHour - right.endHour
-        : left.startHour - right.startHour,
+      left.startMinute === right.startMinute
+        ? left.endMinute - right.endMinute
+        : left.startMinute - right.startMinute,
     );
 
   return sanitized.reduce<BreakPeriod[]>((merged, period) => {
     const last = merged[merged.length - 1];
-    if (!last || period.startHour > last.endHour) {
+    if (!last || period.startMinute > last.endMinute) {
       merged.push({ ...period });
       return merged;
     }
 
-    last.endHour = Math.max(last.endHour, period.endHour);
+    last.endMinute = Math.max(last.endMinute, period.endMinute);
     return merged;
   }, []);
 };
@@ -69,7 +79,7 @@ export const formatWorkScheduleSummary = (schedule: WorkSchedule) => {
   }
 
   const breakLabels = schedule.breakPeriods
-    .map((period) => `${formatHourLabel(period.startHour)}-${formatHourLabel(period.endHour)}`)
+    .map((period) => `${formatMinuteLabel(period.startMinute)}-${formatMinuteLabel(period.endMinute)}`)
     .join(', ');
 
   return `${dayLabels.join('・')} ${formatHourLabel(schedule.workStartHour)}-${formatHourLabel(schedule.workEndHour)} (休憩: ${breakLabels})`;
@@ -100,34 +110,56 @@ export const sanitizeWorkSchedule = (value: unknown): WorkSchedule => {
     return DEFAULT_WORK_SCHEDULE;
   }
 
-  const breakPeriodsFromArray = Array.isArray(candidate.breakPeriods)
-    ? candidate.breakPeriods
+  const rawBreakPeriods = Array.isArray((candidate as { breakPeriods?: unknown }).breakPeriods)
+    ? ((candidate as { breakPeriods: unknown[] }).breakPeriods ?? [])
+    : [];
+
+  const breakPeriodsFromArray = rawBreakPeriods
         .filter(
           (period): period is BreakPeriod =>
             Boolean(period) &&
             typeof period === 'object' &&
-            Number.isInteger((period as BreakPeriod).startHour) &&
-            Number.isInteger((period as BreakPeriod).endHour),
+            Number.isInteger((period as BreakPeriod).startMinute) &&
+            Number.isInteger((period as BreakPeriod).endMinute),
         )
         .map((period) => ({
-          startHour: Number(period.startHour),
-          endHour: Number(period.endHour),
-        }))
-    : [];
+          startMinute: Number(period.startMinute),
+          endMinute: Number(period.endMinute),
+        }));
+
+  const legacyBreakPeriodsFromArray = rawBreakPeriods
+        .filter(
+          (period): period is {
+            startHour: number;
+            endHour: number;
+          } =>
+            Boolean(period) &&
+            typeof period === 'object' &&
+            Number.isInteger((period as { startHour?: unknown }).startHour) &&
+            Number.isInteger((period as { endHour?: unknown }).endHour),
+        )
+        .map((period) => ({
+          startMinute: Number(period.startHour) * 60,
+          endMinute: Number(period.endHour) * 60,
+        }));
 
   const legacyBreakPeriods =
     Number.isInteger((candidate as { breakStartHour?: unknown }).breakStartHour) &&
     Number.isInteger((candidate as { breakEndHour?: unknown }).breakEndHour)
       ? [
           {
-            startHour: Number((candidate as { breakStartHour: number }).breakStartHour),
-            endHour: Number((candidate as { breakEndHour: number }).breakEndHour),
+            startMinute: Number((candidate as { breakStartHour: number }).breakStartHour) * 60,
+            endMinute: Number((candidate as { breakEndHour: number }).breakEndHour) * 60,
           },
         ]
       : [];
 
   const breakPeriods = normalizeBreakPeriods(
-    breakPeriodsFromArray.length > 0 ? breakPeriodsFromArray : legacyBreakPeriods,
+    breakPeriodsFromArray.length > 0
+      ? breakPeriodsFromArray
+      : legacyBreakPeriodsFromArray.length > 0
+        ? legacyBreakPeriodsFromArray
+        : legacyBreakPeriods,
     workStartHour,
     workEndHour,
   );

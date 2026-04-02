@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { Clock3, Plus, Save, Trash2 } from 'lucide-react';
 import { useTodoContext } from '../contexts/TodoContext';
 import {
+  formatMinuteLabel,
   formatHourLabel,
   formatWorkScheduleSummary,
   normalizeBreakPeriods,
@@ -14,11 +15,32 @@ import { useRegisterShortcuts } from '../contexts/ShortcutContext';
 const HOUR_OPTIONS = Array.from({ length: 25 }, (_, index) => index);
 
 const createDefaultBreakPeriod = (workStartHour: number, workEndHour: number): BreakPeriod => {
-  const startHour = Math.max(workStartHour, Math.min(12, workEndHour - 1));
+  const workStartMinute = workStartHour * 60;
+  const workEndMinute = workEndHour * 60;
+  const preferredStartMinute = 12 * 60;
+  const startMinute = Math.max(workStartMinute, Math.min(preferredStartMinute, workEndMinute - 60));
   return {
-    startHour,
-    endHour: startHour + 1,
+    startMinute,
+    endMinute: startMinute + 60,
   };
+};
+
+const formatTimeInputValue = (minuteOfDay: number) => formatMinuteLabel(minuteOfDay);
+
+const parseTimeInputValue = (value: string) => {
+  const [hourText = '0', minuteText = '0'] = value.split(':');
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+
+  if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour < 0 || hour > 24 || minute < 0 || minute >= 60) {
+    return null;
+  }
+
+  if (hour === 24 && minute !== 0) {
+    return null;
+  }
+
+  return hour * 60 + minute;
 };
 
 export const WorkHoursPage = () => {
@@ -283,49 +305,51 @@ export const WorkHoursPage = () => {
 
                   {draft.breakPeriods.map((period, index) => (
                     <div
-                      key={`${period.startHour}-${period.endHour}-${index}`}
+                      key={`${period.startMinute}-${period.endMinute}-${index}`}
                       className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[1fr_1fr_auto]"
                     >
                       <label className="space-y-1 text-sm text-slate-700">
                         <span className="font-medium">休憩開始</span>
-                        <select
-                          value={period.startHour}
+                        <input
+                          type="time"
+                          step={60}
+                          min={formatHourLabel(draft.workStartHour)}
+                          max={formatHourLabel(draft.workEndHour)}
+                          value={formatTimeInputValue(period.startMinute)}
                           onChange={(event) => {
-                            const nextStartHour = Number(event.target.value);
+                            const parsedMinute = parseTimeInputValue(event.target.value);
+                            if (parsedMinute === null) {
+                              return;
+                            }
                             updateBreakPeriod(index, {
-                              startHour: nextStartHour,
-                              endHour: Math.max(period.endHour, nextStartHour + 1),
+                              startMinute: parsedMinute,
+                              endMinute: Math.max(period.endMinute, parsedMinute + 1),
                             });
                           }}
                           className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
-                        >
-                          {HOUR_OPTIONS.slice(0, 24).map((hour) => (
-                            <option key={hour} value={hour}>
-                              {formatHourLabel(hour)}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       </label>
 
                       <label className="space-y-1 text-sm text-slate-700">
                         <span className="font-medium">休憩終了</span>
-                        <select
-                          value={period.endHour}
+                        <input
+                          type="time"
+                          step={60}
+                          min={formatHourLabel(draft.workStartHour)}
+                          max={formatHourLabel(draft.workEndHour)}
+                          value={formatTimeInputValue(period.endMinute)}
                           onChange={(event) => {
-                            const nextEndHour = Number(event.target.value);
+                            const parsedMinute = parseTimeInputValue(event.target.value);
+                            if (parsedMinute === null) {
+                              return;
+                            }
                             updateBreakPeriod(index, {
-                              startHour: Math.min(period.startHour, nextEndHour - 1),
-                              endHour: nextEndHour,
+                              startMinute: Math.min(period.startMinute, parsedMinute - 1),
+                              endMinute: parsedMinute,
                             });
                           }}
                           className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
-                        >
-                          {HOUR_OPTIONS.slice(1).map((hour) => (
-                            <option key={hour} value={hour}>
-                              {formatHourLabel(hour)}
-                            </option>
-                          ))}
-                        </select>
+                        />
                       </label>
 
                       <div className="self-end">

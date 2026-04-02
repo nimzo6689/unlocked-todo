@@ -3,7 +3,7 @@ import ReactECharts from 'echarts-for-react';
 import type { EChartsOption, SeriesOption } from 'echarts';
 import { useTodoContext } from '../contexts/TodoContext';
 import type { Todo, WorkSchedule } from '../common/types';
-import { formatHourLabel, hasBreakTime, WEEKDAY_OPTIONS } from '../common/settings';
+import { formatHourLabel, formatMinuteLabel, hasBreakTime, WEEKDAY_OPTIONS } from '../common/settings';
 import { isMeetingTodo } from '../common/utils';
 import { useRegisterShortcuts } from '../contexts/ShortcutContext';
 
@@ -82,9 +82,9 @@ const isWorkingDay = (date: Date, schedule: WorkSchedule) => schedule.workingDay
 
 const getSortedBreakPeriods = (schedule: WorkSchedule) =>
   [...schedule.breakPeriods].sort((left, right) =>
-    left.startHour === right.startHour
-      ? left.endHour - right.endHour
-      : left.startHour - right.startHour,
+    left.startMinute === right.startMinute
+      ? left.endMinute - right.endMinute
+      : left.startMinute - right.startMinute,
   );
 
 const buildDisplayDates = (startDateStr: string, schedule: WorkSchedule) => {
@@ -110,13 +110,27 @@ const buildTimeSlots = (dateStr: string, schedule: WorkSchedule) => {
   dayStart.setHours(schedule.workStartHour, 0, 0, 0);
   dayEnd.setHours(schedule.workEndHour, 0, 0, 0);
 
+  const mergedBreakIntervals = mergeIntervals(
+    schedule.breakPeriods.map((period) => {
+      const breakStart = new Date(base);
+      const breakEnd = new Date(base);
+      breakStart.setHours(0, period.startMinute, 0, 0);
+      breakEnd.setHours(0, period.endMinute, 0, 0);
+      return {
+        startMs: breakStart.getTime(),
+        endMs: breakEnd.getTime(),
+      };
+    }),
+  );
+
   for (let cursor = dayStart.getTime(); cursor < dayEnd.getTime(); cursor += SLOT_MS) {
     const slotStart = new Date(cursor);
     const slotEnd = new Date(cursor + SLOT_MS);
-    const slotHour = slotStart.getHours();
-    const isWorking = !schedule.breakPeriods.some(
-      (period) => slotHour >= period.startHour && slotHour < period.endHour,
+    const slotAvailableIntervals = subtractIntervals(
+      { startMs: slotStart.getTime(), endMs: slotEnd.getTime() },
+      mergedBreakIntervals,
     );
+    const isWorking = slotAvailableIntervals.some((interval) => interval.endMs > interval.startMs);
 
     slots.push({
       label: formatTimeLabel(slotStart),
@@ -140,8 +154,8 @@ const getWorkingIntervalsForDay = (day: Date, schedule: WorkSchedule): Interval[
     schedule.breakPeriods.map((period) => {
       const breakStart = new Date(day);
       const breakEnd = new Date(day);
-      breakStart.setHours(period.startHour, 0, 0, 0);
-      breakEnd.setHours(period.endHour, 0, 0, 0);
+      breakStart.setHours(0, period.startMinute, 0, 0);
+      breakEnd.setHours(0, period.endMinute, 0, 0);
       return {
         startMs: breakStart.getTime(),
         endMs: breakEnd.getTime(),
@@ -803,8 +817,8 @@ const buildChartOption = ({
                 formatter: '休憩時間',
               },
               data: sortedBreakPeriods.map((period) => [
-                { xAxis: formatHourLabel(period.startHour) },
-                { xAxis: formatHourLabel(period.endHour) },
+                { xAxis: formatMinuteLabel(period.startMinute) },
+                { xAxis: formatMinuteLabel(period.endMinute) },
               ]),
             }
           : undefined,
@@ -829,7 +843,7 @@ export const AvailabilityPage = () => {
   const sortedBreakPeriods = getSortedBreakPeriods(workSchedule);
   const businessHourText = hasBreak
     ? `${formatHourLabel(workSchedule.workStartHour)}-${formatHourLabel(workSchedule.workEndHour)}（休憩: ${sortedBreakPeriods
-      .map((period) => `${formatHourLabel(period.startHour)}-${formatHourLabel(period.endHour)}`)
+      .map((period) => `${formatMinuteLabel(period.startMinute)}-${formatMinuteLabel(period.endMinute)}`)
       .join(', ')}）`
     : `${formatHourLabel(workSchedule.workStartHour)}-${formatHourLabel(workSchedule.workEndHour)} (休憩なし)`;
 

@@ -28,8 +28,8 @@ export type ModalState = {
 }
 
 export type BreakPeriod = {
-  startHour: number;
-  endHour: number;
+  startMinute: number;
+  endMinute: number;
 };
 
 export type WorkSchedule = {
