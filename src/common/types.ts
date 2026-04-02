@@ -27,12 +27,16 @@ export type ModalState = {
   onConfirm: () => void;
 }
 
+export type BreakPeriod = {
+  startHour: number;
+  endHour: number;
+};
+
 export type WorkSchedule = {
   workingDays: number[];
   workStartHour: number;
   workEndHour: number;
-  breakStartHour: number;
-  breakEndHour: number;
+  breakPeriods: BreakPeriod[];
 };
 
 export type ImportResult = {

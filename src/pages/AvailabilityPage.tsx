@@ -80,6 +80,13 @@ const addDays = (date: Date, days: number) => {
 
 const isWorkingDay = (date: Date, schedule: WorkSchedule) => schedule.workingDays.includes(date.getDay());
 
+const getSortedBreakPeriods = (schedule: WorkSchedule) =>
+  [...schedule.breakPeriods].sort((left, right) =>
+    left.startHour === right.startHour
+      ? left.endHour - right.endHour
+      : left.startHour - right.startHour,
+  );
+
 const buildDisplayDates = (startDateStr: string, schedule: WorkSchedule) => {
   const startDate = new Date(`${startDateStr}T00:00:00`);
   const dates: string[] = [];
@@ -106,8 +113,10 @@ const buildTimeSlots = (dateStr: string, schedule: WorkSchedule) => {
   for (let cursor = dayStart.getTime(); cursor < dayEnd.getTime(); cursor += SLOT_MS) {
     const slotStart = new Date(cursor);
     const slotEnd = new Date(cursor + SLOT_MS);
-    const isWorking =
-      slotStart.getHours() < schedule.breakStartHour || slotStart.getHours() >= schedule.breakEndHour;
+    const slotHour = slotStart.getHours();
+    const isWorking = !schedule.breakPeriods.some(
+      (period) => slotHour >= period.startHour && slotHour < period.endHour,
+    );
 
     slots.push({
       label: formatTimeLabel(slotStart),
@@ -122,19 +131,28 @@ const buildTimeSlots = (dateStr: string, schedule: WorkSchedule) => {
 
 const getWorkingIntervalsForDay = (day: Date, schedule: WorkSchedule): Interval[] => {
   const workStart = new Date(day);
-  const breakStart = new Date(day);
-  const breakEnd = new Date(day);
   const workEnd = new Date(day);
 
   workStart.setHours(schedule.workStartHour, 0, 0, 0);
-  breakStart.setHours(schedule.breakStartHour, 0, 0, 0);
-  breakEnd.setHours(schedule.breakEndHour, 0, 0, 0);
   workEnd.setHours(schedule.workEndHour, 0, 0, 0);
 
-  return [
-    { startMs: workStart.getTime(), endMs: breakStart.getTime() },
-    { startMs: breakEnd.getTime(), endMs: workEnd.getTime() },
-  ].filter((interval) => interval.endMs > interval.startMs);
+  const mergedBreakIntervals = mergeIntervals(
+    schedule.breakPeriods.map((period) => {
+      const breakStart = new Date(day);
+      const breakEnd = new Date(day);
+      breakStart.setHours(period.startHour, 0, 0, 0);
+      breakEnd.setHours(period.endHour, 0, 0, 0);
+      return {
+        startMs: breakStart.getTime(),
+        endMs: breakEnd.getTime(),
+      };
+    }),
+  );
+
+  return subtractIntervals(
+    { startMs: workStart.getTime(), endMs: workEnd.getTime() },
+    mergedBreakIntervals,
+  );
 };
 
 const mergeIntervals = (intervals: Interval[]) => {
@@ -562,6 +580,7 @@ const buildChartOption = ({
   slots,
 }: AggregatedLoad, schedule: WorkSchedule): EChartsOption => {
   const hasBreak = hasBreakTime(schedule);
+  const sortedBreakPeriods = getSortedBreakPeriods(schedule);
   const xAxisLabels = slots.map((slot) => slot.label);
   if (slots.length > 0) {
     xAxisLabels.push(formatTimeLabel(slots[slots.length - 1].end));
@@ -781,9 +800,12 @@ const buildChartOption = ({
               label: {
                 show: true,
                 color: '#475569',
-                formatter: `${formatHourLabel(schedule.breakStartHour)}-${formatHourLabel(schedule.breakEndHour)} 非稼働`,
+                formatter: '休憩時間',
               },
-              data: [[{ xAxis: formatHourLabel(schedule.breakStartHour) }, { xAxis: formatHourLabel(schedule.breakEndHour) }]],
+              data: sortedBreakPeriods.map((period) => [
+                { xAxis: formatHourLabel(period.startHour) },
+                { xAxis: formatHourLabel(period.endHour) },
+              ]),
             }
           : undefined,
       },
@@ -804,8 +826,11 @@ export const AvailabilityPage = () => {
     setSelectedDate(toDateInputValue(base));
   }, [selectedDate]);
   const hasBreak = hasBreakTime(workSchedule);
+  const sortedBreakPeriods = getSortedBreakPeriods(workSchedule);
   const businessHourText = hasBreak
-    ? `${formatHourLabel(workSchedule.workStartHour)}-${formatHourLabel(workSchedule.breakStartHour)}, ${formatHourLabel(workSchedule.breakEndHour)}-${formatHourLabel(workSchedule.workEndHour)}`
+    ? `${formatHourLabel(workSchedule.workStartHour)}-${formatHourLabel(workSchedule.workEndHour)}（休憩: ${sortedBreakPeriods
+      .map((period) => `${formatHourLabel(period.startHour)}-${formatHourLabel(period.endHour)}`)
+      .join(', ')}）`
     : `${formatHourLabel(workSchedule.workStartHour)}-${formatHourLabel(workSchedule.workEndHour)} (休憩なし)`;
 
   const selfNormalTodos = useMemo(

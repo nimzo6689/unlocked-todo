@@ -1,38 +1,47 @@
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Clock3, Save } from 'lucide-react';
+import { Clock3, Plus, Save, Trash2 } from 'lucide-react';
 import { useTodoContext } from '../contexts/TodoContext';
 import {
   formatHourLabel,
   formatWorkScheduleSummary,
+  normalizeBreakPeriods,
   WEEKDAY_OPTIONS,
 } from '../common/settings';
-import type { WorkSchedule } from '../common/types';
+import type { BreakPeriod, WorkSchedule } from '../common/types';
 import { useRegisterShortcuts } from '../contexts/ShortcutContext';
 
 const HOUR_OPTIONS = Array.from({ length: 25 }, (_, index) => index);
+
+const createDefaultBreakPeriod = (workStartHour: number, workEndHour: number): BreakPeriod => {
+  const startHour = Math.max(workStartHour, Math.min(12, workEndHour - 1));
+  return {
+    startHour,
+    endHour: startHour + 1,
+  };
+};
 
 export const WorkHoursPage = () => {
   const { workSchedule, setWorkSchedule } = useTodoContext();
   const [draft, setDraft] = useState<WorkSchedule>(workSchedule);
   const [error, setError] = useState('');
-  const hasNoBreak = draft.breakStartHour === draft.breakEndHour;
+  const hasNoBreak = draft.breakPeriods.length === 0;
 
   const toggleNoBreak = (enabled: boolean) => {
     updateDraft((current) => {
       if (enabled) {
         return {
           ...current,
-          breakStartHour: current.workStartHour,
-          breakEndHour: current.workStartHour,
+          breakPeriods: [],
         };
       }
 
-      const nextBreakStartHour = Math.max(current.workStartHour, Math.min(current.breakStartHour, current.workEndHour - 1));
       return {
         ...current,
-        breakStartHour: nextBreakStartHour,
-        breakEndHour: nextBreakStartHour + 1,
+        breakPeriods:
+          current.breakPeriods.length > 0
+            ? current.breakPeriods
+            : [createDefaultBreakPeriod(current.workStartHour, current.workEndHour)],
       };
     });
   };
@@ -59,6 +68,33 @@ export const WorkHoursPage = () => {
     });
   };
 
+  const addBreakPeriod = () => {
+    updateDraft((current) => ({
+      ...current,
+      breakPeriods: [...current.breakPeriods, createDefaultBreakPeriod(current.workStartHour, current.workEndHour)],
+    }));
+  };
+
+  const removeBreakPeriod = (index: number) => {
+    updateDraft((current) => ({
+      ...current,
+      breakPeriods: current.breakPeriods.filter((_, currentIndex) => currentIndex !== index),
+    }));
+  };
+
+  const updateBreakPeriod = (index: number, nextPeriod: BreakPeriod) => {
+    updateDraft((current) => {
+      const nextBreakPeriods = current.breakPeriods.map((period, currentIndex) =>
+        currentIndex === index ? nextPeriod : period,
+      );
+
+      return {
+        ...current,
+        breakPeriods: normalizeBreakPeriods(nextBreakPeriods, current.workStartHour, current.workEndHour),
+      };
+    });
+  };
+
   const handleSave = () => {
     if (draft.workingDays.length === 0) {
       setError('少なくとも 1 つの稼働日を選択してください。');
@@ -70,18 +106,24 @@ export const WorkHoursPage = () => {
       return;
     }
 
-    const noBreak = draft.breakStartHour === draft.breakEndHour;
+    const normalizedBreakPeriods = normalizeBreakPeriods(
+      draft.breakPeriods,
+      draft.workStartHour,
+      draft.workEndHour,
+    );
 
-    if (
-      draft.breakStartHour < draft.workStartHour ||
-      draft.breakEndHour > draft.workEndHour ||
-      (!noBreak && draft.breakStartHour >= draft.breakEndHour)
-    ) {
+    if (normalizedBreakPeriods.length !== draft.breakPeriods.length) {
       setError('休憩時間は稼働時間内に収まるように設定してください。');
       return;
     }
 
-    setWorkSchedule(draft);
+    const nextSchedule = {
+      ...draft,
+      breakPeriods: normalizedBreakPeriods,
+    };
+
+    setWorkSchedule(nextSchedule);
+    setDraft(nextSchedule);
     toast.success('稼働設定を保存しました');
   };
 
@@ -176,18 +218,14 @@ export const WorkHoursPage = () => {
                   onChange={(event) =>
                     updateDraft((current) => {
                       const nextWorkStartHour = Number(event.target.value);
-                      if (current.breakStartHour !== current.breakEndHour) {
-                        return {
-                          ...current,
-                          workStartHour: nextWorkStartHour,
-                        };
-                      }
-
                       return {
                         ...current,
                         workStartHour: nextWorkStartHour,
-                        breakStartHour: nextWorkStartHour,
-                        breakEndHour: nextWorkStartHour,
+                        breakPeriods: normalizeBreakPeriods(
+                          current.breakPeriods,
+                          nextWorkStartHour,
+                          current.workEndHour,
+                        ),
                       };
                     })
                   }
@@ -208,19 +246,14 @@ export const WorkHoursPage = () => {
                   onChange={(event) =>
                     updateDraft((current) => {
                       const nextWorkEndHour = Number(event.target.value);
-                      if (current.breakStartHour !== current.breakEndHour) {
-                        return {
-                          ...current,
-                          workEndHour: nextWorkEndHour,
-                        };
-                      }
-
-                      const nextBreakHour = Math.min(nextWorkEndHour, current.breakStartHour);
                       return {
                         ...current,
                         workEndHour: nextWorkEndHour,
-                        breakStartHour: nextBreakHour,
-                        breakEndHour: nextBreakHour,
+                        breakPeriods: normalizeBreakPeriods(
+                          current.breakPeriods,
+                          current.workStartHour,
+                          nextWorkEndHour,
+                        ),
                       };
                     })
                   }
@@ -235,57 +268,79 @@ export const WorkHoursPage = () => {
               </label>
 
               {!hasNoBreak && (
-                <>
-                  <label className="space-y-2 text-sm text-slate-700">
-                    <span className="font-medium">休憩開始</span>
-                    <select
-                      value={draft.breakStartHour}
-                      onChange={(event) =>
-                        updateDraft((current) => {
-                          const nextBreakStartHour = Number(event.target.value);
-                          const nextBreakEndHour = Math.max(current.breakEndHour, nextBreakStartHour + 1);
-                          return {
-                            ...current,
-                            breakStartHour: nextBreakStartHour,
-                            breakEndHour: Math.min(nextBreakEndHour, current.workEndHour),
-                          };
-                        })
-                      }
-                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+                <div className="sm:col-span-2 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-slate-700">休憩時間</p>
+                    <button
+                      type="button"
+                      onClick={addBreakPeriod}
+                      className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
                     >
-                      {HOUR_OPTIONS.slice(0, 24).map((hour) => (
-                        <option key={hour} value={hour}>
-                          {formatHourLabel(hour)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                      <Plus size={14} />
+                      休憩を追加
+                    </button>
+                  </div>
 
-                  <label className="space-y-2 text-sm text-slate-700">
-                    <span className="font-medium">休憩終了</span>
-                    <select
-                      value={draft.breakEndHour}
-                      onChange={(event) =>
-                        updateDraft((current) => {
-                          const nextBreakEndHour = Number(event.target.value);
-                          const nextBreakStartHour = Math.min(current.breakStartHour, nextBreakEndHour - 1);
-                          return {
-                            ...current,
-                            breakStartHour: Math.max(nextBreakStartHour, current.workStartHour),
-                            breakEndHour: nextBreakEndHour,
-                          };
-                        })
-                      }
-                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+                  {draft.breakPeriods.map((period, index) => (
+                    <div
+                      key={`${period.startHour}-${period.endHour}-${index}`}
+                      className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[1fr_1fr_auto]"
                     >
-                      {HOUR_OPTIONS.slice(1).map((hour) => (
-                        <option key={hour} value={hour}>
-                          {formatHourLabel(hour)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </>
+                      <label className="space-y-1 text-sm text-slate-700">
+                        <span className="font-medium">休憩開始</span>
+                        <select
+                          value={period.startHour}
+                          onChange={(event) => {
+                            const nextStartHour = Number(event.target.value);
+                            updateBreakPeriod(index, {
+                              startHour: nextStartHour,
+                              endHour: Math.max(period.endHour, nextStartHour + 1),
+                            });
+                          }}
+                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+                        >
+                          {HOUR_OPTIONS.slice(0, 24).map((hour) => (
+                            <option key={hour} value={hour}>
+                              {formatHourLabel(hour)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label className="space-y-1 text-sm text-slate-700">
+                        <span className="font-medium">休憩終了</span>
+                        <select
+                          value={period.endHour}
+                          onChange={(event) => {
+                            const nextEndHour = Number(event.target.value);
+                            updateBreakPeriod(index, {
+                              startHour: Math.min(period.startHour, nextEndHour - 1),
+                              endHour: nextEndHour,
+                            });
+                          }}
+                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+                        >
+                          {HOUR_OPTIONS.slice(1).map((hour) => (
+                            <option key={hour} value={hour}>
+                              {formatHourLabel(hour)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <div className="self-end">
+                        <button
+                          type="button"
+                          onClick={() => removeBreakPeriod(index)}
+                          className="inline-flex items-center gap-1 rounded-md border border-rose-300 bg-white px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-50"
+                        >
+                          <Trash2 size={14} />
+                          削除
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>

@@ -1,4 +1,4 @@
-import type { WorkSchedule } from './types';
+import type { BreakPeriod, WorkSchedule } from './types';
 
 export const WORK_SCHEDULE_STORAGE_KEY = 'workSchedule';
 
@@ -6,8 +6,7 @@ export const DEFAULT_WORK_SCHEDULE: WorkSchedule = {
   workingDays: [1, 2, 3, 4, 5],
   workStartHour: 9,
   workEndHour: 17,
-  breakStartHour: 12,
-  breakEndHour: 13,
+  breakPeriods: [{ startHour: 12, endHour: 13 }],
 };
 
 export const WEEKDAY_OPTIONS = [
@@ -22,7 +21,43 @@ export const WEEKDAY_OPTIONS = [
 
 export const formatHourLabel = (hour: number) => `${`${hour}`.padStart(2, '0')}:00`;
 
-export const hasBreakTime = (schedule: WorkSchedule) => schedule.breakStartHour < schedule.breakEndHour;
+export const normalizeBreakPeriods = (
+  breakPeriods: BreakPeriod[],
+  workStartHour: number,
+  workEndHour: number,
+): BreakPeriod[] => {
+  const sanitized = breakPeriods
+    .filter(
+      (period) =>
+        Number.isInteger(period.startHour) &&
+        Number.isInteger(period.endHour) &&
+        period.startHour >= workStartHour &&
+        period.endHour <= workEndHour &&
+        period.startHour < period.endHour,
+    )
+    .map((period) => ({
+      startHour: Number(period.startHour),
+      endHour: Number(period.endHour),
+    }))
+    .sort((left, right) =>
+      left.startHour === right.startHour
+        ? left.endHour - right.endHour
+        : left.startHour - right.startHour,
+    );
+
+  return sanitized.reduce<BreakPeriod[]>((merged, period) => {
+    const last = merged[merged.length - 1];
+    if (!last || period.startHour > last.endHour) {
+      merged.push({ ...period });
+      return merged;
+    }
+
+    last.endHour = Math.max(last.endHour, period.endHour);
+    return merged;
+  }, []);
+};
+
+export const hasBreakTime = (schedule: WorkSchedule) => schedule.breakPeriods.length > 0;
 
 export const formatWorkScheduleSummary = (schedule: WorkSchedule) => {
   const dayLabels = WEEKDAY_OPTIONS.filter((option) => schedule.workingDays.includes(option.value)).map(
@@ -33,7 +68,11 @@ export const formatWorkScheduleSummary = (schedule: WorkSchedule) => {
     return `${dayLabels.join('・')} ${formatHourLabel(schedule.workStartHour)}-${formatHourLabel(schedule.workEndHour)} (休憩なし)`;
   }
 
-  return `${dayLabels.join('・')} ${formatHourLabel(schedule.workStartHour)}-${formatHourLabel(schedule.breakStartHour)} / ${formatHourLabel(schedule.breakEndHour)}-${formatHourLabel(schedule.workEndHour)}`;
+  const breakLabels = schedule.breakPeriods
+    .map((period) => `${formatHourLabel(period.startHour)}-${formatHourLabel(period.endHour)}`)
+    .join(', ');
+
+  return `${dayLabels.join('・')} ${formatHourLabel(schedule.workStartHour)}-${formatHourLabel(schedule.workEndHour)} (休憩: ${breakLabels})`;
 };
 
 export const sanitizeWorkSchedule = (value: unknown): WorkSchedule => {
@@ -52,30 +91,51 @@ export const sanitizeWorkSchedule = (value: unknown): WorkSchedule => {
   const workEndHour = Number.isInteger(candidate.workEndHour)
     ? Number(candidate.workEndHour)
     : DEFAULT_WORK_SCHEDULE.workEndHour;
-  const breakStartHour = Number.isInteger(candidate.breakStartHour)
-    ? Number(candidate.breakStartHour)
-    : DEFAULT_WORK_SCHEDULE.breakStartHour;
-  const breakEndHour = Number.isInteger(candidate.breakEndHour)
-    ? Number(candidate.breakEndHour)
-    : DEFAULT_WORK_SCHEDULE.breakEndHour;
-
-  const hasValidHours =
+  const hasValidWorkHours =
     workStartHour >= 0 &&
     workStartHour < workEndHour &&
-    workEndHour <= 24 &&
-    breakStartHour >= workStartHour &&
-    breakStartHour <= breakEndHour &&
-    breakEndHour <= workEndHour;
+    workEndHour <= 24;
 
-  if (workingDays.length === 0 || !hasValidHours) {
+  if (workingDays.length === 0 || !hasValidWorkHours) {
     return DEFAULT_WORK_SCHEDULE;
   }
+
+  const breakPeriodsFromArray = Array.isArray(candidate.breakPeriods)
+    ? candidate.breakPeriods
+        .filter(
+          (period): period is BreakPeriod =>
+            Boolean(period) &&
+            typeof period === 'object' &&
+            Number.isInteger((period as BreakPeriod).startHour) &&
+            Number.isInteger((period as BreakPeriod).endHour),
+        )
+        .map((period) => ({
+          startHour: Number(period.startHour),
+          endHour: Number(period.endHour),
+        }))
+    : [];
+
+  const legacyBreakPeriods =
+    Number.isInteger((candidate as { breakStartHour?: unknown }).breakStartHour) &&
+    Number.isInteger((candidate as { breakEndHour?: unknown }).breakEndHour)
+      ? [
+          {
+            startHour: Number((candidate as { breakStartHour: number }).breakStartHour),
+            endHour: Number((candidate as { breakEndHour: number }).breakEndHour),
+          },
+        ]
+      : [];
+
+  const breakPeriods = normalizeBreakPeriods(
+    breakPeriodsFromArray.length > 0 ? breakPeriodsFromArray : legacyBreakPeriods,
+    workStartHour,
+    workEndHour,
+  );
 
   return {
     workingDays,
     workStartHour,
     workEndHour,
-    breakStartHour,
-    breakEndHour,
+    breakPeriods,
   };
 };
