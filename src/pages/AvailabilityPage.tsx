@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption, SeriesOption } from 'echarts';
 import { useTodoContext } from '../contexts/TodoContext';
@@ -49,6 +49,38 @@ type AvailabilityChartData = AggregatedLoad & {
   maxLoad: number;
   overloadedSlots: number;
   dateLabel: string;
+};
+
+const areAvailabilityTodosEqual = (left: Todo[], right: Todo[]) => {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((todo, index) => {
+    const other = right[index];
+    return Boolean(other)
+      && todo.id === other.id
+      && todo.title === other.title
+      && todo.taskType === other.taskType
+      && todo.createdAt === other.createdAt
+      && todo.startableAt === other.startableAt
+      && todo.dueDate === other.dueDate
+      && todo.status === other.status
+      && todo.effortMinutes === other.effortMinutes
+      && todo.assignee === other.assignee;
+  });
+};
+
+const useStableAvailabilityTodos = (todos: Todo[]) => {
+  const stableRef = useRef(todos);
+
+  return useMemo(() => {
+    if (!areAvailabilityTodosEqual(stableRef.current, todos)) {
+      stableRef.current = todos;
+    }
+
+    return stableRef.current;
+  }, [todos]);
 };
 
 const toDateInputValue = (date: Date) => {
@@ -641,6 +673,7 @@ const buildChartOption = ({
 
   return {
     color: palette,
+    animationDurationUpdate: 0,
     grid: {
       left: 48,
       right: 28,
@@ -847,15 +880,17 @@ export const AvailabilityPage = () => {
       .join(', ')}）`
     : `${formatHourLabel(workSchedule.workStartHour)}-${formatHourLabel(workSchedule.workEndHour)} (休憩なし)`;
 
-  const selfNormalTodos = useMemo(
+  const filteredSelfNormalTodos = useMemo(
     () => todos.filter((todo) => todo.assignee === '自分' && !isMeetingTodo(todo)),
     [todos],
   );
+  const selfNormalTodos = useStableAvailabilityTodos(filteredSelfNormalTodos);
 
-  const selfMeetings = useMemo(
+  const filteredSelfMeetings = useMemo(
     () => todos.filter((todo) => todo.assignee === '自分' && isMeetingTodo(todo) && todo.status !== 'Completed'),
     [todos],
   );
+  const selfMeetings = useStableAvailabilityTodos(filteredSelfMeetings);
 
   const displayDates = useMemo(
     () => buildDisplayDates(selectedDate, workSchedule),
