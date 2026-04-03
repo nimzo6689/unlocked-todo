@@ -14,6 +14,8 @@ export type TodoFormProps = {
   onChange: (form: Partial<Todo>) => void;
   successorIds: string[];
   onSuccessorChange: (successorIds: string[]) => void;
+  onApplyDueDateQuickAction: (quickAction: 'today' | 'tomorrow' | 'thisWeek') => void;
+  onApplyStartableAtQuickAction: (quickAction: 'now' | 'tomorrow' | 'nextWeek') => void;
   onSave: () => void;
   onComplete: () => void;
   onCancel: () => void;
@@ -27,6 +29,8 @@ export const TodoForm: React.FC<TodoFormProps> = ({
   onChange,
   successorIds,
   onSuccessorChange,
+  onApplyDueDateQuickAction,
+  onApplyStartableAtQuickAction,
   onSave,
   onComplete,
   onCancel,
@@ -177,6 +181,32 @@ export const TodoForm: React.FC<TodoFormProps> = ({
             }
             className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm disabled:bg-slate-100 disabled:cursor-not-allowed"
           />
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={hasDependency}
+              onClick={() => onApplyStartableAtQuickAction('now')}
+              className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:cursor-not-allowed"
+            >
+              現在
+            </button>
+            <button
+              type="button"
+              disabled={hasDependency}
+              onClick={() => onApplyStartableAtQuickAction('tomorrow')}
+              className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:cursor-not-allowed"
+            >
+              明日
+            </button>
+            <button
+              type="button"
+              disabled={hasDependency}
+              onClick={() => onApplyStartableAtQuickAction('nextWeek')}
+              className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:cursor-not-allowed"
+            >
+              来週
+            </button>
+          </div>
         </div>
         <div>
           <label
@@ -198,6 +228,29 @@ export const TodoForm: React.FC<TodoFormProps> = ({
             }
             className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
           />
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => onApplyDueDateQuickAction('today')}
+              className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100"
+            >
+              当日まで
+            </button>
+            <button
+              type="button"
+              onClick={() => onApplyDueDateQuickAction('tomorrow')}
+              className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100"
+            >
+              明日まで
+            </button>
+            <button
+              type="button"
+              onClick={() => onApplyDueDateQuickAction('thisWeek')}
+              className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100"
+            >
+              今週中
+            </button>
+          </div>
         </div>
         {!isMeeting && (
           <>

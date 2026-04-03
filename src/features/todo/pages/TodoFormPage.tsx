@@ -12,17 +12,19 @@ import { useTodoForm } from '../hooks/useTodoForm';
 const QUICK_EFFORT_VALUES = [5, 10, 25, 55, 115];
 
 export const TodoFormPage = () => {
-  const { todos, form, setForm, getTodo, fetchTodos } = useTodoContext();
+  const { todos, form, setForm, getTodo, fetchTodos, workSchedule } = useTodoContext();
   const { id } = useParams();
   const {
     saving,
     successorIds,
     setSuccessorIds,
+    applyDueDateQuickAction,
+    applyStartableAtQuickAction,
     handleSave,
     handleComplete,
     handleCancel,
     handleOpenTodo,
-  } = useTodoForm({ todos, form, setForm, getTodo, fetchTodos, id });
+  } = useTodoForm({ todos, form, setForm, getTodo, fetchTodos, id, workSchedule });
 
   const shortcutRegistration = useMemo(() => {
     const isMeeting = isMeetingTodo({ taskType: form.taskType || DEFAULT_TASK_TYPE });
@@ -81,6 +83,8 @@ export const TodoFormPage = () => {
         onChange={setForm}
         successorIds={successorIds}
         onSuccessorChange={setSuccessorIds}
+        onApplyDueDateQuickAction={applyDueDateQuickAction}
+        onApplyStartableAtQuickAction={applyStartableAtQuickAction}
         onSave={handleSave}
         onComplete={handleComplete}
         onCancel={handleCancel}
