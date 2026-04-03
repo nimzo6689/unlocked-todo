@@ -1,13 +1,15 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import { MoreVertical } from 'lucide-react';
-import toast from 'react-hot-toast';
 import type { Todo } from '../common/types';
 import { TodoCard } from '../components/TodoCard';
 import { Modal } from '../components/Modal';
 import { filterButtons, getDependencyIds, isMeetingTodo } from '../common/utils';
 import { useTodoContext } from '../contexts/TodoContext';
 import { useRegisterShortcuts } from '../contexts/ShortcutContext';
+import { useTodoListFilter } from '../hooks/useTodoListFilter';
+import { useTodoSelection } from '../hooks/useTodoSelection';
+import { useExportImport } from '../hooks/useExportImport';
 
 export const TodoListPage = () => {
   const {
@@ -27,11 +29,6 @@ export const TodoListPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-  const [exportText, setExportText] = useState('');
-  const [importText, setImportText] = useState('');
-  const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   const [, setTick] = useState(0);
   const filter = searchParams.get('filter') || 'unlocked';
 
@@ -41,6 +38,28 @@ export const TodoListPage = () => {
     return () => window.clearInterval(interval);
   }, []);
 
+  const filteredTodos = useTodoListFilter(todos, filter, getTodo);
+  const { setSelectedTodoId, selectedTodo, selectRelativeTodo } =
+    useTodoSelection(filteredTodos);
+  const {
+    isExportDialogOpen,
+    isImportDialogOpen,
+    exportText,
+    importText,
+    setImportText,
+    handleExport,
+    handleImport,
+    closeExportDialog,
+    closeImportDialog,
+    handleFileExport,
+    handleTextExport,
+    handleCopyExportText,
+    handleFileSelected,
+    handleTextImport,
+  } = useExportImport({ exportTodos, exportTodosToText, importTodos, importTodosFromText });
+
+  const isOverlayOpen = Boolean(modal || isExportDialogOpen || isImportDialogOpen || menuOpen);
+
   function handleEdit(id: string) {
     navigate(`/edit/${id}`);
   }
@@ -49,169 +68,12 @@ export const TodoListPage = () => {
     navigate('/new');
   }
 
-  function handleExport() {
-    setIsExportDialogOpen(true);
-  }
-
-  async function handleFileExport() {
-    try {
-      await exportTodos();
-      toast.success('タスクをエクスポートしました');
-      setIsExportDialogOpen(false);
-    } catch (err) {
-      toast.error('エクスポートに失敗しました');
-    }
-  }
-
-  function handleTextExport() {
-    setExportText(exportTodosToText());
-  }
-
-  async function handleCopyExportText() {
-    if (!exportText) {
-      toast.error('出力するテキストがありません');
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(exportText);
-      toast.success('エクスポートテキストをコピーしました');
-    } catch {
-      toast.error('コピーに失敗しました');
-    }
-  }
-
-  function handleImport() {
-    setIsImportDialogOpen(true);
-  }
-
-  async function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const result = await importTodos(file);
-    if (result.success) {
-      if (result.addedCount === 0 && result.updatedCount === 0) {
-        toast.success('ファイルを読み込みましたが、取り込むタスクはありませんでした');
-      } else {
-        toast.success(`${result.addedCount}件追加、${result.updatedCount}件更新しました`);
-      }
-      setIsImportDialogOpen(false);
-      setImportText('');
-    } else {
-      toast.error(`インポートに失敗しました: ${result.message}`);
-    }
-
-    // 同じファイルを再選択できるよう value をクリア
-    e.target.value = '';
-  }
-
-  async function handleTextImport() {
-    if (!importText.trim()) {
-      toast.error('インポートするJSONテキストを入力してください');
-      return;
-    }
-
-    const result = await importTodosFromText(importText);
-    if (result.success) {
-      if (result.addedCount === 0 && result.updatedCount === 0) {
-        toast.success('テキストを読み込みましたが、取り込むタスクはありませんでした');
-      } else {
-        toast.success(`${result.addedCount}件追加、${result.updatedCount}件更新しました`);
-      }
-      setImportText('');
-      setIsImportDialogOpen(false);
-    } else {
-      toast.error(`インポートに失敗しました: ${result.message}`);
-    }
-  }
-
   function handleFilterChange(f: string) {
     setSearchParams({
       ...Object.fromEntries(searchParams.entries()),
       filter: f,
     });
   }
-
-  const filteredTodos = todos
-    .filter(todo => {
-      const now = new Date();
-      const isMeeting = isMeetingTodo(todo);
-      const startableAt = new Date(todo.startableAt || todo.createdAt);
-      const dependentTodos = getDependencyIds(todo)
-        .map(getTodo)
-        .filter((t): t is Todo => Boolean(t));
-      const isDependencyIncomplete = dependentTodos.some(t => t.status !== 'Completed');
-      if (filter === 'all') return true;
-      if (filter === 'completed') return todo.status === 'Completed';
-      if (filter === 'meeting') {
-        return isMeeting && todo.status !== 'Completed';
-      }
-      if (isMeeting) {
-        // Meeting が開始済みかつ終了前（進行中）であれば unlocked タブにも表示
-        if (filter === 'unlocked') {
-          const dueDate = new Date(todo.dueDate);
-          return todo.status !== 'Completed' && startableAt <= now && dueDate > now;
-        }
-        return false;
-      }
-      if (filter === 'unlocked') {
-        return todo.status === 'Unlocked' && startableAt <= now && !isDependencyIncomplete;
-      }
-      if (filter === 'locked') {
-        return (
-          todo.status === 'Locked' ||
-          (todo.status === 'Unlocked' && (startableAt > now || isDependencyIncomplete))
-        );
-      }
-      return false;
-    })
-    .sort((a, b) => {
-      const dueDiff = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-      if (dueDiff !== 0) return dueDiff;
-      if (isMeetingTodo(a) || isMeetingTodo(b)) {
-        return a.title.localeCompare(b.title, 'ja');
-      }
-      return (a.effortMinutes ?? 0) - (b.effortMinutes ?? 0);
-    });
-
-  const selectedTodo = selectedTodoId
-    ? filteredTodos.find((todo) => todo.id === selectedTodoId) || null
-    : filteredTodos[0] || null;
-  const isOverlayOpen = Boolean(modal || isExportDialogOpen || isImportDialogOpen || menuOpen);
-
-  useEffect(() => {
-    if (filteredTodos.length === 0) {
-      setSelectedTodoId(null);
-      return;
-    }
-
-    if (!selectedTodoId || !filteredTodos.some((todo) => todo.id === selectedTodoId)) {
-      setSelectedTodoId(filteredTodos[0].id);
-    }
-  }, [filteredTodos, selectedTodoId]);
-
-  useEffect(() => {
-    if (!selectedTodo?.id) {
-      return;
-    }
-
-    const element = document.getElementById(`todo-card-${selectedTodo.id}`);
-    element?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  }, [selectedTodo?.id]);
-
-  const selectRelativeTodo = (delta: number) => {
-    if (filteredTodos.length === 0) {
-      return;
-    }
-
-    const currentIndex = selectedTodo
-      ? filteredTodos.findIndex((todo) => todo.id === selectedTodo.id)
-      : 0;
-    const safeIndex = currentIndex === -1 ? 0 : currentIndex;
-    const nextIndex = (safeIndex + delta + filteredTodos.length) % filteredTodos.length;
-    setSelectedTodoId(filteredTodos[nextIndex].id);
-  };
 
   const shortcutRegistration = useMemo(() => {
     const canStartSelected = Boolean(
@@ -367,10 +229,7 @@ export const TodoListPage = () => {
           description: 'エクスポートダイアログを閉じる',
           category: 'ダイアログ' as const,
           bindings: ['escape'],
-          action: () => {
-            setIsExportDialogOpen(false);
-            setExportText('');
-          },
+          action: closeExportDialog,
           enabled: isExportDialogOpen,
           allowInDialog: true,
           allowInInput: true,
@@ -380,10 +239,7 @@ export const TodoListPage = () => {
           description: 'インポートダイアログを閉じる',
           category: 'ダイアログ' as const,
           bindings: ['escape'],
-          action: () => {
-            setIsImportDialogOpen(false);
-            setImportText('');
-          },
+          action: closeImportDialog,
           enabled: isImportDialogOpen,
           allowInDialog: true,
           allowInInput: true,
@@ -458,7 +314,7 @@ export const TodoListPage = () => {
             <div className="flex justify-end gap-2 mt-4">
               <button
                 className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg text-sm"
-                onClick={() => setIsImportDialogOpen(false)}
+                onClick={closeImportDialog}
               >
                 キャンセル
               </button>
@@ -521,10 +377,7 @@ export const TodoListPage = () => {
             <div className="flex justify-end gap-2 mt-4">
               <button
                 className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg text-sm"
-                onClick={() => {
-                  setIsExportDialogOpen(false);
-                  setExportText('');
-                }}
+                onClick={closeExportDialog}
               >
                 閉じる
               </button>

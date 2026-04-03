@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
-import toast from 'react-hot-toast';
+import { useMemo } from 'react';
 import { Clock3, Plus, Save, Trash2 } from 'lucide-react';
 import { useTodoContext } from '../contexts/TodoContext';
 import {
@@ -9,21 +8,10 @@ import {
   normalizeBreakPeriods,
   WEEKDAY_OPTIONS,
 } from '../common/settings';
-import type { BreakPeriod, WorkSchedule } from '../common/types';
 import { useRegisterShortcuts } from '../contexts/ShortcutContext';
+import { useWorkHoursDraft } from '../hooks/useWorkHoursDraft';
 
 const HOUR_OPTIONS = Array.from({ length: 25 }, (_, index) => index);
-
-const createDefaultBreakPeriod = (workStartHour: number, workEndHour: number): BreakPeriod => {
-  const workStartMinute = workStartHour * 60;
-  const workEndMinute = workEndHour * 60;
-  const preferredStartMinute = 12 * 60;
-  const startMinute = Math.max(workStartMinute, Math.min(preferredStartMinute, workEndMinute - 60));
-  return {
-    startMinute,
-    endMinute: startMinute + 60,
-  };
-};
 
 const formatTimeInputValue = (minuteOfDay: number) => formatMinuteLabel(minuteOfDay);
 
@@ -45,109 +33,18 @@ const parseTimeInputValue = (value: string) => {
 
 export const WorkHoursPage = () => {
   const { workSchedule, setWorkSchedule } = useTodoContext();
-  const [draft, setDraft] = useState<WorkSchedule>(workSchedule);
-  const [error, setError] = useState('');
-  const hasNoBreak = draft.breakPeriods.length === 0;
-
-  const toggleNoBreak = (enabled: boolean) => {
-    updateDraft((current) => {
-      if (enabled) {
-        return {
-          ...current,
-          breakPeriods: [],
-        };
-      }
-
-      return {
-        ...current,
-        breakPeriods:
-          current.breakPeriods.length > 0
-            ? current.breakPeriods
-            : [createDefaultBreakPeriod(current.workStartHour, current.workEndHour)],
-      };
-    });
-  };
-
-  useEffect(() => {
-    setDraft(workSchedule);
-  }, [workSchedule]);
-
-  const updateDraft = (updater: (current: WorkSchedule) => WorkSchedule) => {
-    setDraft((current) => updater(current));
-    setError('');
-  };
-
-  const toggleWorkingDay = (day: number) => {
-    updateDraft((current) => {
-      const nextDays = current.workingDays.includes(day)
-        ? current.workingDays.filter((currentDay) => currentDay !== day)
-        : [...current.workingDays, day].sort((left, right) => left - right);
-
-      return {
-        ...current,
-        workingDays: nextDays,
-      };
-    });
-  };
-
-  const addBreakPeriod = () => {
-    updateDraft((current) => ({
-      ...current,
-      breakPeriods: [...current.breakPeriods, createDefaultBreakPeriod(current.workStartHour, current.workEndHour)],
-    }));
-  };
-
-  const removeBreakPeriod = (index: number) => {
-    updateDraft((current) => ({
-      ...current,
-      breakPeriods: current.breakPeriods.filter((_, currentIndex) => currentIndex !== index),
-    }));
-  };
-
-  const updateBreakPeriod = (index: number, nextPeriod: BreakPeriod) => {
-    updateDraft((current) => {
-      const nextBreakPeriods = current.breakPeriods.map((period, currentIndex) =>
-        currentIndex === index ? nextPeriod : period,
-      );
-
-      return {
-        ...current,
-        breakPeriods: normalizeBreakPeriods(nextBreakPeriods, current.workStartHour, current.workEndHour),
-      };
-    });
-  };
-
-  const handleSave = () => {
-    if (draft.workingDays.length === 0) {
-      setError('少なくとも 1 つの稼働日を選択してください。');
-      return;
-    }
-
-    if (draft.workStartHour >= draft.workEndHour) {
-      setError('開始時刻は終了時刻より前に設定してください。');
-      return;
-    }
-
-    const normalizedBreakPeriods = normalizeBreakPeriods(
-      draft.breakPeriods,
-      draft.workStartHour,
-      draft.workEndHour,
-    );
-
-    if (normalizedBreakPeriods.length !== draft.breakPeriods.length) {
-      setError('休憩時間は稼働時間内に収まるように設定してください。');
-      return;
-    }
-
-    const nextSchedule = {
-      ...draft,
-      breakPeriods: normalizedBreakPeriods,
-    };
-
-    setWorkSchedule(nextSchedule);
-    setDraft(nextSchedule);
-    toast.success('稼働設定を保存しました');
-  };
+  const {
+    draft,
+    error,
+    hasNoBreak,
+    updateDraft,
+    toggleNoBreak,
+    toggleWorkingDay,
+    addBreakPeriod,
+    removeBreakPeriod,
+    updateBreakPeriod,
+    handleSave,
+  } = useWorkHoursDraft(workSchedule, setWorkSchedule);
 
   const shortcutRegistration = useMemo(() => ({
     pageLabel: '稼働設定',
