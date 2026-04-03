@@ -221,6 +221,18 @@ export const TodoForm: React.FC<TodoFormProps> = ({
                 }
                 className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
               />
+              <div className="mt-2 flex flex-wrap gap-2">
+                {[5, 10, 25, 55, 115].map(value => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => onChange({ ...form, effortMinutes: value })}
+                    className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100"
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
             </div>
             <div>
               <label
@@ -246,20 +258,6 @@ export const TodoForm: React.FC<TodoFormProps> = ({
                 }}
                 className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
               />
-            </div>
-            <div className="sm:col-span-2">
-              <div className="mt-2 flex flex-wrap gap-2">
-                {[5, 10, 25, 55, 115].map(value => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => onChange({ ...form, effortMinutes: value })}
-                    className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100"
-                  >
-                    {value}
-                  </button>
-                ))}
-              </div>
               <p className="mt-2 text-[11px] sm:text-xs text-slate-500">
                 実作業時間表示: {formatDurationFromSeconds(normalizedActualWorkSeconds)}
               </p>
