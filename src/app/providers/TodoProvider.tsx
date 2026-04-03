@@ -412,8 +412,11 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
   }, [currentInProgressId, currentInProgressStartedAt, syncInProgressActualWork]);
 
   const handleDelete = (id: string) => {
+    const targetTodo = todosRef.current.find((todo) => todo.id === id);
+    const todoTitle = targetTodo?.title?.trim() || '（タイトル未設定）';
+
     setModal({
-      message: 'このTodoを本当に削除しますか？\nこの操作は取り消せません。',
+      message: `「${todoTitle}」を本当に削除しますか？\nこの操作は取り消せません。`,
       onConfirm: async () => {
         if (currentInProgressIdRef.current === id) {
           await syncInProgressActualWork(true);
