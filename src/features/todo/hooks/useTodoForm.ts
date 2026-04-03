@@ -33,6 +33,14 @@ export const useTodoForm = ({
   const [successorIds, setSuccessorIds] = useState<string[]>([]);
   const initializedFormKeyRef = useRef<string | null>(null);
 
+  const normalizeActualWorkSeconds = (value: unknown) => {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric) || numeric < 0) {
+      return 0;
+    }
+    return Math.floor(numeric);
+  };
+
   useEffect(() => {
     if (id) {
       if (initializedFormKeyRef.current === id) return;
@@ -86,6 +94,7 @@ export const useTodoForm = ({
 
       newTodos = newTodos.map(todo => {
         if (todo.id === currentTodoId) {
+          const formActualWorkSeconds = normalizeActualWorkSeconds(form.actualWorkSeconds);
           return {
             ...todo,
             ...form,
@@ -98,7 +107,7 @@ export const useTodoForm = ({
               ? getMeetingStatus(form.dueDate || todo.dueDate, todo.status)
               : ((form.status as Todo['status']) || todo.status),
             effortMinutes: isMeeting ? 0 : (form.effortMinutes || todo.effortMinutes),
-            actualWorkSeconds: isMeeting ? 0 : (todo.actualWorkSeconds || 0),
+            actualWorkSeconds: isMeeting ? 0 : formActualWorkSeconds,
             assignee: isMeeting
               ? todo.assignee
               : ((form.assignee as Todo['assignee']) || todo.assignee),
@@ -123,6 +132,7 @@ export const useTodoForm = ({
         return todo;
       });
     } else {
+      const formActualWorkSeconds = normalizeActualWorkSeconds(form.actualWorkSeconds);
       const newTodo: Todo = {
         id: crypto.randomUUID(),
         createdAt: now,
@@ -135,7 +145,7 @@ export const useTodoForm = ({
           ? getMeetingStatus(form.dueDate || '')
           : ((form.status as Todo['status']) || 'Unlocked'),
         effortMinutes: isMeeting ? 0 : (form.effortMinutes || DEFAULT_EFFORT_MINUTES),
-        actualWorkSeconds: 0,
+        actualWorkSeconds: isMeeting ? 0 : formActualWorkSeconds,
         assignee: (form.assignee as Todo['assignee']) || '自分',
         dependency: normalizedDependency,
       };

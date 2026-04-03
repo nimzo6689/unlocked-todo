@@ -11,7 +11,6 @@ import {
 export type TodoFormProps = {
   form: Partial<Todo>;
   todos: Todo[];
-  actualWorkSeconds: number;
   onChange: (form: Partial<Todo>) => void;
   successorIds: string[];
   onSuccessorChange: (successorIds: string[]) => void;
@@ -25,7 +24,6 @@ export type TodoFormProps = {
 export const TodoForm: React.FC<TodoFormProps> = ({
   form,
   todos,
-  actualWorkSeconds,
   onChange,
   successorIds,
   onSuccessorChange,
@@ -51,6 +49,10 @@ export const TodoForm: React.FC<TodoFormProps> = ({
 
   const [isPredecessorExpanded, setIsPredecessorExpanded] = React.useState(false);
   const [isSuccessorExpanded, setIsSuccessorExpanded] = React.useState(false);
+  const normalizedActualWorkSeconds = Number.isFinite(Number(form.actualWorkSeconds))
+    ? Math.max(0, Math.floor(Number(form.actualWorkSeconds)))
+    : 0;
+  const actualWorkMinutes = Math.floor(normalizedActualWorkSeconds / 60);
 
   React.useEffect(() => {
     setIsPredecessorExpanded(currentDeps.length > 0);
@@ -198,14 +200,14 @@ export const TodoForm: React.FC<TodoFormProps> = ({
           />
         </div>
         {!isMeeting && (
-          <div>
-            <label
-              htmlFor="effortMinutes"
-              className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
-            >
-              工数 (分)
-            </label>
-            <div className="flex items-center gap-3">
+          <>
+            <div>
+              <label
+                htmlFor="effortMinutes"
+                className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
+              >
+                工数 (分)
+              </label>
               <input
                 type="number"
                 id="effortMinutes"
@@ -219,23 +221,50 @@ export const TodoForm: React.FC<TodoFormProps> = ({
                 }
                 className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
               />
-              <div className="min-w-fit whitespace-nowrap rounded-md bg-slate-100 px-3 py-2 text-xs sm:text-sm text-slate-700">
-                実作業時間: {formatDurationFromSeconds(actualWorkSeconds)}
+            </div>
+            <div>
+              <label
+                htmlFor="actualWorkMinutes"
+                className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
+              >
+                実作業時間 (分)
+              </label>
+              <input
+                type="number"
+                id="actualWorkMinutes"
+                min={0}
+                value={actualWorkMinutes}
+                onChange={e => {
+                  const inputMinutes = Number(e.target.value);
+                  const nextMinutes = Number.isFinite(inputMinutes)
+                    ? Math.max(0, Math.floor(inputMinutes))
+                    : 0;
+                  onChange({
+                    ...form,
+                    actualWorkSeconds: nextMinutes * 60,
+                  });
+                }}
+                className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <div className="mt-2 flex flex-wrap gap-2">
+                {[5, 10, 25, 55, 115].map(value => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => onChange({ ...form, effortMinutes: value })}
+                    className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100"
+                  >
+                    {value}
+                  </button>
+                ))}
               </div>
+              <p className="mt-2 text-[11px] sm:text-xs text-slate-500">
+                実作業時間表示: {formatDurationFromSeconds(normalizedActualWorkSeconds)}
+              </p>
             </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {[5, 10, 25, 55, 115].map(value => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => onChange({ ...form, effortMinutes: value })}
-                  className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100"
-                >
-                  {value}
-                </button>
-              ))}
-            </div>
-          </div>
+          </>
         )}
       </div>
       {!isMeeting && (

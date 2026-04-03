@@ -78,7 +78,6 @@ export const TodoFormPage = () => {
       <TodoForm
         form={form}
         todos={todos}
-        actualWorkSeconds={form.id ? getTodo(form.id)?.actualWorkSeconds || 0 : 0}
         onChange={setForm}
         successorIds={successorIds}
         onSuccessorChange={setSuccessorIds}
