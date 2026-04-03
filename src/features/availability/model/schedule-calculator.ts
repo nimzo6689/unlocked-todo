@@ -62,6 +62,7 @@ export const buildTimeSlots = (dateStr: string, schedule: WorkSchedule) => {
       start: slotStart,
       end: slotEnd,
       isWorking,
+      isElapsed: false,
     });
   }
 

@@ -23,7 +23,7 @@ export const buildChartOption = ({
   const yAxisMax = Math.max(1.2, Math.ceil(maxLoad * 10) / 10);
   const overloadBase = slotTotals.map((value) => (value > 1 ? 1 : 0));
   const overloadOnly = slotTotals.map((value) => (value > 1 ? value - 1 : 0));
-  const displayMask = slots.map((slot) => (slot.isWorking ? 1 : null));
+  const displayMask = slots.map((slot) => (slot.isWorking && !slot.isElapsed ? 1 : null));
 
   const palette = [
     '#0ea5e9',
@@ -48,7 +48,9 @@ export const buildChartOption = ({
     emphasis: { focus: 'series' },
     color: palette[index % palette.length],
     data: (() => {
-      const values = task.data.map((value, slotIndex) => (slots[slotIndex]?.isWorking ? value : null));
+      const values = task.data.map((value, slotIndex) =>
+        slots[slotIndex]?.isWorking && !slots[slotIndex]?.isElapsed ? value : null,
+      );
       if (values.length === 0) {
         return values;
       }
@@ -83,6 +85,10 @@ export const buildChartOption = ({
             return `${formatTimeLabel(slots[slots.length - 1].end)}<br/>終了時刻`;
           }
           return '';
+        }
+
+        if (slot.isElapsed) {
+          return `${slot.label} - ${formatTimeLabel(slot.end)}<br/>この時間は経過済みのため、負荷を表示しません`;
         }
 
         if (!slot.isWorking) {

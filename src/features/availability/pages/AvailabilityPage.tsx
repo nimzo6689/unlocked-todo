@@ -30,7 +30,7 @@ export const AvailabilityPage = () => {
     : `${formatHourLabel(workSchedule.workStartHour)}-${formatHourLabel(workSchedule.workEndHour)} (休憩なし)`;
 
   const filteredSelfNormalTodos = useMemo(
-    () => todos.filter((todo) => todo.assignee === '自分' && !isMeetingTodo(todo)),
+    () => todos.filter((todo) => todo.assignee === '自分' && !isMeetingTodo(todo) && todo.status !== 'Completed'),
     [todos],
   );
   const selfNormalTodos = useStableAvailabilityTodos(filteredSelfNormalTodos);

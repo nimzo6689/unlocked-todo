@@ -1,7 +1,6 @@
 import type { EChartsOption } from 'echarts';
 
 export const SLOT_MINUTES = 30;
-export const LOAD_BUFFER_MINUTES = 5;
 export const DISPLAY_WINDOW_DAYS = 7;
 export const HOUR_MS = 60 * 60 * 1000;
 export const SLOT_MS = SLOT_MINUTES * 60 * 1000;
@@ -11,6 +10,7 @@ export type TimeSlot = {
   start: Date;
   end: Date;
   isWorking: boolean;
+  isElapsed: boolean;
 };
 
 export type Interval = {

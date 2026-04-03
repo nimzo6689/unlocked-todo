@@ -1,5 +1,5 @@
 import type { Todo, WorkSchedule } from '@/features/todo/model/types';
-import { HOUR_MS, LOAD_BUFFER_MINUTES, type AggregatedLoad, type DatedTimeSlot, type SlotContributor } from './types';
+import { HOUR_MS, SLOT_MS, type AggregatedLoad, type DatedTimeSlot, type SlotContributor } from './types';
 import { subtractIntervals } from './interval-utils';
 import { buildTimeSlots, buildWorkingDateRange, calculateWorkingDurationMsInRange, getMeetingIntervalsForDay, parseTaskRange } from './schedule-calculator';
 
@@ -8,7 +8,21 @@ type TaskWithPriority = {
   workingDurationMs: number;
 };
 
+const STARTED_WORK_THRESHOLD_SECONDS = 1;
+
 const toFiniteNumber = (value: number) => (Number.isFinite(value) ? value : 0);
+
+const toRemainingEffortMinutes = (todo: Todo) => {
+  const plannedMinutes = Math.max(0, toFiniteNumber(todo.effortMinutes));
+  const actualSeconds = Math.max(0, toFiniteNumber(todo.actualWorkSeconds));
+
+  if (actualSeconds < STARTED_WORK_THRESHOLD_SECONDS) {
+    return plannedMinutes;
+  }
+
+  const actualMinutes = actualSeconds / 60;
+  return Math.max(0, plannedMinutes - actualMinutes);
+};
 
 const buildGlobalSlots = (dateStrs: string[], schedule: WorkSchedule): DatedTimeSlot[] =>
   dateStrs.flatMap((dateStr) =>
@@ -24,6 +38,7 @@ export const sortTasksByPriority = (
   meetings: Todo[],
 ): TaskWithPriority[] => {
   return todos
+    .filter((todo) => todo.status !== 'Completed')
     .map((todo) => {
       const range = parseTaskRange(todo);
       if (!range) return null;
@@ -108,7 +123,11 @@ export const aggregateLoadForDates = (
   displayDates: string[],
   schedule: WorkSchedule,
 ): Record<string, AggregatedLoad> => {
+  const now = new Date();
+  const currentSlotStartMs = Math.floor(now.getTime() / SLOT_MS) * SLOT_MS;
+
   const parsedTaskRanges = todos
+    .filter((todo) => todo.status !== 'Completed')
     .map((todo) => {
       const range = parseTaskRange(todo);
       return range ? { todo, range } : null;
@@ -131,7 +150,10 @@ export const aggregateLoadForDates = (
   const rangeStart = new Date(Math.min(...rangeCandidates.map((date) => date.getTime())));
   const rangeEnd = new Date(Math.max(...rangeCandidates.map((date) => date.getTime())));
   const allWorkingDates = buildWorkingDateRange(rangeStart, rangeEnd, schedule);
-  const globalSlots = buildGlobalSlots(allWorkingDates, schedule);
+  const globalSlots = buildGlobalSlots(allWorkingDates, schedule).map((slot) => ({
+    ...slot,
+    isElapsed: slot.end.getTime() <= currentSlotStartMs,
+  }));
   const meetingIntervalsByDate = new Map(
     allWorkingDates.map((dateStr) => [
       dateStr,
@@ -141,7 +163,7 @@ export const aggregateLoadForDates = (
 
   const globalSlotTotals = Array(globalSlots.length).fill(0) as number[];
   const globalMeetingSeries = globalSlots.map((slot) => {
-    if (!slot.isWorking) {
+    if (!slot.isWorking || slot.isElapsed) {
       return 0;
     }
 
@@ -169,11 +191,14 @@ export const aggregateLoadForDates = (
     const effectiveWorkingDurationMs = calculateWorkingDurationMsInRange(range, schedule, meetings);
     if (effectiveWorkingDurationMs <= 0) return;
 
-    const bufferedEffortMinutes = todo.effortMinutes + LOAD_BUFFER_MINUTES;
-    const effortHours = bufferedEffortMinutes / 60;
+    const effortHours = toRemainingEffortMinutes(todo) / 60;
+    if (effortHours <= 0) {
+      return;
+    }
+
     const perSlot = seriesMap.get(todo.id)?.data ?? Array(globalSlots.length).fill(0);
     const overlaps = globalSlots.flatMap((slot, index) => {
-      if (!slot.isWorking) {
+      if (!slot.isWorking || slot.isElapsed) {
         return [] as Array<{ index: number; overlapHours: number; slotHours: number }>;
       }
 
@@ -253,6 +278,7 @@ export const aggregateLoadForDates = (
         start: globalSlots[index].start,
         end: globalSlots[index].end,
         isWorking: globalSlots[index].isWorking,
+        isElapsed: globalSlots[index].isElapsed,
       }));
       const meetingSeries = indices.map((index) => toFiniteNumber(globalMeetingSeries[index] ?? 0));
       const slotTotals = indices.map((index) => toFiniteNumber(globalSlotTotals[index] ?? 0));
