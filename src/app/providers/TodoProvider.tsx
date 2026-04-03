@@ -441,8 +441,11 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
   };
 
   const handleComplete = (id: string) => {
+    const targetTodo = todosRef.current.find((todo) => todo.id === id);
+    const todoTitle = targetTodo?.title?.trim() || '（タイトル未設定）';
+
     setModal({
-      message: 'このTodoを完了にしますか？',
+      message: `「${todoTitle}」を完了にしますか？`,
       onConfirm: async () => {
         if (currentInProgressIdRef.current === id) {
           await syncInProgressActualWork(true);
