@@ -9,6 +9,17 @@ export const AboutPage = () => {
         <p className="max-w-3xl text-sm text-slate-600 sm:text-base">
           Unlocked Todo は、今すぐ着手できるタスクを見つけやすくするための Todo アプリです。
         </p>
+        <p className="inline-flex items-center gap-2 text-sm text-slate-600">
+          <span>ソースコード:</span>
+          <a
+            href="https://github.com/nimzo6689/unlocked-todo"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-800"
+          >
+            github.com/nimzo6689/unlocked-todo
+          </a>
+        </p>
       </header>
 
       <div className="grid gap-4 md:grid-cols-3">
