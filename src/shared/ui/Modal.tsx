@@ -7,7 +7,7 @@ export type ModalProps = {
 };
 
 export const Modal: React.FC<ModalProps> = ({ message, onConfirm, onCancel }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm supports-backdrop-filter:bg-slate-950/35">
     <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-xs sm:max-w-sm">
       <p className="text-slate-700 mb-6 whitespace-pre-line text-sm sm:text-base">{message}</p>
       <div className="flex flex-wrap justify-end gap-2">
