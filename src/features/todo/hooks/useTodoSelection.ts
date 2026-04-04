@@ -21,7 +21,8 @@ export const useTodoSelection = (filteredTodos: Todo[]) => {
 
   useEffect(() => {
     if (!selectedTodo?.id) return;
-    const element = document.getElementById(`todo-card-${selectedTodo.id}`);
+    const element = document.getElementById(`todo-card-${selectedTodo.id}`)
+      ?? document.getElementById(`todo-row-${selectedTodo.id}`);
     element?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   }, [selectedTodo?.id]);
 

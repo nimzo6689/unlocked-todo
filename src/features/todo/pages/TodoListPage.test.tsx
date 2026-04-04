@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import { TodoListPage } from '@/features/todo/pages/TodoListPage';
@@ -28,6 +28,16 @@ vi.mock('@/features/todo/hooks/useExportImport', () => ({
 
 vi.mock('@/features/todo/ui/TodoCard', () => ({
   TodoCard: ({ todo }: { todo: { title: string } }) => <article>{todo.title}</article>,
+}));
+
+vi.mock('@/features/todo/ui/TodoListRows', () => ({
+  TodoListRows: ({ todos }: { todos: Array<{ title: string }> }) => (
+    <section aria-label="todo-list-rows">
+      {todos.map((todo) => (
+        <div key={todo.title}>{todo.title}</div>
+      ))}
+    </section>
+  ),
 }));
 
 const useTodoContextMock = vi.mocked(useTodoContext);
@@ -106,6 +116,22 @@ describe('TodoListPage', () => {
     );
 
     expect(screen.getByText('タスクはありません。')).toBeInTheDocument();
+  });
+
+  it('switches between card and list view', () => {
+    render(
+      <MemoryRouter initialEntries={['/?filter=unlocked&view=card']}>
+        <TodoListPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByLabelText('todo-list-rows')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'リスト表示' }));
+    expect(screen.getByLabelText('todo-list-rows')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'カード表示' }));
+    expect(screen.queryByLabelText('todo-list-rows')).not.toBeInTheDocument();
   });
 
   it('opens menu and invokes export/import handlers', async () => {
@@ -281,9 +307,16 @@ describe('TodoListPage', () => {
     expect(registration).toBeDefined();
 
     const shortcuts = registration!.shortcuts;
+    expect(shortcuts.find((item) => item.id === 'list-view-list')?.bindings).toEqual(['v l']);
+    expect(shortcuts.find((item) => item.id === 'list-view-card')?.bindings).toEqual(['v c']);
+
     shortcuts.find((item) => item.id === 'list-start')?.action();
     shortcuts.find((item) => item.id === 'list-complete')?.action();
     shortcuts.find((item) => item.id === 'list-delete')?.action();
+    act(() => {
+      shortcuts.find((item) => item.id === 'list-view-list')?.action();
+      shortcuts.find((item) => item.id === 'list-view-card')?.action();
+    });
     shortcuts.find((item) => item.id === 'dialog-confirm-modal')?.action();
     shortcuts.find((item) => item.id === 'dialog-close-modal')?.action();
     shortcuts.find((item) => item.id === 'dialog-export-file')?.action();

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { MoreVertical } from 'lucide-react';
 import type { Todo } from '@/features/todo/model/types';
 import { TodoCard } from '@/features/todo/ui/TodoCard';
+import { TodoListRows } from '@/features/todo/ui/TodoListRows';
 import { Modal } from '@/shared/ui/Modal';
 import { filterButtons, getDependencyIds, isMeetingTodo } from '@/features/todo/model/todo-utils';
 import { useTodoContext } from '@/app/providers/TodoContext';
@@ -32,6 +33,7 @@ export const TodoListPage = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [, setTick] = useState(0);
   const filter = searchParams.get('filter') || 'unlocked';
+  const view = searchParams.get('view') === 'list' ? 'list' : 'card';
 
   // 時刻経過による Locked→Unlocked / Meeting→Unlocked 等の遷移を自動反映するため定期再レンダリング
   useEffect(() => {
@@ -73,6 +75,13 @@ export const TodoListPage = () => {
     setSearchParams({
       ...Object.fromEntries(searchParams.entries()),
       filter: f,
+    });
+  }
+
+  function handleViewChange(nextView: 'card' | 'list') {
+    setSearchParams({
+      ...Object.fromEntries(searchParams.entries()),
+      view: nextView,
     });
   }
 
@@ -155,6 +164,22 @@ export const TodoListPage = () => {
           category: '一覧操作' as const,
           bindings: ['i'],
           action: handleImport,
+        },
+        {
+          id: 'list-view-list',
+          description: 'リスト表示に切り替える',
+          category: '一覧操作' as const,
+          bindings: ['v l'],
+          action: () => handleViewChange('list'),
+          enabled: view !== 'list',
+        },
+        {
+          id: 'list-view-card',
+          description: 'カード表示に切り替える',
+          category: '一覧操作' as const,
+          bindings: ['v c'],
+          action: () => handleViewChange('card'),
+          enabled: view !== 'card',
         },
         ...filterButtons.map((button, index) => ({
           id: `list-filter-${button.key}`,
@@ -269,6 +294,7 @@ export const TodoListPage = () => {
     modal,
     selectedTodo,
     startTodo,
+    view,
   ]);
 
   useRegisterShortcuts(shortcutRegistration);
@@ -368,31 +394,71 @@ export const TodoListPage = () => {
         <p className="text-xs text-slate-500">
           並び順: 期限（昇順）→ 工数（昇順）
         </p>
+        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+          <button
+            className={`px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition-colors ${
+              view === 'card'
+                ? 'bg-white text-blue-600 shadow'
+                : 'text-slate-600 hover:bg-slate-200'
+            }`}
+            onClick={() => handleViewChange('card')}
+            aria-pressed={view === 'card'}
+          >
+            カード表示
+          </button>
+          <button
+            className={`px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition-colors ${
+              view === 'list'
+                ? 'bg-white text-blue-600 shadow'
+                : 'text-slate-600 hover:bg-slate-200'
+            }`}
+            onClick={() => handleViewChange('list')}
+            aria-pressed={view === 'list'}
+          >
+            リスト表示
+          </button>
+        </div>
       </div>
       <main
         id="todo-list"
         role="listbox"
         aria-label="タスク一覧"
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+        className={view === 'card'
+          ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'
+          : 'space-y-2'}
       >
         {filteredTodos.length > 0 ? (
-          filteredTodos.map(todo => (
-            <TodoCard
-              key={todo.id}
-              todo={todo}
-              dependentTodos={getDependencyIds(todo)
-                .map(getTodo)
-                .filter((t): t is Todo => Boolean(t))}
+          view === 'card' ? (
+            filteredTodos.map(todo => (
+              <TodoCard
+                key={todo.id}
+                todo={todo}
+                dependentTodos={getDependencyIds(todo)
+                  .map(getTodo)
+                  .filter((t): t is Todo => Boolean(t))}
+                filter={filter}
+                selected={selectedTodo?.id === todo.id}
+                currentInProgressId={currentInProgressId}
+                onSelect={setSelectedTodoId}
+                onEdit={handleEdit}
+                onDelete={() => handleDelete(todo.id)}
+                onComplete={() => handleComplete(todo.id)}
+                onStartTodo={startTodo}
+              />
+            ))
+          ) : (
+            <TodoListRows
+              todos={filteredTodos}
               filter={filter}
-              selected={selectedTodo?.id === todo.id}
+              selectedTodoId={selectedTodo?.id ?? null}
               currentInProgressId={currentInProgressId}
               onSelect={setSelectedTodoId}
               onEdit={handleEdit}
-              onDelete={() => handleDelete(todo.id)}
-              onComplete={() => handleComplete(todo.id)}
+              onDelete={handleDelete}
+              onComplete={handleComplete}
               onStartTodo={startTodo}
             />
-          ))
+          )
         ) : (
           <p className="text-slate-500 col-span-full text-center py-10">タスクはありません。</p>
         )}
