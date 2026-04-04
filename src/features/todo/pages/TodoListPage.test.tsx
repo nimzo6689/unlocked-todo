@@ -41,13 +41,16 @@ describe('TodoListPage', () => {
 
     vi.mocked(useTodoListFilter).mockReturnValue([createTodo({ id: 'todo-1', title: '一覧テスト' })]);
     vi.mocked(useTodoSelection).mockReturnValue({
+      selectedTodoId: 'todo-1',
       setSelectedTodoId: vi.fn(),
       selectedTodo: createTodo({ id: 'todo-1', title: '一覧テスト' }),
       selectRelativeTodo: vi.fn(),
     });
     vi.mocked(useExportImport).mockReturnValue({
       isExportDialogOpen: false,
+      setIsExportDialogOpen: vi.fn(),
       isImportDialogOpen: false,
+      setIsImportDialogOpen: vi.fn(),
       exportText: '',
       importText: '',
       setImportText: vi.fn(),
@@ -112,7 +115,9 @@ describe('TodoListPage', () => {
 
     vi.mocked(useExportImport).mockReturnValue({
       isExportDialogOpen: false,
+      setIsExportDialogOpen: vi.fn(),
       isImportDialogOpen: false,
+      setIsImportDialogOpen: vi.fn(),
       exportText: '',
       importText: '',
       setImportText: vi.fn(),
@@ -156,7 +161,9 @@ describe('TodoListPage', () => {
 
     vi.mocked(useExportImport).mockReturnValue({
       isExportDialogOpen: true,
+      setIsExportDialogOpen: vi.fn(),
       isImportDialogOpen: true,
+      setIsImportDialogOpen: vi.fn(),
       exportText: '{"ok":true}',
       importText: '',
       setImportText,
@@ -229,7 +236,9 @@ describe('TodoListPage', () => {
 
     vi.mocked(useExportImport).mockReturnValue({
       isExportDialogOpen: true,
+      setIsExportDialogOpen: vi.fn(),
       isImportDialogOpen: true,
+      setIsImportDialogOpen: vi.fn(),
       exportText: '{"ok":true}',
       importText: '[{"id":"x"}]',
       setImportText: vi.fn(),

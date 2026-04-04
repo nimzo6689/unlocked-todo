@@ -24,3 +24,21 @@ npm install
 # 開発サーバーの起動
 npm run dev
 ```
+
+## テスト
+
+```sh
+# 単体テスト
+npm run test
+
+# Playwright 用ブラウザのインストール
+npm run e2e:install
+
+# E2E テスト
+npm run e2e
+
+# E2E テスト(UI モード)
+npm run e2e:ui
+```
+
+Playwright の E2E は Chromium を対象にしています。実行時は E2E 専用の Vite モードで起動し、Service Worker を無効化してテストの再現性を優先しています。
