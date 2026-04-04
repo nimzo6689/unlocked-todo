@@ -48,9 +48,21 @@ export default defineConfig({
     }),
   ],
   test: {
-    environment: 'node',
+    environment: 'jsdom',
     globals: true,
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    setupFiles: ['src/test/setup.ts'],
+    css: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 80,
+        statements: 80,
+      },
+    },
     env: {
       TZ: 'UTC',
     },
