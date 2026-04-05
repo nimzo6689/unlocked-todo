@@ -162,4 +162,44 @@ describe('load-allocator', () => {
     expect(day.slotTotals.every((value) => value === 0)).toBe(true);
     expect(day.meetingSeries.every((value) => value === 0)).toBe(true);
   });
+
+  it('treats 25-minute task as 30 minutes in chart load', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-06T00:00:00.000Z'));
+
+    const todos = [
+      createTodo({
+        id: 'task-25',
+        startableAt: '2026-04-06T09:00:00.000Z',
+        dueDate: '2026-04-06T10:00:00.000Z',
+        effortMinutes: 25,
+      }),
+    ];
+
+    const aggregated = aggregateLoadForDates(todos, [], ['2026-04-06'], schedule);
+    const day = aggregated['2026-04-06'];
+    const totalLoadHours = day.slotTotals.reduce((sum, value) => sum + value * 0.5, 0);
+
+    expect(totalLoadHours).toBeCloseTo(0.5, 6);
+  });
+
+  it('treats 55-minute task as 60 minutes in chart load', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-06T00:00:00.000Z'));
+
+    const todos = [
+      createTodo({
+        id: 'task-55',
+        startableAt: '2026-04-06T09:00:00.000Z',
+        dueDate: '2026-04-06T11:00:00.000Z',
+        effortMinutes: 55,
+      }),
+    ];
+
+    const aggregated = aggregateLoadForDates(todos, [], ['2026-04-06'], schedule);
+    const day = aggregated['2026-04-06'];
+    const totalLoadHours = day.slotTotals.reduce((sum, value) => sum + value * 0.5, 0);
+
+    expect(totalLoadHours).toBeCloseTo(1, 6);
+  });
 });

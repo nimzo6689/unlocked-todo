@@ -9,19 +9,21 @@ type TaskWithPriority = {
 };
 
 const STARTED_WORK_THRESHOLD_SECONDS = 1;
+const AVAILABILITY_LOAD_BUFFER_MINUTES = 5;
 
 const toFiniteNumber = (value: number) => (Number.isFinite(value) ? value : 0);
 
 const toRemainingEffortMinutes = (todo: Todo) => {
   const plannedMinutes = Math.max(0, toFiniteNumber(todo.effortMinutes));
+  const bufferedPlannedMinutes = plannedMinutes + AVAILABILITY_LOAD_BUFFER_MINUTES;
   const actualSeconds = Math.max(0, toFiniteNumber(todo.actualWorkSeconds));
 
   if (actualSeconds < STARTED_WORK_THRESHOLD_SECONDS) {
-    return plannedMinutes;
+    return bufferedPlannedMinutes;
   }
 
   const actualMinutes = actualSeconds / 60;
-  return Math.max(0, plannedMinutes - actualMinutes);
+  return Math.max(0, bufferedPlannedMinutes - actualMinutes);
 };
 
 const buildGlobalSlots = (dateStrs: string[], schedule: WorkSchedule): DatedTimeSlot[] =>
