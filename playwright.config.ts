@@ -17,7 +17,7 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run dev -- --host 127.0.0.1 --port 4173 --mode e2e',
+    command: 'pnpm run dev --host 127.0.0.1 --port 4173 --mode e2e',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: true,
     timeout: 120_000,
