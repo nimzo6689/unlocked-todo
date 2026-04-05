@@ -103,7 +103,7 @@ export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
           className="flex items-center gap-3 rounded-lg px-2 py-2.5 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
         >
           <Menu size={20} className="shrink-0" />
-          {!collapsed && <span className="truncate">Unlocked Todo</span>}
+          {!collapsed && <span className="truncate">Todoroki</span>}
         </button>
 
         <div className="min-h-0 flex-1 overflow-y-auto space-y-1">

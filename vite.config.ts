@@ -30,8 +30,8 @@ export default defineConfig(({ mode }) => {
                 importScripts: ['sw-custom.js'],
               },
               manifest: {
-                name: 'Unlocked Todo',
-                short_name: 'Unlocked Todo',
+                name: 'Todoroki',
+                short_name: 'Todoroki',
                 start_url: '.',
                 display: 'standalone',
                 background_color: '#ffffff',

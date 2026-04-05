@@ -1,6 +1,6 @@
 import type { Todo } from '@/features/todo/model/types';
 
-const DB_NAME = 'unlockedTodoDB';
+const DB_NAME = 'todorokiDB';
 const DB_VERSION = 1;
 const OBJECT_STORE_NAME = 'todos';
 
