@@ -58,6 +58,21 @@ export const buildChartOption = ({
     })(),
   }));
 
+  const taskNames = new Set(taskSeries.map((task) => task.title));
+
+  const toTooltipValue = (value: unknown) => {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (Array.isArray(value)) {
+      const last = value[value.length - 1];
+      return typeof last === 'number' && Number.isFinite(last) ? last : 0;
+    }
+
+    return 0;
+  };
+
   const totalSeriesIndex = stackedTaskSeries.length + 3;
 
   return {
@@ -74,7 +89,7 @@ export const buildChartOption = ({
       bottom: 0,
     },
     tooltip: {
-      trigger: 'axis',
+      trigger: 'item',
       axisPointer: { type: 'cross' },
       formatter: (params) => {
         const list = Array.isArray(params) ? params : [params];
@@ -100,13 +115,18 @@ export const buildChartOption = ({
           .join('<br/>');
         const total = slotTotals[index] ?? 0;
         const hasMeeting = (meetingSeries[index] ?? 0) > 0;
+        const hovered = Array.isArray(params) ? undefined : params;
+        const hoveredSeriesName = typeof hovered?.seriesName === 'string' ? hovered.seriesName : '';
+        const isTaskSeries = taskNames.has(hoveredSeriesName);
+        const hoveredTaskLoad = toTooltipValue(hovered?.value);
 
         return [
           `${slot.label} - ${formatTimeLabel(slot.end)}`,
+          isTaskSeries ? `ホバー中: <b>${hoveredSeriesName}</b> ${hoveredTaskLoad.toFixed(2)} 人時/h` : null,
           `合計負荷: <b>${total.toFixed(2)} 人時/h</b>`,
           hasMeeting ? 'Meeting: <b>1.00</b> (非稼働)' : 'Meeting: なし',
           details || '重なりタスクなし',
-        ].join('<br/>');
+        ].filter(Boolean).join('<br/>');
       },
     },
     xAxis: [
