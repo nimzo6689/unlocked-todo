@@ -30,8 +30,8 @@ export default defineConfig(({ mode }) => {
                 importScripts: ['sw-custom.js'],
               },
               manifest: {
-                name: 'Todoroki',
-                short_name: 'Todoroki',
+                name: 'Hakaru Todo',
+                short_name: 'Hakaru Todo',
                 start_url: '.',
                 display: 'standalone',
                 background_color: '#ffffff',

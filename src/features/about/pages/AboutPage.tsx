@@ -7,7 +7,7 @@ export const AboutPage = () => {
         <p className="text-sm font-medium uppercase tracking-[0.25em] text-slate-500">Help</p>
         <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">アプリ情報</h1>
         <p className="max-w-3xl text-sm text-slate-600 sm:text-base">
-          Todoroki は、今すぐ着手できるタスクを見つけやすくするための Todo アプリです。
+          Hakaru Todo は、今すぐ着手できるタスクを見つけやすくするための Todo アプリです。
         </p>
         <p className="inline-flex items-center gap-2 text-sm text-slate-600">
           <span>ソースコード:</span>

@@ -1,6 +1,6 @@
 import { expect, test as base } from '@playwright/test';
 
-const APP_DB_NAME = 'todorokiDB';
+const APP_DB_NAME = 'hakaruTodoDB';
 
 type AppFixtures = {
   gotoApp: (path?: string) => Promise<void>;

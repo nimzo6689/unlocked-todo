@@ -55,7 +55,7 @@ const AppContent = () => {
               <Menu size={20} />
             </button>
             <div>
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Todoroki</p>
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Hakaru Todo</p>
               <p className="text-sm font-semibold text-slate-900">ナビゲーション</p>
             </div>
           </header>
