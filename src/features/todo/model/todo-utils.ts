@@ -7,7 +7,10 @@ export const isMeetingTodo = (todo: Pick<Todo, 'taskType'>) => todo.taskType ===
 
 export const isNormalTodo = (todo: Pick<Todo, 'taskType'>) => todo.taskType === 'Normal';
 
-export const getMeetingStatus = (dueDate: string, currentStatus?: Todo['status']): Todo['status'] => {
+export const getMeetingStatus = (
+  dueDate: string,
+  currentStatus?: Todo['status'],
+): Todo['status'] => {
   if (currentStatus === 'Completed') {
     return 'Completed';
   }
@@ -92,7 +95,7 @@ export function todosFromJSON(jsonString: string): Todo[] {
   let parsed: unknown;
   try {
     parsed = JSON.parse(jsonString);
-  } catch (e) {
+  } catch {
     throw new Error('JSONの解析に失敗しました');
   }
 
@@ -211,13 +214,13 @@ export function normalizeTodo(todo: Todo): Todo {
     effortMinutes: isMeeting
       ? 0
       : Number.isFinite(Number(todo.effortMinutes))
-      ? Math.max(0, Number(todo.effortMinutes))
-      : 0,
+        ? Math.max(0, Number(todo.effortMinutes))
+        : 0,
     actualWorkSeconds: isMeeting
       ? 0
       : Number.isFinite(Number(todo.actualWorkSeconds))
-      ? Math.max(0, Number(todo.actualWorkSeconds))
-      : 0,
+        ? Math.max(0, Number(todo.actualWorkSeconds))
+        : 0,
     dependency: isMeeting ? undefined : todo.dependency,
   };
 }

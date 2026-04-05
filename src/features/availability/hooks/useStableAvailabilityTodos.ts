@@ -8,17 +8,19 @@ const areAvailabilityTodosEqual = (left: Todo[], right: Todo[]) => {
 
   return left.every((todo, index) => {
     const other = right[index];
-    return Boolean(other)
-      && todo.id === other.id
-      && todo.title === other.title
-      && todo.taskType === other.taskType
-      && todo.createdAt === other.createdAt
-      && todo.startableAt === other.startableAt
-      && todo.dueDate === other.dueDate
-      && todo.status === other.status
-      && todo.effortMinutes === other.effortMinutes
-      && todo.actualWorkSeconds === other.actualWorkSeconds
-      && todo.assignee === other.assignee;
+    return (
+      Boolean(other) &&
+      todo.id === other.id &&
+      todo.title === other.title &&
+      todo.taskType === other.taskType &&
+      todo.createdAt === other.createdAt &&
+      todo.startableAt === other.startableAt &&
+      todo.dueDate === other.dueDate &&
+      todo.status === other.status &&
+      todo.effortMinutes === other.effortMinutes &&
+      todo.actualWorkSeconds === other.actualWorkSeconds &&
+      todo.assignee === other.assignee
+    );
   });
 };
 

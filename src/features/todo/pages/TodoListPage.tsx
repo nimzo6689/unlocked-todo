@@ -42,8 +42,7 @@ export const TodoListPage = () => {
   }, []);
 
   const filteredTodos = useTodoListFilter(todos, filter, getTodo);
-  const { setSelectedTodoId, selectedTodo, selectRelativeTodo } =
-    useTodoSelection(filteredTodos);
+  const { setSelectedTodoId, selectedTodo, selectRelativeTodo } = useTodoSelection(filteredTodos);
   const {
     isExportDialogOpen,
     isImportDialogOpen,
@@ -87,9 +86,9 @@ export const TodoListPage = () => {
 
   const shortcutRegistration = useMemo(() => {
     const canStartSelected = Boolean(
-      selectedTodo
-      && !isMeetingTodo(selectedTodo)
-      && (currentInProgressId === selectedTodo.id || selectedTodo.status === 'Unlocked'),
+      selectedTodo &&
+      !isMeetingTodo(selectedTodo) &&
+      (currentInProgressId === selectedTodo.id || selectedTodo.status === 'Unlocked'),
     );
 
     return {
@@ -420,9 +419,11 @@ export const TodoListPage = () => {
         id="todo-list"
         role="listbox"
         aria-label="タスク一覧"
-        className={view === 'card'
-          ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'
-          : 'space-y-2'}
+        className={
+          view === 'card'
+            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'
+            : 'space-y-2'
+        }
       >
         {filteredTodos.length > 0 ? (
           view === 'card' ? (

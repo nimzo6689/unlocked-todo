@@ -36,7 +36,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     () =>
       typeof Notification !== 'undefined' &&
       Notification.permission === 'granted' &&
-      localStorage.getItem(NOTIFICATION_PERMISSION_KEY) === 'granted'
+      localStorage.getItem(NOTIFICATION_PERMISSION_KEY) === 'granted',
   );
   const [workSchedule, setWorkSchedule] = useState(() => {
     const storedValue = localStorage.getItem(WORK_SCHEDULE_STORAGE_KEY);
@@ -74,7 +74,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     const completedAt = new Date().toISOString();
     let changed = false;
 
-    let newTodos = todosRef.current.map((todo) => {
+    let newTodos = todosRef.current.map(todo => {
       if (!targetIds.has(todo.id) || todo.status === 'Completed') {
         return todo;
       }
@@ -83,18 +83,18 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
       return { ...todo, status: 'Completed' as const, completedAt };
     });
 
-    newTodos = newTodos.map((todo) => {
+    newTodos = newTodos.map(todo => {
       if (!todo.dependency) {
         return todo;
       }
 
       const depIds = getDependencyIds(todo);
-      if (!depIds.some((depId) => targetIds.has(depId))) {
+      if (!depIds.some(depId => targetIds.has(depId))) {
         return todo;
       }
 
-      const allDepsCompleted = depIds.every((depId) => {
-        const depTodo = newTodos.find((item) => item.id === depId);
+      const allDepsCompleted = depIds.every(depId => {
+        const depTodo = newTodos.find(item => item.id === depId);
         return depTodo?.status === 'Completed';
       });
 
@@ -103,7 +103,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
       }
 
       const maxCompletedAt = depIds
-        .map((depId) => newTodos.find((item) => item.id === depId)?.completedAt)
+        .map(depId => newTodos.find(item => item.id === depId)?.completedAt)
         .filter(Boolean)
         .sort()
         .pop();
@@ -125,7 +125,6 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     await todoDB.save(newTodos);
     return true;
   }, []);
-
 
   useEffect(() => {
     todosRef.current = todos;
@@ -163,17 +162,15 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     if ('serviceWorker' in navigator) {
       const baseUrl = import.meta.env.BASE_URL || '/';
       const isDev = import.meta.env.DEV;
-      const swPath = isDev
-        ? `${baseUrl}dev-sw.js?dev-sw`
-        : `${baseUrl}sw.js`;
+      const swPath = isDev ? `${baseUrl}dev-sw.js?dev-sw` : `${baseUrl}sw.js`;
       const scope = baseUrl;
 
       navigator.serviceWorker
         .register(swPath, { scope })
-        .then((reg) => {
+        .then(reg => {
           console.log('ServiceWorker registered', swPath, reg.scope);
         })
-        .catch((error) => {
+        .catch(error => {
           console.error('ServiceWorker registration failed:', error);
         });
     }
@@ -183,15 +180,12 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     localStorage.setItem(WORK_SCHEDULE_STORAGE_KEY, JSON.stringify(workSchedule));
   }, [workSchedule]);
 
-  const getTodo = useCallback(
-    (id: string) => todos.find((t) => t.id === id),
-    [todos]
-  );
+  const getTodo = useCallback((id: string) => todos.find(t => t.id === id), [todos]);
 
   useEffect(() => {
     const showNotification = (title: string, options: NotificationOptions) => {
       if ('serviceWorker' in navigator && 'PushManager' in window) {
-        navigator.serviceWorker.ready.then((registration) => {
+        navigator.serviceWorker.ready.then(registration => {
           registration.showNotification(title, options);
         });
       }
@@ -203,11 +197,11 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
       }
 
       const notifiedTodoIds: string[] = JSON.parse(
-        localStorage.getItem(NOTIFIED_TODOS_KEY) || '[]'
+        localStorage.getItem(NOTIFIED_TODOS_KEY) || '[]',
       );
       const now = new Date();
 
-      todos.forEach((todo) => {
+      todos.forEach(todo => {
         if (isMeetingTodo(todo)) {
           return;
         }
@@ -216,14 +210,9 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
         const dependentTodos = getDependencyIds(todo)
           .map(getTodo)
           .filter((t): t is Todo => Boolean(t));
-        const isDependencyIncomplete = dependentTodos.some(
-          (t) => t.status !== 'Completed',
-        );
+        const isDependencyIncomplete = dependentTodos.some(t => t.status !== 'Completed');
 
-        const isReady =
-          todo.status === 'Unlocked' &&
-          startableAt <= now &&
-          !isDependencyIncomplete;
+        const isReady = todo.status === 'Unlocked' && startableAt <= now && !isDependencyIncomplete;
 
         if (isReady && !notifiedTodoIds.includes(todo.id)) {
           showNotification('タスクが開始可能です！', {
@@ -247,7 +236,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     const syncCompletedMeetings = () => {
       const now = Date.now();
       const targetIds = todosRef.current
-        .filter((todo) => {
+        .filter(todo => {
           if (!isMeetingTodo(todo) || todo.status === 'Completed') {
             return false;
           }
@@ -255,7 +244,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
           const end = new Date(todo.dueDate);
           return !Number.isNaN(end.getTime()) && end.getTime() <= now;
         })
-        .map((todo) => todo.id);
+        .map(todo => todo.id);
 
       if (targetIds.length > 0) {
         void completeTodos(targetIds);
@@ -276,7 +265,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
       return;
     }
 
-    Notification.requestPermission().then((permission) => {
+    Notification.requestPermission().then(permission => {
       if (permission === 'granted') {
         localStorage.setItem(NOTIFICATION_PERMISSION_KEY, 'granted');
         setNotificationEnabled(true);
@@ -365,7 +354,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
       return;
     }
 
-    const targetTodo = todosRef.current.find((todo) => todo.id === parsedState.id);
+    const targetTodo = todosRef.current.find(todo => todo.id === parsedState.id);
     if (!targetTodo || targetTodo.status === 'Completed' || isMeetingTodo(targetTodo)) {
       localStorage.removeItem(IN_PROGRESS_TODO_KEY);
       setIsInProgressRestoreDone(true);
@@ -376,7 +365,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     const restoreDeltaSeconds = Math.max(0, Math.floor((now - parsedState.startedAt) / 1000));
 
     if (restoreDeltaSeconds > 0) {
-      const updatedTodos = todosRef.current.map((todo) =>
+      const updatedTodos = todosRef.current.map(todo =>
         todo.id === parsedState.id
           ? {
               ...todo,
@@ -395,7 +384,10 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     setCurrentInProgressId(parsedState.id);
     setCurrentInProgressStartedAt(now);
 
-    localStorage.setItem(IN_PROGRESS_TODO_KEY, JSON.stringify({ id: parsedState.id, startedAt: now }));
+    localStorage.setItem(
+      IN_PROGRESS_TODO_KEY,
+      JSON.stringify({ id: parsedState.id, startedAt: now }),
+    );
     setIsInProgressRestoreDone(true);
   }, [isTodosLoaded]);
 
@@ -412,7 +404,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
   }, [currentInProgressId, currentInProgressStartedAt, syncInProgressActualWork]);
 
   const handleDelete = (id: string) => {
-    const targetTodo = todosRef.current.find((todo) => todo.id === id);
+    const targetTodo = todosRef.current.find(todo => todo.id === id);
     const todoTitle = targetTodo?.title?.trim() || '（タイトル未設定）';
 
     setModal({
@@ -422,10 +414,10 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
           await syncInProgressActualWork(true);
         }
         const deletedAt = new Date().toISOString();
-        const newTodos = todosRef.current.filter((todo) => todo.id !== id);
-        newTodos.forEach((todo) => {
+        const newTodos = todosRef.current.filter(todo => todo.id !== id);
+        newTodos.forEach(todo => {
           const originalDeps = getDependencyIds(todo);
-          const newDeps = originalDeps.filter((depId) => depId !== id);
+          const newDeps = originalDeps.filter(depId => depId !== id);
           const dependencyChanged = newDeps.length < originalDeps.length;
           todo.dependency = newDeps.length > 0 ? newDeps : undefined;
           if (dependencyChanged) {
@@ -441,7 +433,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
   };
 
   const handleComplete = (id: string) => {
-    const targetTodo = todosRef.current.find((todo) => todo.id === id);
+    const targetTodo = todosRef.current.find(todo => todo.id === id);
     const todoTitle = targetTodo?.title?.trim() || '（タイトル未設定）';
 
     setModal({
@@ -457,7 +449,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
   };
 
   const startTodo = async (id: string) => {
-    const targetTodo = todosRef.current.find((todo) => todo.id === id);
+    const targetTodo = todosRef.current.find(todo => todo.id === id);
     if (!targetTodo || isMeetingTodo(targetTodo)) {
       return;
     }
@@ -473,7 +465,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
 
     if (targetTodo && !targetTodo.startedAt) {
       const firstStartedAt = new Date().toISOString();
-      const updatedTodos = todosRef.current.map((todo) =>
+      const updatedTodos = todosRef.current.map(todo =>
         todo.id === id ? { ...todo, startedAt: firstStartedAt } : todo,
       );
       todosRef.current = updatedTodos;
@@ -563,9 +555,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
 
       // 進行中タスクと衝突する場合、計測を同期停止
       if (currentInProgressIdRef.current && !existingIds.has(currentInProgressIdRef.current)) {
-        const importedId = importedTodos.find(
-          t => t.id === currentInProgressIdRef.current
-        );
+        const importedId = importedTodos.find(t => t.id === currentInProgressIdRef.current);
         if (!importedId) {
           // 進行中タスクが削除された場合も同期停止
           await syncInProgressActualWork(true);

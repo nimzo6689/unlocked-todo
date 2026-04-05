@@ -7,19 +7,22 @@ export const NotificationsSettingsPage = () => {
   const { notificationEnabled, requestNotificationPermission } = useTodoContext();
   const browserSupportsNotifications = typeof Notification !== 'undefined';
 
-  const shortcutRegistration = useMemo(() => ({
-    pageLabel: '通知設定',
-    shortcuts: [
-      {
-        id: 'notifications-enable',
-        description: '通知を有効にする',
-        category: 'ページ操作' as const,
-        bindings: ['e'],
-        action: requestNotificationPermission,
-        enabled: browserSupportsNotifications && !notificationEnabled,
-      },
-    ],
-  }), [browserSupportsNotifications, notificationEnabled, requestNotificationPermission]);
+  const shortcutRegistration = useMemo(
+    () => ({
+      pageLabel: '通知設定',
+      shortcuts: [
+        {
+          id: 'notifications-enable',
+          description: '通知を有効にする',
+          category: 'ページ操作' as const,
+          bindings: ['e'],
+          action: requestNotificationPermission,
+          enabled: browserSupportsNotifications && !notificationEnabled,
+        },
+      ],
+    }),
+    [browserSupportsNotifications, notificationEnabled, requestNotificationPermission],
+  );
 
   useRegisterShortcuts(shortcutRegistration);
 
@@ -29,7 +32,8 @@ export const NotificationsSettingsPage = () => {
         <p className="text-sm font-medium uppercase tracking-[0.25em] text-slate-500">Settings</p>
         <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">通知設定</h1>
         <p className="max-w-2xl text-sm text-slate-600 sm:text-base">
-          開始可能になったタスクの通知を管理します。通知はこのブラウザ内でのみ有効になり、Todo データは外部へ送信されません。
+          開始可能になったタスクの通知を管理します。通知はこのブラウザ内でのみ有効になり、Todo
+          データは外部へ送信されません。
         </p>
       </header>
 

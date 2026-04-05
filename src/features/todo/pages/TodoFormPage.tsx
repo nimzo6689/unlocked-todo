@@ -1,10 +1,7 @@
 import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { TodoForm } from '@/features/todo/ui/TodoForm';
-import {
-  DEFAULT_TASK_TYPE,
-  isMeetingTodo,
-} from '@/features/todo/model/todo-utils';
+import { DEFAULT_TASK_TYPE, isMeetingTodo } from '@/features/todo/model/todo-utils';
 import { useTodoContext } from '@/app/providers/TodoContext';
 import { useRegisterShortcuts } from '@/features/shortcuts/context/ShortcutContext';
 import { useTodoForm } from '../hooks/useTodoForm';

@@ -22,10 +22,12 @@ type DrawerProps = {
 };
 
 export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: DrawerProps) => {
-  const [expandedKeys, setExpandedKeys] = useState<string[]>(() => getExpandedKeysForPath(items, currentPath));
+  const [expandedKeys, setExpandedKeys] = useState<string[]>(() =>
+    getExpandedKeysForPath(items, currentPath),
+  );
   const bottomAnchoredItemKey = 'settings-help';
-  const primaryItems = items.filter((item) => item.key !== bottomAnchoredItemKey);
-  const bottomItems = items.filter((item) => item.key === bottomAnchoredItemKey);
+  const primaryItems = items.filter(item => item.key !== bottomAnchoredItemKey);
+  const bottomItems = items.filter(item => item.key === bottomAnchoredItemKey);
 
   useEffect(() => {
     const activeKeys = getExpandedKeysForPath(items, currentPath);
@@ -33,19 +35,19 @@ export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: Dra
       return;
     }
 
-    setExpandedKeys((previous) => [...new Set([...previous, ...activeKeys])]);
+    setExpandedKeys(previous => [...new Set([...previous, ...activeKeys])]);
   }, [items, currentPath]);
 
   const toggleExpanded = (key: string) => {
-    setExpandedKeys((previous) =>
+    setExpandedKeys(previous =>
       previous.includes(key)
-        ? previous.filter((currentKey) => currentKey !== key)
+        ? previous.filter(currentKey => currentKey !== key)
         : [...previous, key],
     );
   };
 
   const renderItems = (navigationItems: NavigationItem[], depth = 0) =>
-    navigationItems.map((item) => {
+    navigationItems.map(item => {
       const hasChildren = Boolean(item.children?.length);
       const isExpanded = expandedKeys.includes(item.key);
       const isActive = isNavigationItemActive(item, currentPath);
@@ -73,9 +75,12 @@ export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: Dra
           >
             {Icon ? <Icon size={depth === 0 ? 18 : 16} className="shrink-0" /> : null}
             <span className="min-w-0 flex-1 truncate">{item.label}</span>
-            {hasChildren && (
-              isExpanded ? <ChevronDown size={16} className="shrink-0" /> : <ChevronRight size={16} className="shrink-0" />
-            )}
+            {hasChildren &&
+              (isExpanded ? (
+                <ChevronDown size={16} className="shrink-0" />
+              ) : (
+                <ChevronRight size={16} className="shrink-0" />
+              ))}
           </button>
 
           {hasChildren && isExpanded && (
@@ -115,4 +120,3 @@ export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: Dra
     </UiDrawer>
   );
 };
-

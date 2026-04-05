@@ -13,9 +13,14 @@ export const useAvailabilityCharts = (
   workSchedule: WorkSchedule,
 ): AvailabilityChartData[] => {
   return useMemo(() => {
-    const loadsByDate = aggregateLoadForDates(selfNormalTodos, selfMeetings, displayDates, workSchedule);
+    const loadsByDate = aggregateLoadForDates(
+      selfNormalTodos,
+      selfMeetings,
+      displayDates,
+      workSchedule,
+    );
 
-    return displayDates.map((dateStr) => {
+    return displayDates.map(dateStr => {
       const fallbackSlots = buildTimeSlots(dateStr, workSchedule);
       const load = loadsByDate[dateStr] ?? {
         slots: fallbackSlots,
@@ -25,10 +30,9 @@ export const useAvailabilityCharts = (
         slotContributors: fallbackSlots.map(() => []),
       };
       const hasLoad =
-        load.slotTotals.some((value) => value > 0) ||
-        load.meetingSeries.some((value) => value > 0);
+        load.slotTotals.some(value => value > 0) || load.meetingSeries.some(value => value > 0);
       const maxLoad = Math.max(...load.slotTotals, 0);
-      const overloadedSlots = load.slotTotals.filter((value) => value > 1).length;
+      const overloadedSlots = load.slotTotals.filter(value => value > 1).length;
 
       return {
         ...load,

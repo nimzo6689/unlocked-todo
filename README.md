@@ -1,7 +1,7 @@
 # Hakaru Todo
 
 今、着手可能な Todo が一目でわかる ToDo アプリです。  
-ブラウザ（ IndexedDB, LocalStorage ）にデータが保存されるため、ネットワーク通信は発生しません。  
+ブラウザ（ IndexedDB, LocalStorage ）にデータが保存されるため、ネットワーク通信は発生しません。
 
 ## よくある Todo アプリとの違い
 

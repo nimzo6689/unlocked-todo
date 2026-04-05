@@ -33,7 +33,7 @@ const AppContent = () => {
           <Sidebar
             items={navigationItems}
             currentPath={location.pathname}
-            onSelect={(path) => navigate(path)}
+            onSelect={path => navigate(path)}
           />
         </div>
 
@@ -42,7 +42,7 @@ const AppContent = () => {
           onOpenChange={setDrawerOpen}
           items={navigationItems}
           currentPath={location.pathname}
-          onSelect={(path) => navigate(path)}
+          onSelect={path => navigate(path)}
         />
 
         <main className="h-screen flex-1 overflow-y-auto">
@@ -55,7 +55,9 @@ const AppContent = () => {
               <Menu size={20} />
             </button>
             <div>
-              <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">Hakaru Todo</p>
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
+                Hakaru Todo
+              </p>
               <p className="text-sm font-semibold text-slate-900">ナビゲーション</p>
             </div>
           </header>

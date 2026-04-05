@@ -8,12 +8,14 @@ const steps = [
   },
   {
     title: '着手可能な一覧を見る',
-    description: 'タスク一覧では、開始可能なタスクを優先的に確認できます。フィルターで Locked や Completed に切り替えられます。',
+    description:
+      'タスク一覧では、開始可能なタスクを優先的に確認できます。フィルターで Locked や Completed に切り替えられます。',
     icon: CheckSquare,
   },
   {
     title: '空き状況を確認する',
-    description: '空き状況ページでは、自分担当タスクの負荷を時間帯ごとに確認できます。設定した勤務時間が使われます。',
+    description:
+      '空き状況ページでは、自分担当タスクの負荷を時間帯ごとに確認できます。設定した勤務時間が使われます。',
     icon: CalendarClock,
   },
   {
@@ -50,7 +52,10 @@ const shortcutCategories = [
       { keys: 'Ctrl/Cmd+Shift+Enter', description: 'フォームを保存して一覧に戻ります。' },
       { keys: 'Esc', description: 'ダイアログやフォーム編集を閉じます。' },
       { keys: 'Alt+1 - Alt+5', description: 'Todo フォームの工数をクイック設定します。' },
-      { keys: 'h / l / t', description: '空き状況・予実管理の日付を前日、翌日、今日へ切り替えます。' },
+      {
+        keys: 'h / l / t',
+        description: '空き状況・予実管理の日付を前日、翌日、今日へ切り替えます。',
+      },
     ],
   },
 ];
@@ -105,13 +110,21 @@ export const UsagePage = () => {
         </div>
 
         <div className="mt-5 grid gap-4 lg:grid-cols-3">
-          {shortcutCategories.map((category) => (
-            <section key={category.title} className="rounded-2xl border border-slate-200 bg-white p-4">
+          {shortcutCategories.map(category => (
+            <section
+              key={category.title}
+              className="rounded-2xl border border-slate-200 bg-white p-4"
+            >
               <h3 className="text-sm font-semibold text-slate-900">{category.title}</h3>
               <div className="mt-3 space-y-3">
-                {category.items.map((item) => (
-                  <div key={`${category.title}-${item.keys}`} className="rounded-xl bg-slate-50 px-3 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{item.keys}</p>
+                {category.items.map(item => (
+                  <div
+                    key={`${category.title}-${item.keys}`}
+                    className="rounded-xl bg-slate-50 px-3 py-3"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      {item.keys}
+                    </p>
                     <p className="mt-1 text-sm text-slate-700">{item.description}</p>
                   </div>
                 ))}

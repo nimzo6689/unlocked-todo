@@ -38,10 +38,12 @@ const baseLoad = (): AggregatedLoad => {
     ],
     meetingSeries: [0],
     slotTotals: [1],
-    slotContributors: [[
-      { taskId: 'task-1', title: '設計レビュー', load: 0.6 },
-      { taskId: 'task-2', title: '実装', load: 0.4 },
-    ]],
+    slotContributors: [
+      [
+        { taskId: 'task-1', title: '設計レビュー', load: 0.6 },
+        { taskId: 'task-2', title: '実装', load: 0.4 },
+      ],
+    ],
   };
 };
 
@@ -51,7 +53,9 @@ describe('buildChartOption tooltip', () => {
     const tooltip = option.tooltip;
     expect(tooltip).toBeDefined();
     expect(Array.isArray(tooltip)).toBe(false);
-    const formatter = (tooltip as { formatter: (params: TooltipComponentFormatterCallbackParams) => string }).formatter;
+    const formatter = (
+      tooltip as { formatter: (params: TooltipComponentFormatterCallbackParams) => string }
+    ).formatter;
 
     const tooltipText = formatter({
       dataIndex: 0,
@@ -69,7 +73,9 @@ describe('buildChartOption tooltip', () => {
     const tooltip = option.tooltip;
     expect(tooltip).toBeDefined();
     expect(Array.isArray(tooltip)).toBe(false);
-    const formatter = (tooltip as { formatter: (params: TooltipComponentFormatterCallbackParams) => string }).formatter;
+    const formatter = (
+      tooltip as { formatter: (params: TooltipComponentFormatterCallbackParams) => string }
+    ).formatter;
 
     const tooltipText = formatter({
       dataIndex: 0,

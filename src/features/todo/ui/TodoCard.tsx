@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import type { Todo } from '@/features/todo/model/types';
-import { formatDate, formatDurationFromSeconds, isMeetingTodo } from '@/features/todo/model/todo-utils';
+import {
+  formatDate,
+  formatDurationFromSeconds,
+  isMeetingTodo,
+} from '@/features/todo/model/todo-utils';
 import { marked } from 'marked';
 
 const statusClasses: Record<string, string> = {
@@ -43,10 +47,13 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   const now = new Date();
   const dueDate = new Date(todo.dueDate);
   const startableAt = new Date(todo.startableAt || todo.createdAt);
-  const isOverdue = isMeeting ? dueDate < now : new Date(dueDate.getTime() - (todo.effortMinutes || 0) * 60 * 1000) < now;
+  const isOverdue = isMeeting
+    ? dueDate < now
+    : new Date(dueDate.getTime() - (todo.effortMinutes || 0) * 60 * 1000) < now;
   const isDueToday = dueDate.toDateString() === now.toDateString();
   const isInProgress = todo.id === currentInProgressId;
-  const isMeetingInProgress = isMeeting && todo.status !== 'Completed' && startableAt <= now && dueDate > now;
+  const isMeetingInProgress =
+    isMeeting && todo.status !== 'Completed' && startableAt <= now && dueDate > now;
   let cardBgClass = 'bg-white';
   if (isInProgress || isMeetingInProgress) {
     cardBgClass = 'bg-blue-50 border-blue-500 border-2 shadow-blue-200';
@@ -142,31 +149,36 @@ export const TodoCard: React.FC<TodoCardProps> = ({
       <div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm text-slate-500 mt-4 pt-4 border-t">
           <div>
-            <strong>{isMeeting ? '開始日時' : '着手可能日時'}:</strong> {formatDate(todo.startableAt)}
+            <strong>{isMeeting ? '開始日時' : '着手可能日時'}:</strong>{' '}
+            {formatDate(todo.startableAt)}
           </div>
           <div>
             <strong>{isMeeting ? '終了日時' : '期限'}:</strong> {formatDate(todo.dueDate)}
           </div>
-          {!isMeeting && <div>
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span>
-                <strong>工数:</strong> {todo.effortMinutes || 0} 分
+          {!isMeeting && (
+            <div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <span>
+                  <strong>工数:</strong> {todo.effortMinutes || 0} 分
+                </span>
+              </div>
+              <div className="mt-1">
+                <span>
+                  <strong>実作業時間:</strong> {formatDurationFromSeconds(todo.actualWorkSeconds)}
+                </span>
+              </div>
+            </div>
+          )}
+          {!isMeeting && (
+            <div>
+              <strong>担当:</strong>{' '}
+              <span
+                className={`font-semibold px-2 py-0.5 rounded-full ${assigneeClasses[todo.assignee]}`}
+              >
+                {todo.assignee}
               </span>
             </div>
-            <div className="mt-1">
-              <span>
-                <strong>実作業時間:</strong> {formatDurationFromSeconds(todo.actualWorkSeconds)}
-              </span>
-            </div>
-          </div>}
-          {!isMeeting && <div>
-            <strong>担当:</strong>{' '}
-            <span
-              className={`font-semibold px-2 py-0.5 rounded-full ${assigneeClasses[todo.assignee]}`}
-            >
-              {todo.assignee}
-            </span>
-          </div>}
+          )}
           {!isMeeting && dependencyList.length > 0 && (
             <div className="col-span-1 sm:col-span-2">
               <strong>依存Todo:</strong>

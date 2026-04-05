@@ -63,7 +63,7 @@ const withinOneWeek = (target: Date, baseDateInput: string) => {
   }
 
   const rangeStartMs = rangeStart.getTime();
-  const rangeEndMs = rangeStartMs + (7 * DAY_MS);
+  const rangeEndMs = rangeStartMs + 7 * DAY_MS;
   const targetMs = target.getTime();
 
   return targetMs >= rangeStartMs && targetMs < rangeEndMs;
@@ -71,8 +71,8 @@ const withinOneWeek = (target: Date, baseDateInput: string) => {
 
 const buildRows = (todos: Todo[], baseDateInput: string): PlanActualRow[] => {
   return todos
-    .filter((todo) => todo.status === 'Completed' && !isMeetingTodo(todo))
-    .map((todo) => {
+    .filter(todo => todo.status === 'Completed' && !isMeetingTodo(todo))
+    .map(todo => {
       const startedAt = parseStartedAt(todo);
       if (!startedAt) {
         return null;
@@ -105,10 +105,10 @@ const buildChartOption = (
   totalActualMinutes: number,
   totalDiffMinutes: number,
 ): EChartsOption => {
-  const categories = rows.map((row) => row.title);
-  const planned = rows.map((row) => Number(row.plannedMinutes.toFixed(1)));
-  const actual = rows.map((row) => Number(row.actualMinutes.toFixed(1)));
-  const diff = rows.map((row) => Number(row.diffMinutes.toFixed(1)));
+  const categories = rows.map(row => row.title);
+  const planned = rows.map(row => Number(row.plannedMinutes.toFixed(1)));
+  const actual = rows.map(row => Number(row.actualMinutes.toFixed(1)));
+  const diff = rows.map(row => Number(row.diffMinutes.toFixed(1)));
 
   return {
     axisPointer: {
@@ -144,7 +144,7 @@ const buildChartOption = (
       axisPointer: {
         show: false,
       },
-      formatter: (params) => {
+      formatter: params => {
         const list = Array.isArray(params) ? params : [params];
         const index = list[0]?.dataIndex ?? 0;
         const row = rows[index];
@@ -221,7 +221,7 @@ const buildChartOption = (
         name: '乖離(実績-予定)',
         type: 'line',
         yAxisIndex: 1,
-        data: diff.map((value) => ({
+        data: diff.map(value => ({
           value,
           itemStyle: {
             color: value > 0 ? '#dc2626' : '#2563eb',
@@ -260,15 +260,18 @@ export const PlanActualPage = () => {
   const { todos } = useTodoContext();
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue(new Date()));
 
-  const moveSelectedDate = useCallback((deltaDays: number) => {
-    const base = new Date(`${selectedDate}T00:00:00`);
-    if (Number.isNaN(base.getTime())) {
-      return;
-    }
+  const moveSelectedDate = useCallback(
+    (deltaDays: number) => {
+      const base = new Date(`${selectedDate}T00:00:00`);
+      if (Number.isNaN(base.getTime())) {
+        return;
+      }
 
-    base.setDate(base.getDate() + deltaDays);
-    setSelectedDate(toDateInputValue(base));
-  }, [selectedDate]);
+      base.setDate(base.getDate() + deltaDays);
+      setSelectedDate(toDateInputValue(base));
+    },
+    [selectedDate],
+  );
 
   const rows = useMemo(() => buildRows(todos, selectedDate), [todos, selectedDate]);
 
@@ -287,32 +290,35 @@ export const PlanActualPage = () => {
     [rows, selectedDate, totalActualMinutes, totalDiffMinutes],
   );
 
-  const shortcutRegistration = useMemo(() => ({
-    pageLabel: '予実管理',
-    shortcuts: [
-      {
-        id: 'plan-actual-prev-day',
-        description: '集計開始日を前日に移動する',
-        category: 'ページ操作' as const,
-        bindings: ['h'],
-        action: () => moveSelectedDate(-1),
-      },
-      {
-        id: 'plan-actual-next-day',
-        description: '集計開始日を翌日に移動する',
-        category: 'ページ操作' as const,
-        bindings: ['l'],
-        action: () => moveSelectedDate(1),
-      },
-      {
-        id: 'plan-actual-today',
-        description: '集計開始日を今日に戻す',
-        category: 'ページ操作' as const,
-        bindings: ['t'],
-        action: () => setSelectedDate(toDateInputValue(new Date())),
-      },
-    ],
-  }), [moveSelectedDate]);
+  const shortcutRegistration = useMemo(
+    () => ({
+      pageLabel: '予実管理',
+      shortcuts: [
+        {
+          id: 'plan-actual-prev-day',
+          description: '集計開始日を前日に移動する',
+          category: 'ページ操作' as const,
+          bindings: ['h'],
+          action: () => moveSelectedDate(-1),
+        },
+        {
+          id: 'plan-actual-next-day',
+          description: '集計開始日を翌日に移動する',
+          category: 'ページ操作' as const,
+          bindings: ['l'],
+          action: () => moveSelectedDate(1),
+        },
+        {
+          id: 'plan-actual-today',
+          description: '集計開始日を今日に戻す',
+          category: 'ページ操作' as const,
+          bindings: ['t'],
+          action: () => setSelectedDate(toDateInputValue(new Date())),
+        },
+      ],
+    }),
+    [moveSelectedDate],
+  );
 
   useRegisterShortcuts(shortcutRegistration);
 
@@ -321,7 +327,9 @@ export const PlanActualPage = () => {
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">予実管理</h1>
-          <p className="text-slate-600">完了タスクの予定工数と実績時間を、実作業開始日基準で比較します。</p>
+          <p className="text-slate-600">
+            完了タスクの予定工数と実績時間を、実作業開始日基準で比較します。
+          </p>
         </div>
 
         <label className="text-sm text-slate-700 flex items-center gap-2">
@@ -329,7 +337,7 @@ export const PlanActualPage = () => {
           <input
             type="date"
             value={selectedDate}
-            onChange={(event) => setSelectedDate(event.target.value)}
+            onChange={event => setSelectedDate(event.target.value)}
             className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm"
           />
         </label>
@@ -337,7 +345,12 @@ export const PlanActualPage = () => {
 
       <section className="rounded-lg border border-slate-200 bg-white p-4 shadow">
         {rows.length > 0 ? (
-          <ReactECharts option={option} notMerge lazyUpdate style={{ width: '100%', height: 400 }} />
+          <ReactECharts
+            option={option}
+            notMerge
+            lazyUpdate
+            style={{ width: '100%', height: 400 }}
+          />
         ) : (
           <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-500">
             指定期間内に、表示対象の完了タスクがありません。

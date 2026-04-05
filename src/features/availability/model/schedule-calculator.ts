@@ -3,7 +3,8 @@ import { DISPLAY_WINDOW_DAYS, SLOT_MS, type Interval, type TimeSlot } from './ty
 import { addDays, formatTimeLabel, toDateInputValue } from './datetime-utils';
 import { mergeIntervals, subtractIntervals } from './interval-utils';
 
-export const isWorkingDay = (date: Date, schedule: WorkSchedule) => schedule.workingDays.includes(date.getDay());
+export const isWorkingDay = (date: Date, schedule: WorkSchedule) =>
+  schedule.workingDays.includes(date.getDay());
 
 export const getSortedBreakPeriods = (schedule: WorkSchedule) =>
   [...schedule.breakPeriods].sort((left, right) =>
@@ -36,7 +37,7 @@ export const buildTimeSlots = (dateStr: string, schedule: WorkSchedule) => {
   dayEnd.setHours(schedule.workEndHour, 0, 0, 0);
 
   const mergedBreakIntervals = mergeIntervals(
-    schedule.breakPeriods.map((period) => {
+    schedule.breakPeriods.map(period => {
       const breakStart = new Date(base);
       const breakEnd = new Date(base);
       breakStart.setHours(0, period.startMinute, 0, 0);
@@ -55,7 +56,7 @@ export const buildTimeSlots = (dateStr: string, schedule: WorkSchedule) => {
       { startMs: slotStart.getTime(), endMs: slotEnd.getTime() },
       mergedBreakIntervals,
     );
-    const isWorking = slotAvailableIntervals.some((interval) => interval.endMs > interval.startMs);
+    const isWorking = slotAvailableIntervals.some(interval => interval.endMs > interval.startMs);
 
     slots.push({
       label: formatTimeLabel(slotStart),
@@ -94,7 +95,7 @@ export const getWorkingIntervalsForDay = (day: Date, schedule: WorkSchedule): In
   workEnd.setHours(schedule.workEndHour, 0, 0, 0);
 
   const mergedBreakIntervals = mergeIntervals(
-    schedule.breakPeriods.map((period) => {
+    schedule.breakPeriods.map(period => {
       const breakStart = new Date(day);
       const breakEnd = new Date(day);
       breakStart.setHours(0, period.startMinute, 0, 0);
@@ -123,13 +124,13 @@ export const getMeetingIntervalsForDay = (day: Date, meetings: Todo[]) => {
 
   return mergeIntervals(
     meetings
-      .map((meeting) => parseTaskRange(meeting, { allowZeroEffort: true }))
+      .map(meeting => parseTaskRange(meeting, { allowZeroEffort: true }))
       .filter((range): range is { start: Date; end: Date } => Boolean(range))
-      .map((range) => ({
+      .map(range => ({
         startMs: Math.max(range.start.getTime(), dayStartMs),
         endMs: Math.min(range.end.getTime(), dayEndMs),
       }))
-      .filter((interval) => interval.endMs > interval.startMs),
+      .filter(interval => interval.endMs > interval.startMs),
   );
 };
 
@@ -153,10 +154,10 @@ export const calculateWorkingDurationMsInRange = (
     const meetingIntervals = getMeetingIntervalsForDay(day, meetings);
     const workingIntervals = getWorkingIntervalsForDay(day, schedule);
 
-    workingIntervals.forEach((interval) => {
+    workingIntervals.forEach(interval => {
       const availableIntervals = subtractIntervals(interval, meetingIntervals);
 
-      availableIntervals.forEach((availableInterval) => {
+      availableIntervals.forEach(availableInterval => {
         const overlapStartMs = Math.max(availableInterval.startMs, range.start.getTime());
         const overlapEndMs = Math.min(availableInterval.endMs, range.end.getTime());
         const overlapMs = overlapEndMs - overlapStartMs;
@@ -171,11 +172,7 @@ export const calculateWorkingDurationMsInRange = (
   return totalMs;
 };
 
-export const buildWorkingDateRange = (
-  start: Date,
-  end: Date,
-  schedule: WorkSchedule,
-) => {
+export const buildWorkingDateRange = (start: Date, end: Date, schedule: WorkSchedule) => {
   const startDay = new Date(start);
   const endDay = new Date(end);
   startDay.setHours(0, 0, 0, 0);

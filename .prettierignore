@@ -11,3 +11,9 @@ instrumented
 node_modules
 .gitattributes
 yarn.lock
+pnpm-lock.yaml
+dist
+dev-dist
+coverage
+test-results
+playwright-report

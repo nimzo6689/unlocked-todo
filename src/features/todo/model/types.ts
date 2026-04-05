@@ -25,7 +25,7 @@ export type FilterButton = {
 export type ModalState = {
   message: string;
   onConfirm: () => void;
-}
+};
 
 export type BreakPeriod = {
   startMinute: number;
@@ -68,4 +68,4 @@ export type TodoContextType = {
   exportTodosToText: () => string;
   importTodos: (file: File) => Promise<ImportResult>;
   importTodosFromText: (text: string) => Promise<ImportResult>;
-}
+};

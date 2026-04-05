@@ -25,8 +25,8 @@ export const subtractIntervals = (base: Interval, blocked: Interval[]) => {
 
   let segments: Interval[] = [base];
 
-  blocked.forEach((block) => {
-    segments = segments.flatMap((segment) => {
+  blocked.forEach(block => {
+    segments = segments.flatMap(segment => {
       if (block.endMs <= segment.startMs || block.startMs >= segment.endMs) {
         return [segment];
       }
@@ -42,5 +42,5 @@ export const subtractIntervals = (base: Interval, blocked: Interval[]) => {
     });
   });
 
-  return segments.filter((segment) => segment.endMs > segment.startMs);
+  return segments.filter(segment => segment.endMs > segment.startMs);
 };

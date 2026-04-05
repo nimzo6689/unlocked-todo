@@ -54,7 +54,9 @@ const getWorkingDayByOffset = (
 
   let found = 0;
   while (true) {
-    const isToday = cursor.getTime() === new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate()).getTime();
+    const isToday =
+      cursor.getTime() ===
+      new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate()).getTime();
     if (isWorkingDay(cursor, schedule) && (allowToday || !isToday)) {
       if (found === offset) {
         return new Date(cursor);
@@ -117,10 +119,7 @@ export const useTodoForm = ({
     return Math.floor(numeric);
   };
 
-  const getDueDateByQuickAction = (
-    quickAction: 'today' | 'tomorrow' | 'thisWeek',
-    now: Date,
-  ) => {
+  const getDueDateByQuickAction = (quickAction: 'today' | 'tomorrow' | 'thisWeek', now: Date) => {
     const withinWorkingHours = isWithinWorkingHours(now, workSchedule);
 
     if (quickAction === 'thisWeek') {
@@ -138,10 +137,7 @@ export const useTodoForm = ({
     return getDateAtHour(target, workSchedule.workEndHour);
   };
 
-  const getStartableAtByQuickAction = (
-    quickAction: 'now' | 'tomorrow' | 'nextWeek',
-    now: Date,
-  ) => {
+  const getStartableAtByQuickAction = (quickAction: 'now' | 'tomorrow' | 'nextWeek', now: Date) => {
     if (quickAction === 'now') {
       return new Date(now);
     }
@@ -213,8 +209,8 @@ export const useTodoForm = ({
     const dependency = Array.isArray(form.dependency)
       ? form.dependency.filter(Boolean)
       : form.dependency
-      ? [form.dependency]
-      : [];
+        ? [form.dependency]
+        : [];
     const normalizedDependency = isMeeting ? [] : dependency;
     const hasDependency = normalizedDependency.length > 0;
 
@@ -233,16 +229,16 @@ export const useTodoForm = ({
             taskType,
             dependency: normalizedDependency,
             startableAt: hasDependency
-              ? (form.startableAt || '')
-              : (form.startableAt || todo.startableAt),
+              ? form.startableAt || ''
+              : form.startableAt || todo.startableAt,
             status: isMeeting
               ? getMeetingStatus(form.dueDate || todo.dueDate, todo.status)
-              : ((form.status as Todo['status']) || todo.status),
-            effortMinutes: isMeeting ? 0 : (form.effortMinutes || todo.effortMinutes),
+              : (form.status as Todo['status']) || todo.status,
+            effortMinutes: isMeeting ? 0 : form.effortMinutes || todo.effortMinutes,
             actualWorkSeconds: isMeeting ? 0 : formActualWorkSeconds,
             assignee: isMeeting
               ? todo.assignee
-              : ((form.assignee as Todo['assignee']) || todo.assignee),
+              : (form.assignee as Todo['assignee']) || todo.assignee,
           } as Todo;
         }
 
@@ -268,15 +264,15 @@ export const useTodoForm = ({
       const newTodo: Todo = {
         id: crypto.randomUUID(),
         createdAt: now,
-        startableAt: hasDependency ? (form.startableAt || '') : (form.startableAt || now),
+        startableAt: hasDependency ? form.startableAt || '' : form.startableAt || now,
         title: form.title || '',
         description: form.description || '',
         taskType,
         dueDate: form.dueDate || '',
         status: isMeeting
           ? getMeetingStatus(form.dueDate || '')
-          : ((form.status as Todo['status']) || 'Unlocked'),
-        effortMinutes: isMeeting ? 0 : (form.effortMinutes || DEFAULT_EFFORT_MINUTES),
+          : (form.status as Todo['status']) || 'Unlocked',
+        effortMinutes: isMeeting ? 0 : form.effortMinutes || DEFAULT_EFFORT_MINUTES,
         actualWorkSeconds: isMeeting ? 0 : formActualWorkSeconds,
         assignee: (form.assignee as Todo['assignee']) || '自分',
         dependency: normalizedDependency,

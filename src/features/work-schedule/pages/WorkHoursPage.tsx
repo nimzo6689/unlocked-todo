@@ -20,7 +20,14 @@ const parseTimeInputValue = (value: string) => {
   const hour = Number(hourText);
   const minute = Number(minuteText);
 
-  if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour < 0 || hour > 24 || minute < 0 || minute >= 60) {
+  if (
+    !Number.isInteger(hour) ||
+    !Number.isInteger(minute) ||
+    hour < 0 ||
+    hour > 24 ||
+    minute < 0 ||
+    minute >= 60
+  ) {
     return null;
   }
 
@@ -46,33 +53,36 @@ export const WorkHoursPage = () => {
     handleSave,
   } = useWorkHoursDraft(workSchedule, setWorkSchedule);
 
-  const shortcutRegistration = useMemo(() => ({
-    pageLabel: '稼働設定',
-    shortcuts: [
-      {
-        id: 'work-hours-save',
-        description: '稼働設定を保存する',
-        category: 'ページ操作' as const,
-        bindings: ['mod+enter'],
-        action: handleSave,
-        allowInInput: true,
-      },
-      {
-        id: 'work-hours-toggle-break',
-        description: '休憩時間なしを切り替える',
-        category: 'ページ操作' as const,
-        bindings: ['b'],
-        action: () => toggleNoBreak(!hasNoBreak),
-      },
-      ...WEEKDAY_OPTIONS.map((option, index) => ({
-        id: `work-hours-day-${option.value}`,
-        description: `${option.label} を稼働日に切り替える`,
-        category: 'ページ操作' as const,
-        bindings: [`${index + 1}`],
-        action: () => toggleWorkingDay(option.value),
-      })),
-    ],
-  }), [hasNoBreak, draft]);
+  const shortcutRegistration = useMemo(
+    () => ({
+      pageLabel: '稼働設定',
+      shortcuts: [
+        {
+          id: 'work-hours-save',
+          description: '稼働設定を保存する',
+          category: 'ページ操作' as const,
+          bindings: ['mod+enter'],
+          action: handleSave,
+          allowInInput: true,
+        },
+        {
+          id: 'work-hours-toggle-break',
+          description: '休憩時間なしを切り替える',
+          category: 'ページ操作' as const,
+          bindings: ['b'],
+          action: () => toggleNoBreak(!hasNoBreak),
+        },
+        ...WEEKDAY_OPTIONS.map((option, index) => ({
+          id: `work-hours-day-${option.value}`,
+          description: `${option.label} を稼働日に切り替える`,
+          category: 'ページ操作' as const,
+          bindings: [`${index + 1}`],
+          action: () => toggleWorkingDay(option.value),
+        })),
+      ],
+    }),
+    [hasNoBreak, draft],
+  );
 
   useRegisterShortcuts(shortcutRegistration);
 
@@ -97,7 +107,7 @@ export const WorkHoursPage = () => {
             <div className="space-y-3">
               <h2 className="text-lg font-semibold text-slate-900">稼働日</h2>
               <div className="flex flex-wrap gap-2">
-                {WEEKDAY_OPTIONS.map((option) => {
+                {WEEKDAY_OPTIONS.map(option => {
                   const selected = draft.workingDays.includes(option.value);
                   return (
                     <button
@@ -123,7 +133,7 @@ export const WorkHoursPage = () => {
                   <input
                     type="checkbox"
                     checked={hasNoBreak}
-                    onChange={(event) => toggleNoBreak(event.target.checked)}
+                    onChange={event => toggleNoBreak(event.target.checked)}
                     className="h-4 w-4 rounded border-slate-300"
                   />
                   <span className="font-medium">休憩時間なし</span>
@@ -134,8 +144,8 @@ export const WorkHoursPage = () => {
                 <span className="font-medium">開始時刻</span>
                 <select
                   value={draft.workStartHour}
-                  onChange={(event) =>
-                    updateDraft((current) => {
+                  onChange={event =>
+                    updateDraft(current => {
                       const nextWorkStartHour = Number(event.target.value);
                       return {
                         ...current,
@@ -150,7 +160,7 @@ export const WorkHoursPage = () => {
                   }
                   className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
                 >
-                  {HOUR_OPTIONS.slice(0, 24).map((hour) => (
+                  {HOUR_OPTIONS.slice(0, 24).map(hour => (
                     <option key={hour} value={hour}>
                       {formatHourLabel(hour)}
                     </option>
@@ -162,8 +172,8 @@ export const WorkHoursPage = () => {
                 <span className="font-medium">終了時刻</span>
                 <select
                   value={draft.workEndHour}
-                  onChange={(event) =>
-                    updateDraft((current) => {
+                  onChange={event =>
+                    updateDraft(current => {
                       const nextWorkEndHour = Number(event.target.value);
                       return {
                         ...current,
@@ -178,7 +188,7 @@ export const WorkHoursPage = () => {
                   }
                   className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
                 >
-                  {HOUR_OPTIONS.slice(1).map((hour) => (
+                  {HOUR_OPTIONS.slice(1).map(hour => (
                     <option key={hour} value={hour}>
                       {formatHourLabel(hour)}
                     </option>
@@ -213,7 +223,7 @@ export const WorkHoursPage = () => {
                           min={formatHourLabel(draft.workStartHour)}
                           max={formatHourLabel(draft.workEndHour)}
                           value={formatTimeInputValue(period.startMinute)}
-                          onChange={(event) => {
+                          onChange={event => {
                             const parsedMinute = parseTimeInputValue(event.target.value);
                             if (parsedMinute === null) {
                               return;
@@ -235,7 +245,7 @@ export const WorkHoursPage = () => {
                           min={formatHourLabel(draft.workStartHour)}
                           max={formatHourLabel(draft.workEndHour)}
                           value={formatTimeInputValue(period.endMinute)}
-                          onChange={(event) => {
+                          onChange={event => {
                             const parsedMinute = parseTimeInputValue(event.target.value);
                             if (parsedMinute === null) {
                               return;

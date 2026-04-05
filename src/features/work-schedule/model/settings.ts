@@ -38,14 +38,14 @@ export const normalizeBreakPeriods = (
 
   const sanitized = breakPeriods
     .filter(
-      (period) =>
+      period =>
         Number.isInteger(period.startMinute) &&
         Number.isInteger(period.endMinute) &&
         period.startMinute >= workStartMinute &&
         period.endMinute <= workEndMinute &&
         period.startMinute < period.endMinute,
     )
-    .map((period) => ({
+    .map(period => ({
       startMinute: Number(period.startMinute),
       endMinute: Number(period.endMinute),
     }))
@@ -70,16 +70,18 @@ export const normalizeBreakPeriods = (
 export const hasBreakTime = (schedule: WorkSchedule) => schedule.breakPeriods.length > 0;
 
 export const formatWorkScheduleSummary = (schedule: WorkSchedule) => {
-  const dayLabels = WEEKDAY_OPTIONS.filter((option) => schedule.workingDays.includes(option.value)).map(
-    (option) => option.label,
-  );
+  const dayLabels = WEEKDAY_OPTIONS.filter(option =>
+    schedule.workingDays.includes(option.value),
+  ).map(option => option.label);
 
   if (!hasBreakTime(schedule)) {
     return `${dayLabels.join('・')} ${formatHourLabel(schedule.workStartHour)}-${formatHourLabel(schedule.workEndHour)} (休憩なし)`;
   }
 
   const breakLabels = schedule.breakPeriods
-    .map((period) => `${formatMinuteLabel(period.startMinute)}-${formatMinuteLabel(period.endMinute)}`)
+    .map(
+      period => `${formatMinuteLabel(period.startMinute)}-${formatMinuteLabel(period.endMinute)}`,
+    )
     .join(', ');
 
   return `${dayLabels.join('・')} ${formatHourLabel(schedule.workStartHour)}-${formatHourLabel(schedule.workEndHour)} (休憩: ${breakLabels})`;
@@ -92,7 +94,13 @@ export const sanitizeWorkSchedule = (value: unknown): WorkSchedule => {
 
   const candidate = value as Partial<WorkSchedule>;
   const workingDays = Array.isArray(candidate.workingDays)
-    ? [...new Set(candidate.workingDays.filter((day): day is number => Number.isInteger(day) && day >= 0 && day <= 6))].sort((left, right) => left - right)
+    ? [
+        ...new Set(
+          candidate.workingDays.filter(
+            (day): day is number => Number.isInteger(day) && day >= 0 && day <= 6,
+          ),
+        ),
+      ].sort((left, right) => left - right)
     : DEFAULT_WORK_SCHEDULE.workingDays;
 
   const workStartHour = Number.isInteger(candidate.workStartHour)
@@ -101,10 +109,7 @@ export const sanitizeWorkSchedule = (value: unknown): WorkSchedule => {
   const workEndHour = Number.isInteger(candidate.workEndHour)
     ? Number(candidate.workEndHour)
     : DEFAULT_WORK_SCHEDULE.workEndHour;
-  const hasValidWorkHours =
-    workStartHour >= 0 &&
-    workStartHour < workEndHour &&
-    workEndHour <= 24;
+  const hasValidWorkHours = workStartHour >= 0 && workStartHour < workEndHour && workEndHour <= 24;
 
   if (workingDays.length === 0 || !hasValidWorkHours) {
     return DEFAULT_WORK_SCHEDULE;
@@ -115,33 +120,35 @@ export const sanitizeWorkSchedule = (value: unknown): WorkSchedule => {
     : [];
 
   const breakPeriodsFromArray = rawBreakPeriods
-        .filter(
-          (period): period is BreakPeriod =>
-            Boolean(period) &&
-            typeof period === 'object' &&
-            Number.isInteger((period as BreakPeriod).startMinute) &&
-            Number.isInteger((period as BreakPeriod).endMinute),
-        )
-        .map((period) => ({
-          startMinute: Number(period.startMinute),
-          endMinute: Number(period.endMinute),
-        }));
+    .filter(
+      (period): period is BreakPeriod =>
+        Boolean(period) &&
+        typeof period === 'object' &&
+        Number.isInteger((period as BreakPeriod).startMinute) &&
+        Number.isInteger((period as BreakPeriod).endMinute),
+    )
+    .map(period => ({
+      startMinute: Number(period.startMinute),
+      endMinute: Number(period.endMinute),
+    }));
 
   const legacyBreakPeriodsFromArray = rawBreakPeriods
-        .filter(
-          (period): period is {
-            startHour: number;
-            endHour: number;
-          } =>
-            Boolean(period) &&
-            typeof period === 'object' &&
-            Number.isInteger((period as { startHour?: unknown }).startHour) &&
-            Number.isInteger((period as { endHour?: unknown }).endHour),
-        )
-        .map((period) => ({
-          startMinute: Number(period.startHour) * 60,
-          endMinute: Number(period.endHour) * 60,
-        }));
+    .filter(
+      (
+        period,
+      ): period is {
+        startHour: number;
+        endHour: number;
+      } =>
+        Boolean(period) &&
+        typeof period === 'object' &&
+        Number.isInteger((period as { startHour?: unknown }).startHour) &&
+        Number.isInteger((period as { endHour?: unknown }).endHour),
+    )
+    .map(period => ({
+      startMinute: Number(period.startHour) * 60,
+      endMinute: Number(period.endHour) * 60,
+    }));
 
   const legacyBreakPeriods =
     Number.isInteger((candidate as { breakStartHour?: unknown }).breakStartHour) &&

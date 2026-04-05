@@ -36,7 +36,8 @@ const useRegisterShortcutsMock = vi.mocked(useRegisterShortcuts);
 describe('AvailabilityPage', () => {
   beforeEach(async () => {
     chartSpy.mockReset();
-    const { useAvailabilityCharts } = await import('@/features/availability/hooks/useAvailabilityCharts');
+    const { useAvailabilityCharts } =
+      await import('@/features/availability/hooks/useAvailabilityCharts');
     vi.mocked(useAvailabilityCharts).mockReturnValue([]);
 
     useTodoContextMock.mockReturnValue({
@@ -52,7 +53,8 @@ describe('AvailabilityPage', () => {
   });
 
   it('renders chart when load data exists', async () => {
-    const { useAvailabilityCharts } = await import('@/features/availability/hooks/useAvailabilityCharts');
+    const { useAvailabilityCharts } =
+      await import('@/features/availability/hooks/useAvailabilityCharts');
     vi.mocked(useAvailabilityCharts).mockReturnValue([
       {
         dateLabel: '4/4(土)',
@@ -70,7 +72,8 @@ describe('AvailabilityPage', () => {
   });
 
   it('renders no-load text and no-break business-hour text', async () => {
-    const { useAvailabilityCharts } = await import('@/features/availability/hooks/useAvailabilityCharts');
+    const { useAvailabilityCharts } =
+      await import('@/features/availability/hooks/useAvailabilityCharts');
     vi.mocked(useAvailabilityCharts).mockReturnValue([
       {
         dateLabel: '4/7(火)',
@@ -91,12 +94,17 @@ describe('AvailabilityPage', () => {
 
     render(<AvailabilityPage />);
 
-    expect(screen.getByText('4/7(火) の業務時間帯 (09:00-17:00 (休憩なし)) に重なる自分のタスクがありません。')).toBeInTheDocument();
-    expect(screen.getByText((content) => content.includes('稼働時間帯は'))).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        '4/7(火) の業務時間帯 (09:00-17:00 (休憩なし)) に重なる自分のタスクがありません。',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText(content => content.includes('稼働時間帯は'))).toBeInTheDocument();
   });
 
   it('changes date by input and registered shortcuts', async () => {
-    const { useAvailabilityCharts } = await import('@/features/availability/hooks/useAvailabilityCharts');
+    const { useAvailabilityCharts } =
+      await import('@/features/availability/hooks/useAvailabilityCharts');
     vi.mocked(useAvailabilityCharts).mockReturnValue([]);
 
     render(<AvailabilityPage />);
@@ -111,25 +119,25 @@ describe('AvailabilityPage', () => {
     expect(registration).toBeDefined();
 
     act(() => {
-      registration?.shortcuts.find((item) => item.id === 'availability-prev-day')?.action();
+      registration?.shortcuts.find(item => item.id === 'availability-prev-day')?.action();
     });
     expect(input.value).toBe('2026-04-07');
 
     const latestRegistration = useRegisterShortcutsMock.mock.calls.at(-1)?.[0];
     act(() => {
-      latestRegistration?.shortcuts.find((item) => item.id === 'availability-next-day')?.action();
+      latestRegistration?.shortcuts.find(item => item.id === 'availability-next-day')?.action();
     });
     expect(input.value).toBe('2026-04-08');
 
     act(() => {
-      latestRegistration?.shortcuts.find((item) => item.id === 'availability-today')?.action();
+      latestRegistration?.shortcuts.find(item => item.id === 'availability-today')?.action();
     });
     expect(input.value).toBe(initialDate);
 
     fireEvent.change(input, { target: { value: '' } });
     const invalidRegistration = useRegisterShortcutsMock.mock.calls.at(-1)?.[0];
     act(() => {
-      invalidRegistration?.shortcuts.find((item) => item.id === 'availability-prev-day')?.action();
+      invalidRegistration?.shortcuts.find(item => item.id === 'availability-prev-day')?.action();
     });
     expect(input.value).toBe('');
   });

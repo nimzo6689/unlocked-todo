@@ -89,7 +89,9 @@ describe('TodoCard', () => {
   });
 
   it('handles markdown parse promise and description toggle', async () => {
-    vi.spyOn(marked, 'parse').mockImplementation((text: string) => Promise.resolve(`<p>${text}</p>`));
+    vi.spyOn(marked, 'parse').mockImplementation((text: string) =>
+      Promise.resolve(`<p>${text}</p>`),
+    );
 
     const longDescriptionTodo = createTodo({
       description: 'a'.repeat(120),

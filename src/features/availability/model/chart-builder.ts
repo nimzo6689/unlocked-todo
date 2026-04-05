@@ -5,25 +5,22 @@ import { formatTimeLabel } from './datetime-utils';
 import { getSortedBreakPeriods } from './schedule-calculator';
 import type { AggregatedLoad } from './types';
 
-export const buildChartOption = ({
-  taskSeries,
-  meetingSeries,
-  slotContributors,
-  slotTotals,
-  slots,
-}: AggregatedLoad, schedule: WorkSchedule): EChartsOption => {
+export const buildChartOption = (
+  { taskSeries, meetingSeries, slotContributors, slotTotals, slots }: AggregatedLoad,
+  schedule: WorkSchedule,
+): EChartsOption => {
   const hasBreak = hasBreakTime(schedule);
   const sortedBreakPeriods = getSortedBreakPeriods(schedule);
-  const xAxisLabels = slots.map((slot) => slot.label);
+  const xAxisLabels = slots.map(slot => slot.label);
   if (slots.length > 0) {
     xAxisLabels.push(formatTimeLabel(slots[slots.length - 1].end));
   }
 
   const maxLoad = Math.max(...slotTotals, 0);
   const yAxisMax = Math.max(1.2, Math.ceil(maxLoad * 10) / 10);
-  const overloadBase = slotTotals.map((value) => (value > 1 ? 1 : 0));
-  const overloadOnly = slotTotals.map((value) => (value > 1 ? value - 1 : 0));
-  const displayMask = slots.map((slot) => (slot.isWorking && !slot.isElapsed ? 1 : null));
+  const overloadBase = slotTotals.map(value => (value > 1 ? 1 : 0));
+  const overloadOnly = slotTotals.map(value => (value > 1 ? value - 1 : 0));
+  const displayMask = slots.map(slot => (slot.isWorking && !slot.isElapsed ? 1 : null));
 
   const palette = [
     '#0ea5e9',
@@ -58,7 +55,7 @@ export const buildChartOption = ({
     })(),
   }));
 
-  const taskNames = new Set(taskSeries.map((task) => task.title));
+  const taskNames = new Set(taskSeries.map(task => task.title));
 
   const toTooltipValue = (value: unknown) => {
     if (typeof value === 'number' && Number.isFinite(value)) {
@@ -91,7 +88,7 @@ export const buildChartOption = ({
     tooltip: {
       trigger: 'item',
       axisPointer: { type: 'cross' },
-      formatter: (params) => {
+      formatter: params => {
         const list = Array.isArray(params) ? params : [params];
         const index = list[0]?.dataIndex ?? 0;
         const slot = slots[index];
@@ -111,7 +108,7 @@ export const buildChartOption = ({
         }
 
         const details = slotContributors[index]
-          .map((item) => `・${item.title}: ${item.load.toFixed(2)} 人時/h`)
+          .map(item => `・${item.title}: ${item.load.toFixed(2)} 人時/h`)
           .join('<br/>');
         const total = slotTotals[index] ?? 0;
         const hasMeeting = (meetingSeries[index] ?? 0) > 0;
@@ -122,11 +119,15 @@ export const buildChartOption = ({
 
         return [
           `${slot.label} - ${formatTimeLabel(slot.end)}`,
-          isTaskSeries ? `ホバー中: <b>${hoveredSeriesName}</b> ${hoveredTaskLoad.toFixed(2)} 人時/h` : null,
+          isTaskSeries
+            ? `ホバー中: <b>${hoveredSeriesName}</b> ${hoveredTaskLoad.toFixed(2)} 人時/h`
+            : null,
           `合計負荷: <b>${total.toFixed(2)} 人時/h</b>`,
           hasMeeting ? 'Meeting: <b>1.00</b> (非稼働)' : 'Meeting: なし',
           details || '重なりタスクなし',
-        ].filter(Boolean).join('<br/>');
+        ]
+          .filter(Boolean)
+          .join('<br/>');
       },
     },
     xAxis: [
@@ -142,7 +143,7 @@ export const buildChartOption = ({
       {
         type: 'category',
         boundaryGap: true,
-        data: slots.map((slot) => slot.label),
+        data: slots.map(slot => slot.label),
         show: false,
       },
     ],
@@ -262,7 +263,7 @@ export const buildChartOption = ({
                 color: '#475569',
                 formatter: '休憩時間',
               },
-              data: sortedBreakPeriods.map((period) => [
+              data: sortedBreakPeriods.map(period => [
                 { xAxis: formatMinuteLabel(period.startMinute) },
                 { xAxis: formatMinuteLabel(period.endMinute) },
               ]),

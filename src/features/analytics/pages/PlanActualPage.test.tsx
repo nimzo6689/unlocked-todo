@@ -37,7 +37,9 @@ describe('PlanActualPage', () => {
 
     render(<PlanActualPage />);
 
-    expect(screen.getByText('指定期間内に、表示対象の完了タスクがありません。')).toBeInTheDocument();
+    expect(
+      screen.getByText('指定期間内に、表示対象の完了タスクがありません。'),
+    ).toBeInTheDocument();
   });
 
   it('renders chart and normalizes invalid numeric fields', () => {
@@ -58,7 +60,9 @@ describe('PlanActualPage', () => {
 
     expect(screen.getByTestId('plan-actual-chart')).toBeInTheDocument();
 
-    const chartProps = chartSpy.mock.calls[0]?.[0] as { option: { series: Array<{ data: unknown[] }> } };
+    const chartProps = chartSpy.mock.calls[0]?.[0] as {
+      option: { series: Array<{ data: unknown[] }> };
+    };
     expect(chartProps.option.series[0].data[0]).toBe(0);
     expect(chartProps.option.series[1].data[0]).toBe(0);
   });
@@ -122,12 +126,12 @@ describe('PlanActualPage', () => {
     expect(registration).toBeDefined();
 
     act(() => {
-      registration?.shortcuts.find((item) => item.id === 'plan-actual-prev-day')?.action();
+      registration?.shortcuts.find(item => item.id === 'plan-actual-prev-day')?.action();
     });
 
     const latestRegistration = useRegisterShortcutsMock.mock.calls.at(-1)?.[0];
     act(() => {
-      latestRegistration?.shortcuts.find((item) => item.id === 'plan-actual-next-day')?.action();
+      latestRegistration?.shortcuts.find(item => item.id === 'plan-actual-next-day')?.action();
     });
 
     fireEvent.change(input, { target: { value: '2026-04-02' } });
@@ -135,7 +139,7 @@ describe('PlanActualPage', () => {
 
     const currentRegistration = useRegisterShortcutsMock.mock.calls.at(-1)?.[0];
     act(() => {
-      currentRegistration?.shortcuts.find((item) => item.id === 'plan-actual-today')?.action();
+      currentRegistration?.shortcuts.find(item => item.id === 'plan-actual-today')?.action();
     });
 
     expect(chartSpy).toHaveBeenCalled();
@@ -208,7 +212,7 @@ describe('PlanActualPage', () => {
 
     const registration = useRegisterShortcutsMock.mock.calls.at(-1)?.[0];
     act(() => {
-      registration?.shortcuts.find((item) => item.id === 'plan-actual-prev-day')?.action();
+      registration?.shortcuts.find(item => item.id === 'plan-actual-prev-day')?.action();
     });
 
     expect(input.value).toBe('');

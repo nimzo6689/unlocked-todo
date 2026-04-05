@@ -49,7 +49,8 @@ const normalizeKey = (event: KeyboardEvent) => {
   return event.key.toLowerCase();
 };
 
-const isModifierOnly = (event: KeyboardEvent) => ['control', 'shift', 'alt', 'meta'].includes(normalizeKey(event));
+const isModifierOnly = (event: KeyboardEvent) =>
+  ['control', 'shift', 'alt', 'meta'].includes(normalizeKey(event));
 
 const isEditableElement = (target: EventTarget | null) => {
   if (!(target instanceof HTMLElement)) {
@@ -126,9 +127,9 @@ const buildHelpSections = (shortcuts: ShortcutDefinition[]) => {
     return map;
   }, new Map());
 
-  return SHORTCUT_CATEGORY_ORDER
-    .map((category) => grouped.get(category))
-    .filter((section): section is ShortcutHelpSection => Boolean(section));
+  return SHORTCUT_CATEGORY_ORDER.map(category => grouped.get(category)).filter(
+    (section): section is ShortcutHelpSection => Boolean(section),
+  );
 };
 
 export const ShortcutProvider = ({
@@ -155,122 +156,129 @@ export const ShortcutProvider = ({
   }, [currentPath, clearSequence]);
 
   const registerShortcuts = useCallback((sourceId: string, registration: ShortcutRegistration) => {
-    setRegistrations((current) => ({
+    setRegistrations(current => ({
       ...current,
       [sourceId]: registration,
     }));
   }, []);
 
   const unregisterShortcuts = useCallback((sourceId: string) => {
-    setRegistrations((current) => {
+    setRegistrations(current => {
       const next = { ...current };
       delete next[sourceId];
       return next;
     });
   }, []);
 
-  const handleNavigate = useCallback((path: string) => {
-    clearSequence();
-    setDrawerOpen(false);
-    navigate(path);
-    setHelpOpen(false);
-  }, [clearSequence, navigate, setDrawerOpen]);
+  const handleNavigate = useCallback(
+    (path: string) => {
+      clearSequence();
+      setDrawerOpen(false);
+      navigate(path);
+      setHelpOpen(false);
+    },
+    [clearSequence, navigate, setDrawerOpen],
+  );
 
-  const globalShortcuts = useMemo<ShortcutDefinition[]>(() => [
-    {
-      id: 'shortcut-help',
-      description: 'ショートカットヘルプを開く',
-      category: 'ナビゲーション',
-      bindings: ['?'],
-      action: () => setHelpOpen((current) => !current),
-      allowInDialog: true,
-    },
-    {
-      id: 'nav-todos',
-      description: 'タスク一覧へ移動',
-      category: 'ナビゲーション',
-      bindings: ['g i'],
-      action: () => handleNavigate('/'),
-    },
-    {
-      id: 'nav-new',
-      description: '新規作成へ移動',
-      category: 'ナビゲーション',
-      bindings: ['g n'],
-      action: () => handleNavigate('/new'),
-    },
-    {
-      id: 'nav-availability',
-      description: '空き状況へ移動',
-      category: 'ナビゲーション',
-      bindings: ['g a'],
-      action: () => handleNavigate('/availability'),
-    },
-    {
-      id: 'nav-plan-actual',
-      description: '予実管理へ移動',
-      category: 'ナビゲーション',
-      bindings: ['g p'],
-      action: () => handleNavigate('/plan-actual'),
-    },
-    {
-      id: 'nav-notifications',
-      description: '通知設定へ移動',
-      category: 'ナビゲーション',
-      bindings: ['g t'],
-      action: () => handleNavigate('/settings/notifications'),
-    },
-    {
-      id: 'nav-work-hours',
-      description: '稼働設定へ移動',
-      category: 'ナビゲーション',
-      bindings: ['g w'],
-      action: () => handleNavigate('/settings/work-hours'),
-    },
-    {
-      id: 'nav-usage',
-      description: '使い方へ移動',
-      category: 'ナビゲーション',
-      bindings: ['g u'],
-      action: () => handleNavigate('/help/usage'),
-    },
-    {
-      id: 'nav-about',
-      description: 'アプリ情報へ移動',
-      category: 'ナビゲーション',
-      bindings: ['g b'],
-      action: () => handleNavigate('/help/about'),
-    },
-    {
-      id: 'close-global-overlay',
-      description: '共通オーバーレイを閉じる',
-      category: 'ダイアログ',
-      bindings: ['escape'],
-      action: () => {
-        if (helpOpen) {
-          setHelpOpen(false);
-          return;
-        }
-
-        if (drawerOpen) {
-          setDrawerOpen(false);
-        }
+  const globalShortcuts = useMemo<ShortcutDefinition[]>(
+    () => [
+      {
+        id: 'shortcut-help',
+        description: 'ショートカットヘルプを開く',
+        category: 'ナビゲーション',
+        bindings: ['?'],
+        action: () => setHelpOpen(current => !current),
+        allowInDialog: true,
       },
-      enabled: helpOpen || drawerOpen,
-      visible: false,
-      allowInDialog: true,
-      allowInInput: true,
-    },
-  ], [drawerOpen, handleNavigate, helpOpen, setDrawerOpen]);
+      {
+        id: 'nav-todos',
+        description: 'タスク一覧へ移動',
+        category: 'ナビゲーション',
+        bindings: ['g i'],
+        action: () => handleNavigate('/'),
+      },
+      {
+        id: 'nav-new',
+        description: '新規作成へ移動',
+        category: 'ナビゲーション',
+        bindings: ['g n'],
+        action: () => handleNavigate('/new'),
+      },
+      {
+        id: 'nav-availability',
+        description: '空き状況へ移動',
+        category: 'ナビゲーション',
+        bindings: ['g a'],
+        action: () => handleNavigate('/availability'),
+      },
+      {
+        id: 'nav-plan-actual',
+        description: '予実管理へ移動',
+        category: 'ナビゲーション',
+        bindings: ['g p'],
+        action: () => handleNavigate('/plan-actual'),
+      },
+      {
+        id: 'nav-notifications',
+        description: '通知設定へ移動',
+        category: 'ナビゲーション',
+        bindings: ['g t'],
+        action: () => handleNavigate('/settings/notifications'),
+      },
+      {
+        id: 'nav-work-hours',
+        description: '稼働設定へ移動',
+        category: 'ナビゲーション',
+        bindings: ['g w'],
+        action: () => handleNavigate('/settings/work-hours'),
+      },
+      {
+        id: 'nav-usage',
+        description: '使い方へ移動',
+        category: 'ナビゲーション',
+        bindings: ['g u'],
+        action: () => handleNavigate('/help/usage'),
+      },
+      {
+        id: 'nav-about',
+        description: 'アプリ情報へ移動',
+        category: 'ナビゲーション',
+        bindings: ['g b'],
+        action: () => handleNavigate('/help/about'),
+      },
+      {
+        id: 'close-global-overlay',
+        description: '共通オーバーレイを閉じる',
+        category: 'ダイアログ',
+        bindings: ['escape'],
+        action: () => {
+          if (helpOpen) {
+            setHelpOpen(false);
+            return;
+          }
+
+          if (drawerOpen) {
+            setDrawerOpen(false);
+          }
+        },
+        enabled: helpOpen || drawerOpen,
+        visible: false,
+        allowInDialog: true,
+        allowInInput: true,
+      },
+    ],
+    [drawerOpen, handleNavigate, helpOpen, setDrawerOpen],
+  );
 
   const pageEntries = useMemo(() => Object.values(registrations), [registrations]);
-  const overlayOpen = pageEntries.some((entry) => entry.overlayOpen);
-  const pageShortcuts = useMemo(
-    () => pageEntries.flatMap((entry) => entry.shortcuts),
-    [pageEntries],
-  );
+  const overlayOpen = pageEntries.some(entry => entry.overlayOpen);
+  const pageShortcuts = useMemo(() => pageEntries.flatMap(entry => entry.shortcuts), [pageEntries]);
   const pageLabel = useMemo(
-    () => pageEntries.map((entry) => entry.pageLabel).filter(Boolean).at(-1),
+    () =>
+      pageEntries
+        .map(entry => entry.pageLabel)
+        .filter(Boolean)
+        .at(-1),
     [pageEntries],
   );
   const globalHelpSections = useMemo(() => buildHelpSections(globalShortcuts), [globalShortcuts]);
@@ -300,7 +308,7 @@ export const ShortcutProvider = ({
       }
 
       const editable = isEditableElement(event.target);
-      const availableShortcuts = [...pageShortcuts, ...globalShortcuts].filter((shortcut) => {
+      const availableShortcuts = [...pageShortcuts, ...globalShortcuts].filter(shortcut => {
         if (shortcut.enabled === false) {
           return false;
         }
@@ -324,8 +332,8 @@ export const ShortcutProvider = ({
           return;
         }
 
-        const helpShortcut = availableShortcuts.find((shortcut) => shortcut.id === 'shortcut-help');
-        if (helpShortcut && helpShortcut.bindings.some((binding) => matchesStroke(binding, event))) {
+        const helpShortcut = availableShortcuts.find(shortcut => shortcut.id === 'shortcut-help');
+        if (helpShortcut && helpShortcut.bindings.some(binding => matchesStroke(binding, event))) {
           event.preventDefault();
           runShortcut(helpShortcut);
         }
@@ -334,12 +342,14 @@ export const ShortcutProvider = ({
 
       const sequenceState = sequenceStateRef.current;
       if (sequenceState) {
-        const sequenceMatch = availableShortcuts.find((shortcut) =>
-          shortcut.bindings.some((binding) => {
+        const sequenceMatch = availableShortcuts.find(shortcut =>
+          shortcut.bindings.some(binding => {
             const strokes = binding.split(' ');
-            return strokes.length === 2
-              && strokes[0] === sequenceState.firstStroke
-              && matchesStroke(strokes[1], event);
+            return (
+              strokes.length === 2 &&
+              strokes[0] === sequenceState.firstStroke &&
+              matchesStroke(strokes[1], event)
+            );
           }),
         );
 
@@ -352,8 +362,8 @@ export const ShortcutProvider = ({
         clearSequence();
       }
 
-      const singleMatch = availableShortcuts.find((shortcut) =>
-        shortcut.bindings.some((binding) => {
+      const singleMatch = availableShortcuts.find(shortcut =>
+        shortcut.bindings.some(binding => {
           const strokes = binding.split(' ');
           return strokes.length === 1 && matchesStroke(strokes[0], event);
         }),
@@ -365,8 +375,8 @@ export const ShortcutProvider = ({
         return;
       }
 
-      const sequenceStart = availableShortcuts.find((shortcut) =>
-        shortcut.bindings.some((binding) => {
+      const sequenceStart = availableShortcuts.find(shortcut =>
+        shortcut.bindings.some(binding => {
           const strokes = binding.split(' ');
           return strokes.length === 2 && matchesStroke(strokes[0], event);
         }),
@@ -374,8 +384,8 @@ export const ShortcutProvider = ({
 
       if (sequenceStart) {
         const firstStroke = sequenceStart.bindings
-          .map((binding) => binding.split(' '))
-          .find((strokes) => strokes.length === 2 && matchesStroke(strokes[0], event))?.[0];
+          .map(binding => binding.split(' '))
+          .find(strokes => strokes.length === 2 && matchesStroke(strokes[0], event))?.[0];
 
         if (firstStroke) {
           event.preventDefault();
@@ -402,12 +412,15 @@ export const ShortcutProvider = ({
     };
   }, [clearSequence, drawerOpen, globalShortcuts, helpOpen, overlayOpen, pageShortcuts]);
 
-  const contextValue = useMemo<ShortcutContextValue>(() => ({
-    registerShortcuts,
-    unregisterShortcuts,
-    openHelp: () => setHelpOpen(true),
-    closeHelp: () => setHelpOpen(false),
-  }), [registerShortcuts, unregisterShortcuts]);
+  const contextValue = useMemo<ShortcutContextValue>(
+    () => ({
+      registerShortcuts,
+      unregisterShortcuts,
+      openHelp: () => setHelpOpen(true),
+      closeHelp: () => setHelpOpen(false),
+    }),
+    [registerShortcuts, unregisterShortcuts],
+  );
 
   return (
     <ShortcutContext.Provider value={contextValue}>
@@ -423,6 +436,7 @@ export const ShortcutProvider = ({
   );
 };
 
+/* eslint-disable-next-line react-refresh/only-export-components */
 export const useRegisterShortcuts = (registration: ShortcutRegistration) => {
   const context = useContext(ShortcutContext);
   const sourceId = useId();
@@ -437,6 +451,7 @@ export const useRegisterShortcuts = (registration: ShortcutRegistration) => {
   }, [context, registration, sourceId]);
 };
 
+/* eslint-disable-next-line react-refresh/only-export-components */
 export const useShortcutHelp = () => {
   const context = useContext(ShortcutContext);
 

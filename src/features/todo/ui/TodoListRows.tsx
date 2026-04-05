@@ -47,7 +47,7 @@ export const TodoListRows: FC<TodoListRowsProps> = ({
           </tr>
         </thead>
         <tbody>
-          {todos.map((todo) => {
+          {todos.map(todo => {
             const isMeeting = isMeetingTodo(todo);
             const isSelected = selectedTodoId === todo.id;
             const isInProgress = currentInProgressId === todo.id;
@@ -76,14 +76,24 @@ export const TodoListRows: FC<TodoListRowsProps> = ({
                   </div>
                 </td>
                 <td className="px-3 py-3">
-                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${statusClasses[todo.status]}`}>
+                  <span
+                    className={`text-xs font-semibold px-2 py-1 rounded-full ${statusClasses[todo.status]}`}
+                  >
                     {todo.status}
                   </span>
                 </td>
-                <td className="hidden md:table-cell px-3 py-3">{isMeeting ? 'Meeting' : 'Normal'}</td>
-                <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap">{formatDate(todo.dueDate)}</td>
-                <td className="hidden md:table-cell px-3 py-3 whitespace-nowrap">{isMeeting ? '-' : `${todo.effortMinutes || 0} 分`}</td>
-                <td className="hidden md:table-cell px-3 py-3">{isMeeting ? '-' : todo.assignee}</td>
+                <td className="hidden md:table-cell px-3 py-3">
+                  {isMeeting ? 'Meeting' : 'Normal'}
+                </td>
+                <td className="hidden sm:table-cell px-3 py-3 whitespace-nowrap">
+                  {formatDate(todo.dueDate)}
+                </td>
+                <td className="hidden md:table-cell px-3 py-3 whitespace-nowrap">
+                  {isMeeting ? '-' : `${todo.effortMinutes || 0} 分`}
+                </td>
+                <td className="hidden md:table-cell px-3 py-3">
+                  {isMeeting ? '-' : todo.assignee}
+                </td>
                 <td className="px-3 py-3 align-top">
                   <div className="flex justify-end sm:justify-end flex-wrap gap-1">
                     {!isMeeting && filter === 'unlocked' && todo.status === 'Unlocked' && (
@@ -94,12 +104,14 @@ export const TodoListRows: FC<TodoListRowsProps> = ({
                             : 'bg-blue-500 hover:bg-blue-600'
                         } text-white font-semibold py-1 px-2 rounded-md inline-flex items-center justify-center`}
                         aria-label={isInProgress ? '中断' : '着手'}
-                        onClick={(event) => {
+                        onClick={event => {
                           event.stopPropagation();
                           onStartTodo(todo.id);
                         }}
                       >
-                        <span className="sm:hidden">{isInProgress ? <Square size={14} /> : <Play size={14} />}</span>
+                        <span className="sm:hidden">
+                          {isInProgress ? <Square size={14} /> : <Play size={14} />}
+                        </span>
                         <span className="hidden sm:inline">{isInProgress ? '中断' : '着手'}</span>
                       </button>
                     )}
@@ -107,35 +119,41 @@ export const TodoListRows: FC<TodoListRowsProps> = ({
                       <button
                         className="text-xs bg-green-500 hover:bg-green-600 text-white font-semibold py-1 px-2 rounded-md inline-flex items-center justify-center"
                         aria-label="完了"
-                        onClick={(event) => {
+                        onClick={event => {
                           event.stopPropagation();
                           onComplete(todo.id);
                         }}
                       >
-                        <span className="sm:hidden"><Check size={14} /></span>
+                        <span className="sm:hidden">
+                          <Check size={14} />
+                        </span>
                         <span className="hidden sm:inline">完了</span>
                       </button>
                     )}
                     <button
                       className="text-xs bg-slate-500 hover:bg-slate-600 text-white font-semibold py-1 px-2 rounded-md inline-flex items-center justify-center"
                       aria-label="編集"
-                      onClick={(event) => {
+                      onClick={event => {
                         event.stopPropagation();
                         onEdit(todo.id);
                       }}
                     >
-                      <span className="sm:hidden"><Pencil size={14} /></span>
+                      <span className="sm:hidden">
+                        <Pencil size={14} />
+                      </span>
                       <span className="hidden sm:inline">編集</span>
                     </button>
                     <button
                       className="text-xs bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-2 rounded-md inline-flex items-center justify-center"
                       aria-label="削除"
-                      onClick={(event) => {
+                      onClick={event => {
                         event.stopPropagation();
                         onDelete(todo.id);
                       }}
                     >
-                      <span className="sm:hidden"><Trash2 size={14} /></span>
+                      <span className="sm:hidden">
+                        <Trash2 size={14} />
+                      </span>
                       <span className="hidden sm:inline">削除</span>
                     </button>
                   </div>

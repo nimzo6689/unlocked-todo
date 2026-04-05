@@ -74,7 +74,7 @@ describe('useWorkHoursDraft', () => {
     const { result } = renderHook(() => useWorkHoursDraft(DEFAULT_WORK_SCHEDULE, setWorkSchedule));
 
     act(() => {
-      result.current.updateDraft((current) => ({ ...current, workingDays: [] }));
+      result.current.updateDraft(current => ({ ...current, workingDays: [] }));
     });
     act(() => {
       result.current.handleSave();
@@ -89,7 +89,7 @@ describe('useWorkHoursDraft', () => {
     const { result } = renderHook(() => useWorkHoursDraft(DEFAULT_WORK_SCHEDULE, setWorkSchedule));
 
     act(() => {
-      result.current.updateDraft((current) => ({ ...current, workStartHour: 18, workEndHour: 18 }));
+      result.current.updateDraft(current => ({ ...current, workStartHour: 18, workEndHour: 18 }));
     });
     act(() => {
       result.current.handleSave();

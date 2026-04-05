@@ -1,7 +1,19 @@
 import type { Todo, WorkSchedule } from '@/features/todo/model/types';
-import { HOUR_MS, SLOT_MS, type AggregatedLoad, type DatedTimeSlot, type SlotContributor } from './types';
+import {
+  HOUR_MS,
+  SLOT_MS,
+  type AggregatedLoad,
+  type DatedTimeSlot,
+  type SlotContributor,
+} from './types';
 import { subtractIntervals } from './interval-utils';
-import { buildTimeSlots, buildWorkingDateRange, calculateWorkingDurationMsInRange, getMeetingIntervalsForDay, parseTaskRange } from './schedule-calculator';
+import {
+  buildTimeSlots,
+  buildWorkingDateRange,
+  calculateWorkingDurationMsInRange,
+  getMeetingIntervalsForDay,
+  parseTaskRange,
+} from './schedule-calculator';
 
 type TaskWithPriority = {
   todo: Todo;
@@ -27,11 +39,11 @@ const toRemainingEffortMinutes = (todo: Todo) => {
 };
 
 const buildGlobalSlots = (dateStrs: string[], schedule: WorkSchedule): DatedTimeSlot[] =>
-  dateStrs.flatMap((dateStr) =>
-    buildTimeSlots(dateStr, schedule).map((slot) => ({
+  dateStrs.flatMap(dateStr =>
+    buildTimeSlots(dateStr, schedule).map(slot => ({
       ...slot,
       dateStr,
-    }))
+    })),
   );
 
 export const sortTasksByPriority = (
@@ -40,8 +52,8 @@ export const sortTasksByPriority = (
   meetings: Todo[],
 ): TaskWithPriority[] => {
   return todos
-    .filter((todo) => todo.status !== 'Completed')
-    .map((todo) => {
+    .filter(todo => todo.status !== 'Completed')
+    .map(todo => {
       const range = parseTaskRange(todo);
       if (!range) return null;
 
@@ -98,7 +110,10 @@ export const allocateTaskEffortAcrossSlots = (
     }
 
     overlaps.forEach((item, overlapIndex) => {
-      allocatedHours[overlapIndex] = Math.min(high * item.overlapHours, capacities[overlapIndex] ?? 0);
+      allocatedHours[overlapIndex] = Math.min(
+        high * item.overlapHours,
+        capacities[overlapIndex] ?? 0,
+      );
     });
   } else {
     overlaps.forEach((_, overlapIndex) => {
@@ -129,42 +144,42 @@ export const aggregateLoadForDates = (
   const currentSlotStartMs = Math.floor(now.getTime() / SLOT_MS) * SLOT_MS;
 
   const parsedTaskRanges = todos
-    .filter((todo) => todo.status !== 'Completed')
-    .map((todo) => {
+    .filter(todo => todo.status !== 'Completed')
+    .map(todo => {
       const range = parseTaskRange(todo);
       return range ? { todo, range } : null;
     })
     .filter((item): item is { todo: Todo; range: { start: Date; end: Date } } => Boolean(item));
 
   const parsedMeetingRanges = meetings
-    .map((meeting) => {
+    .map(meeting => {
       const range = parseTaskRange(meeting, { allowZeroEffort: true });
       return range ? { meeting, range } : null;
     })
     .filter((item): item is { meeting: Todo; range: { start: Date; end: Date } } => Boolean(item));
 
   const rangeCandidates = [
-    ...displayDates.map((dateStr) => new Date(`${dateStr}T00:00:00`)),
+    ...displayDates.map(dateStr => new Date(`${dateStr}T00:00:00`)),
     ...parsedTaskRanges.flatMap(({ range }) => [range.start, range.end]),
     ...parsedMeetingRanges.flatMap(({ range }) => [range.start, range.end]),
   ];
 
-  const rangeStart = new Date(Math.min(...rangeCandidates.map((date) => date.getTime())));
-  const rangeEnd = new Date(Math.max(...rangeCandidates.map((date) => date.getTime())));
+  const rangeStart = new Date(Math.min(...rangeCandidates.map(date => date.getTime())));
+  const rangeEnd = new Date(Math.max(...rangeCandidates.map(date => date.getTime())));
   const allWorkingDates = buildWorkingDateRange(rangeStart, rangeEnd, schedule);
-  const globalSlots = buildGlobalSlots(allWorkingDates, schedule).map((slot) => ({
+  const globalSlots = buildGlobalSlots(allWorkingDates, schedule).map(slot => ({
     ...slot,
     isElapsed: slot.end.getTime() <= currentSlotStartMs,
   }));
   const meetingIntervalsByDate = new Map(
-    allWorkingDates.map((dateStr) => [
+    allWorkingDates.map(dateStr => [
       dateStr,
       getMeetingIntervalsForDay(new Date(`${dateStr}T00:00:00`), meetings),
-    ])
+    ]),
   );
 
   const globalSlotTotals = Array(globalSlots.length).fill(0) as number[];
-  const globalMeetingSeries = globalSlots.map((slot) => {
+  const globalMeetingSeries = globalSlots.map(slot => {
     if (!slot.isWorking || slot.isElapsed) {
       return 0;
     }
@@ -181,7 +196,10 @@ export const aggregateLoadForDates = (
 
     return overlapMs > 0 ? 1 : 0;
   });
-  const globalSlotContribMap = Array.from({ length: globalSlots.length }, () => new Map<string, SlotContributor>());
+  const globalSlotContribMap = Array.from(
+    { length: globalSlots.length },
+    () => new Map<string, SlotContributor>(),
+  );
   const seriesMap = new Map<string, { id: string; title: string; data: number[] }>();
 
   const sortedTodos = sortTasksByPriority(todos, schedule, meetings);
@@ -273,28 +291,28 @@ export const aggregateLoadForDates = (
   });
 
   return Object.fromEntries(
-    displayDates.map((dateStr) => {
+    displayDates.map(dateStr => {
       const indices = dateToIndices.get(dateStr) ?? [];
-      const slots = indices.map((index) => ({
+      const slots = indices.map(index => ({
         label: globalSlots[index].label,
         start: globalSlots[index].start,
         end: globalSlots[index].end,
         isWorking: globalSlots[index].isWorking,
         isElapsed: globalSlots[index].isElapsed,
       }));
-      const meetingSeries = indices.map((index) => toFiniteNumber(globalMeetingSeries[index] ?? 0));
-      const slotTotals = indices.map((index) => toFiniteNumber(globalSlotTotals[index] ?? 0));
-      const slotContributors = indices.map((index) =>
+      const meetingSeries = indices.map(index => toFiniteNumber(globalMeetingSeries[index] ?? 0));
+      const slotTotals = indices.map(index => toFiniteNumber(globalSlotTotals[index] ?? 0));
+      const slotContributors = indices.map(index =>
         [...(globalSlotContribMap[index]?.values() ?? [])]
-          .map((item) => ({ ...item, load: toFiniteNumber(item.load) }))
-          .sort((a, b) => b.load - a.load)
+          .map(item => ({ ...item, load: toFiniteNumber(item.load) }))
+          .sort((a, b) => b.load - a.load),
       );
       const taskSeries = [...seriesMap.values()]
-        .map((task) => ({
+        .map(task => ({
           ...task,
-          data: indices.map((index) => toFiniteNumber(task.data[index] ?? 0)),
+          data: indices.map(index => toFiniteNumber(task.data[index] ?? 0)),
         }))
-        .filter((task) => task.data.some((value) => value > 0));
+        .filter(task => task.data.some(value => value > 0));
 
       return [
         dateStr,
@@ -306,6 +324,6 @@ export const aggregateLoadForDates = (
           slotContributors,
         },
       ];
-    })
+    }),
   );
 };

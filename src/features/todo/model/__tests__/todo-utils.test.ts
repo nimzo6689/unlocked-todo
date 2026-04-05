@@ -35,7 +35,10 @@ describe('todo-utils', () => {
 
   it('normalizes dependencies from string, array and empty value', () => {
     expect(getDependencyIds(createTodo({ dependency: 'id-1' }))).toEqual(['id-1']);
-    expect(getDependencyIds(createTodo({ dependency: ['id-1', '', 'id-2'] }))).toEqual(['id-1', 'id-2']);
+    expect(getDependencyIds(createTodo({ dependency: ['id-1', '', 'id-2'] }))).toEqual([
+      'id-1',
+      'id-2',
+    ]);
     expect(getDependencyIds(createTodo({ dependency: undefined }))).toEqual([]);
   });
 
@@ -97,15 +100,42 @@ describe('todo-utils', () => {
 
     const invalidCases: Array<{ payload: Record<string, unknown>; message: string }> = [
       { payload: { ...base, title: 123 }, message: 'titleは文字列である必要があります' },
-      { payload: { ...base, createdAt: 123 }, message: 'createdAtはISO 8601文字列である必要があります' },
-      { payload: { ...base, startableAt: 123 }, message: 'startableAtはISO 8601文字列である必要があります' },
-      { payload: { ...base, dueDate: 123 }, message: 'dueDateはISO 8601文字列である必要があります' },
-      { payload: { ...base, status: 'Unknown' }, message: 'statusは "Unlocked", "Locked", "Completed" のいずれかである必要があります' },
-      { payload: { ...base, assignee: 'unknown' }, message: 'assigneeは "自分" または "他人" である必要があります' },
-      { payload: { ...base, effortMinutes: -1 }, message: 'effortMinutesは0以上の数値である必要があります' },
-      { payload: { ...base, actualWorkSeconds: -1 }, message: 'actualWorkSecondsは0以上の数値である必要があります' },
-      { payload: { ...base, dependency: { id: 'x' } }, message: 'dependencyは文字列または文字列配列である必要があります' },
-      { payload: { ...base, taskType: 'InvalidType' }, message: 'taskTypeは "Normal" または "Meeting" である必要があります' },
+      {
+        payload: { ...base, createdAt: 123 },
+        message: 'createdAtはISO 8601文字列である必要があります',
+      },
+      {
+        payload: { ...base, startableAt: 123 },
+        message: 'startableAtはISO 8601文字列である必要があります',
+      },
+      {
+        payload: { ...base, dueDate: 123 },
+        message: 'dueDateはISO 8601文字列である必要があります',
+      },
+      {
+        payload: { ...base, status: 'Unknown' },
+        message: 'statusは "Unlocked", "Locked", "Completed" のいずれかである必要があります',
+      },
+      {
+        payload: { ...base, assignee: 'unknown' },
+        message: 'assigneeは "自分" または "他人" である必要があります',
+      },
+      {
+        payload: { ...base, effortMinutes: -1 },
+        message: 'effortMinutesは0以上の数値である必要があります',
+      },
+      {
+        payload: { ...base, actualWorkSeconds: -1 },
+        message: 'actualWorkSecondsは0以上の数値である必要があります',
+      },
+      {
+        payload: { ...base, dependency: { id: 'x' } },
+        message: 'dependencyは文字列または文字列配列である必要があります',
+      },
+      {
+        payload: { ...base, taskType: 'InvalidType' },
+        message: 'taskTypeは "Normal" または "Meeting" である必要があります',
+      },
     ];
 
     invalidCases.forEach(({ payload, message }) => {
@@ -161,7 +191,9 @@ describe('todo-utils', () => {
     expect(normalizeTaskType(undefined)).toBe(DEFAULT_TASK_TYPE);
     expect(normalizeTaskType('')).toBe(DEFAULT_TASK_TYPE);
     expect(normalizeTaskType('Meeting')).toBe('Meeting');
-    expect(() => normalizeTaskType('Unknown')).toThrow('taskTypeは "Normal" または "Meeting" である必要があります');
+    expect(() => normalizeTaskType('Unknown')).toThrow(
+      'taskTypeは "Normal" または "Meeting" である必要があります',
+    );
   });
 
   it('normalizes meeting todo fields and invalid numbers', () => {

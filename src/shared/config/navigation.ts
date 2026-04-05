@@ -55,10 +55,7 @@ export const navigationItems: NavigationItem[] = [
   },
 ];
 
-export const isNavigationItemActive = (
-  item: NavigationItem,
-  currentPath?: string,
-): boolean => {
+export const isNavigationItemActive = (item: NavigationItem, currentPath?: string): boolean => {
   if (!currentPath) {
     return false;
   }
@@ -67,13 +64,10 @@ export const isNavigationItemActive = (
     return true;
   }
 
-  return item.children?.some((child) => isNavigationItemActive(child, currentPath)) ?? false;
+  return item.children?.some(child => isNavigationItemActive(child, currentPath)) ?? false;
 };
 
-export const getExpandedKeysForPath = (
-  items: NavigationItem[],
-  currentPath?: string,
-): string[] => {
+export const getExpandedKeysForPath = (items: NavigationItem[], currentPath?: string): string[] => {
   if (!currentPath) {
     return [];
   }
@@ -89,14 +83,14 @@ export const getExpandedKeysForPath = (
       return false;
     }
 
-    const childMatched = item.children.some((child) => walk(child));
+    const childMatched = item.children.some(child => walk(child));
     if (childMatched) {
       expandedKeys.add(item.key);
     }
     return childMatched;
   };
 
-  items.forEach((item) => {
+  items.forEach(item => {
     walk(item);
   });
 

@@ -33,7 +33,7 @@ vi.mock('@/features/todo/ui/TodoCard', () => ({
 vi.mock('@/features/todo/ui/TodoListRows', () => ({
   TodoListRows: ({ todos }: { todos: Array<{ title: string }> }) => (
     <section aria-label="todo-list-rows">
-      {todos.map((todo) => (
+      {todos.map(todo => (
         <div key={todo.title}>{todo.title}</div>
       ))}
     </section>
@@ -49,7 +49,9 @@ describe('TodoListPage', () => {
     const { useTodoSelection } = await import('@/features/todo/hooks/useTodoSelection');
     const { useExportImport } = await import('@/features/todo/hooks/useExportImport');
 
-    vi.mocked(useTodoListFilter).mockReturnValue([createTodo({ id: 'todo-1', title: '一覧テスト' })]);
+    vi.mocked(useTodoListFilter).mockReturnValue([
+      createTodo({ id: 'todo-1', title: '一覧テスト' }),
+    ]);
     vi.mocked(useTodoSelection).mockReturnValue({
       selectedTodoId: 'todo-1',
       setSelectedTodoId: vi.fn(),
@@ -86,8 +88,18 @@ describe('TodoListPage', () => {
       startTodo: vi.fn(),
       exportTodos: vi.fn(async () => undefined),
       exportTodosToText: vi.fn(() => '[]'),
-      importTodos: vi.fn(async () => ({ success: true, addedCount: 0, updatedCount: 0, message: '' })),
-      importTodosFromText: vi.fn(async () => ({ success: true, addedCount: 0, updatedCount: 0, message: '' })),
+      importTodos: vi.fn(async () => ({
+        success: true,
+        addedCount: 0,
+        updatedCount: 0,
+        message: '',
+      })),
+      importTodosFromText: vi.fn(async () => ({
+        success: true,
+        addedCount: 0,
+        updatedCount: 0,
+        message: '',
+      })),
     } as never);
 
     useRegisterShortcutsMock.mockClear();
@@ -164,7 +176,7 @@ describe('TodoListPage', () => {
       </MemoryRouter>,
     );
 
-    const menuButton = screen.getAllByRole('button').find((button) => button.querySelector('svg'));
+    const menuButton = screen.getAllByRole('button').find(button => button.querySelector('svg'));
     expect(menuButton).toBeTruthy();
     fireEvent.click(menuButton!);
 
@@ -215,8 +227,18 @@ describe('TodoListPage', () => {
       startTodo: vi.fn(),
       exportTodos: vi.fn(async () => undefined),
       exportTodosToText: vi.fn(() => '[]'),
-      importTodos: vi.fn(async () => ({ success: true, addedCount: 0, updatedCount: 0, message: '' })),
-      importTodosFromText: vi.fn(async () => ({ success: true, addedCount: 0, updatedCount: 0, message: '' })),
+      importTodos: vi.fn(async () => ({
+        success: true,
+        addedCount: 0,
+        updatedCount: 0,
+        message: '',
+      })),
+      importTodosFromText: vi.fn(async () => ({
+        success: true,
+        addedCount: 0,
+        updatedCount: 0,
+        message: '',
+      })),
     } as never);
 
     render(
@@ -293,8 +315,18 @@ describe('TodoListPage', () => {
       startTodo,
       exportTodos: vi.fn(async () => undefined),
       exportTodosToText: vi.fn(() => '[]'),
-      importTodos: vi.fn(async () => ({ success: true, addedCount: 0, updatedCount: 0, message: '' })),
-      importTodosFromText: vi.fn(async () => ({ success: true, addedCount: 0, updatedCount: 0, message: '' })),
+      importTodos: vi.fn(async () => ({
+        success: true,
+        addedCount: 0,
+        updatedCount: 0,
+        message: '',
+      })),
+      importTodosFromText: vi.fn(async () => ({
+        success: true,
+        addedCount: 0,
+        updatedCount: 0,
+        message: '',
+      })),
     } as never);
 
     render(
@@ -307,24 +339,24 @@ describe('TodoListPage', () => {
     expect(registration).toBeDefined();
 
     const shortcuts = registration!.shortcuts;
-    expect(shortcuts.find((item) => item.id === 'list-view-list')?.bindings).toEqual(['v l']);
-    expect(shortcuts.find((item) => item.id === 'list-view-card')?.bindings).toEqual(['v c']);
+    expect(shortcuts.find(item => item.id === 'list-view-list')?.bindings).toEqual(['v l']);
+    expect(shortcuts.find(item => item.id === 'list-view-card')?.bindings).toEqual(['v c']);
 
-    shortcuts.find((item) => item.id === 'list-start')?.action();
-    shortcuts.find((item) => item.id === 'list-complete')?.action();
-    shortcuts.find((item) => item.id === 'list-delete')?.action();
+    shortcuts.find(item => item.id === 'list-start')?.action();
+    shortcuts.find(item => item.id === 'list-complete')?.action();
+    shortcuts.find(item => item.id === 'list-delete')?.action();
     act(() => {
-      shortcuts.find((item) => item.id === 'list-view-list')?.action();
-      shortcuts.find((item) => item.id === 'list-view-card')?.action();
+      shortcuts.find(item => item.id === 'list-view-list')?.action();
+      shortcuts.find(item => item.id === 'list-view-card')?.action();
     });
-    shortcuts.find((item) => item.id === 'dialog-confirm-modal')?.action();
-    shortcuts.find((item) => item.id === 'dialog-close-modal')?.action();
-    shortcuts.find((item) => item.id === 'dialog-export-file')?.action();
-    shortcuts.find((item) => item.id === 'dialog-export-text')?.action();
-    shortcuts.find((item) => item.id === 'dialog-export-copy')?.action();
-    shortcuts.find((item) => item.id === 'dialog-import-submit')?.action();
-    shortcuts.find((item) => item.id === 'dialog-close-export')?.action();
-    shortcuts.find((item) => item.id === 'dialog-close-import')?.action();
+    shortcuts.find(item => item.id === 'dialog-confirm-modal')?.action();
+    shortcuts.find(item => item.id === 'dialog-close-modal')?.action();
+    shortcuts.find(item => item.id === 'dialog-export-file')?.action();
+    shortcuts.find(item => item.id === 'dialog-export-text')?.action();
+    shortcuts.find(item => item.id === 'dialog-export-copy')?.action();
+    shortcuts.find(item => item.id === 'dialog-import-submit')?.action();
+    shortcuts.find(item => item.id === 'dialog-close-export')?.action();
+    shortcuts.find(item => item.id === 'dialog-close-import')?.action();
 
     expect(startTodo).toHaveBeenCalledWith(expect.any(String));
     expect(handleComplete).toHaveBeenCalledWith(expect.any(String));

@@ -1,4 +1,9 @@
-export type ShortcutCategory = 'ナビゲーション' | '一覧操作' | 'フォーム操作' | 'ダイアログ' | 'ページ操作';
+export type ShortcutCategory =
+  | 'ナビゲーション'
+  | '一覧操作'
+  | 'フォーム操作'
+  | 'ダイアログ'
+  | 'ページ操作';
 
 export type ShortcutDefinition = {
   id: string;
@@ -55,10 +60,10 @@ const KEY_LABELS: Record<string, string> = {
 export const formatShortcutBinding = (binding: string) =>
   binding
     .split(' ')
-    .map((stroke) =>
+    .map(stroke =>
       stroke
         .split('+')
-        .map((part) => KEY_LABELS[part] || part.toUpperCase())
+        .map(part => KEY_LABELS[part] || part.toUpperCase())
         .join('+'),
     )
     .join(' → ');

@@ -43,7 +43,8 @@ export const AboutPage = () => {
           <ShieldCheck size={18} className="text-violet-600" />
           <h2 className="mt-3 text-lg font-semibold text-slate-900">データ保存</h2>
           <p className="mt-2 text-sm text-slate-600">
-            データはブラウザ内の IndexedDB と LocalStorage に保存され、通常利用で外部通信は行いません。
+            データはブラウザ内の IndexedDB と LocalStorage
+            に保存され、通常利用で外部通信は行いません。
           </p>
         </section>
       </div>

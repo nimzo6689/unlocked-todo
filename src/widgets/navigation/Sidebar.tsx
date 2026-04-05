@@ -14,10 +14,12 @@ type SidebarProps = {
 
 export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
   const [collapsed, setCollapsed] = useState(true);
-  const [expandedKeys, setExpandedKeys] = useState<string[]>(() => getExpandedKeysForPath(items, currentPath));
+  const [expandedKeys, setExpandedKeys] = useState<string[]>(() =>
+    getExpandedKeysForPath(items, currentPath),
+  );
   const bottomAnchoredItemKey = 'settings-help';
-  const primaryItems = items.filter((item) => item.key !== bottomAnchoredItemKey);
-  const bottomItems = items.filter((item) => item.key === bottomAnchoredItemKey);
+  const primaryItems = items.filter(item => item.key !== bottomAnchoredItemKey);
+  const bottomItems = items.filter(item => item.key === bottomAnchoredItemKey);
 
   useEffect(() => {
     const activeKeys = getExpandedKeysForPath(items, currentPath);
@@ -25,19 +27,19 @@ export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
       return;
     }
 
-    setExpandedKeys((previous) => [...new Set([...previous, ...activeKeys])]);
+    setExpandedKeys(previous => [...new Set([...previous, ...activeKeys])]);
   }, [items, currentPath]);
 
   const toggleExpanded = (key: string) => {
-    setExpandedKeys((previous) =>
+    setExpandedKeys(previous =>
       previous.includes(key)
-        ? previous.filter((currentKey) => currentKey !== key)
+        ? previous.filter(currentKey => currentKey !== key)
         : [...previous, key],
     );
   };
 
   const renderItems = (navigationItems: NavigationItem[], depth = 0) =>
-    navigationItems.map((item) => {
+    navigationItems.map(item => {
       const Icon = item.icon;
       const hasChildren = Boolean(item.children?.length);
       const isExpanded = expandedKeys.includes(item.key);
@@ -75,9 +77,12 @@ export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
             {!collapsed && (
               <>
                 <span className="min-w-0 flex-1 truncate text-left">{item.label}</span>
-                {hasChildren && (
-                  isExpanded ? <ChevronDown size={16} className="shrink-0" /> : <ChevronRight size={16} className="shrink-0" />
-                )}
+                {hasChildren &&
+                  (isExpanded ? (
+                    <ChevronDown size={16} className="shrink-0" />
+                  ) : (
+                    <ChevronRight size={16} className="shrink-0" />
+                  ))}
               </>
             )}
           </button>
@@ -106,14 +111,10 @@ export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
           {!collapsed && <span className="truncate">Hakaru Todo</span>}
         </button>
 
-        <div className="min-h-0 flex-1 overflow-y-auto space-y-1">
-          {renderItems(primaryItems)}
-        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto space-y-1">{renderItems(primaryItems)}</div>
 
         {bottomItems.length > 0 && (
-          <div className="mt-auto border-t border-slate-700 pt-2">
-            {renderItems(bottomItems)}
-          </div>
+          <div className="mt-auto border-t border-slate-700 pt-2">{renderItems(bottomItems)}</div>
         )}
       </nav>
     </aside>

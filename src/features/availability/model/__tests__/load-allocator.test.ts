@@ -1,5 +1,9 @@
 import type { Todo, WorkSchedule } from '@/features/todo/model/types';
-import { aggregateLoadForDates, allocateTaskEffortAcrossSlots, sortTasksByPriority } from '../load-allocator';
+import {
+  aggregateLoadForDates,
+  allocateTaskEffortAcrossSlots,
+  sortTasksByPriority,
+} from '../load-allocator';
 import { afterEach, vi } from 'vitest';
 
 const schedule: WorkSchedule = {
@@ -46,7 +50,7 @@ describe('load-allocator', () => {
 
     const sorted = sortTasksByPriority([longTask, shortTask], schedule, []);
 
-    expect(sorted.map((item) => item.todo.id)).toEqual(['short', 'long']);
+    expect(sorted.map(item => item.todo.id)).toEqual(['short', 'long']);
   });
 
   it('sorts by start time when working durations are equal', () => {
@@ -65,7 +69,7 @@ describe('load-allocator', () => {
 
     const sorted = sortTasksByPriority([second, first], schedule, []);
 
-    expect(sorted.map((item) => item.todo.id)).toEqual(['first', 'second']);
+    expect(sorted.map(item => item.todo.id)).toEqual(['first', 'second']);
   });
 
   it('distributes effort under capped capacity path', () => {
@@ -98,7 +102,9 @@ describe('load-allocator', () => {
 
   it('returns empty map for empty overlaps or non-positive effort', () => {
     expect(allocateTaskEffortAcrossSlots([], [0], 1).size).toBe(0);
-    expect(allocateTaskEffortAcrossSlots([{ index: 0, overlapHours: 1, slotHours: 1 }], [0], 0).size).toBe(0);
+    expect(
+      allocateTaskEffortAcrossSlots([{ index: 0, overlapHours: 1, slotHours: 1 }], [0], 0).size,
+    ).toBe(0);
   });
 
   it('aggregates slot load and meeting series for display dates', () => {
@@ -135,9 +141,9 @@ describe('load-allocator', () => {
 
     expect(day).toBeDefined();
     expect(day.slots.length).toBeGreaterThan(0);
-    expect(day.slotTotals.some((value) => value > 0)).toBe(true);
+    expect(day.slotTotals.some(value => value > 0)).toBe(true);
     expect(day.taskSeries.length).toBe(2);
-    expect(day.meetingSeries.some((value) => value > 0)).toBe(true);
+    expect(day.meetingSeries.some(value => value > 0)).toBe(true);
     expect(day.slotContributors.length).toBe(day.slots.length);
   });
 
@@ -159,8 +165,8 @@ describe('load-allocator', () => {
     const day = aggregated['2026-04-06'];
 
     expect(day.taskSeries).toHaveLength(0);
-    expect(day.slotTotals.every((value) => value === 0)).toBe(true);
-    expect(day.meetingSeries.every((value) => value === 0)).toBe(true);
+    expect(day.slotTotals.every(value => value === 0)).toBe(true);
+    expect(day.meetingSeries.every(value => value === 0)).toBe(true);
   });
 
   it('treats 25-minute task as 30 minutes in chart load', () => {

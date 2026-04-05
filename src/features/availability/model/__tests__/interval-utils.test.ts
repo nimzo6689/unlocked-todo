@@ -23,31 +23,22 @@ describe('interval-utils', () => {
 
   describe('subtractIntervals', () => {
     it('returns empty array when base interval is invalid', () => {
-      const result = subtractIntervals(
-        { startMs: 10, endMs: 10 },
-        [{ startMs: 0, endMs: 5 }],
-      );
+      const result = subtractIntervals({ startMs: 10, endMs: 10 }, [{ startMs: 0, endMs: 5 }]);
 
       expect(result).toEqual([]);
     });
 
     it('keeps segment unchanged when blocked does not overlap', () => {
-      const result = subtractIntervals(
-        { startMs: 0, endMs: 10 },
-        [{ startMs: 20, endMs: 30 }],
-      );
+      const result = subtractIntervals({ startMs: 0, endMs: 10 }, [{ startMs: 20, endMs: 30 }]);
 
       expect(result).toEqual([{ startMs: 0, endMs: 10 }]);
     });
 
     it('subtracts and splits interval by blocked ranges', () => {
-      const result = subtractIntervals(
-        { startMs: 0, endMs: 100 },
-        [
-          { startMs: 20, endMs: 40 },
-          { startMs: 60, endMs: 80 },
-        ],
-      );
+      const result = subtractIntervals({ startMs: 0, endMs: 100 }, [
+        { startMs: 20, endMs: 40 },
+        { startMs: 60, endMs: 80 },
+      ]);
 
       expect(result).toEqual([
         { startMs: 0, endMs: 20 },

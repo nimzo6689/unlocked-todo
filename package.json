@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "format": "prettier --write .",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -16,7 +17,8 @@
     "e2e": "playwright test --headed",
     "e2e:ui": "playwright test --ui",
     "e2e:ci": "playwright test",
-    "e2e:install": "playwright install --with-deps chromium chromium-headless-shell"
+    "e2e:install": "playwright install --with-deps chromium chromium-headless-shell",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.8",
@@ -55,13 +57,20 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
+    "husky": "^9.1.7",
     "jsdom": "^29.0.1",
+    "lint-staged": "^15.2.11",
     "postcss": "^8.5.6",
+    "prettier": "^3.4.2",
     "tailwindcss": "^4.1.12",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.39.1",
     "vite": "^7.1.2",
     "vite-plugin-pwa": "^1.0.3",
     "vitest": "^4.1.2"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,css,md}": "prettier --write",
+    "*.{ts,tsx}": "eslint --fix"
   }
 }

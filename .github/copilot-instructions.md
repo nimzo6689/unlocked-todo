@@ -1,6 +1,7 @@
 <!-- Use this file to provide workspace-specific custom instructions to Copilot. For more details, visit https://code.visualstudio.com/docs/copilot/copilot-customization#_use-a-githubcopilotinstructionsmd-file -->
 
 ## Copilot Workspace Checklist
+
 - [x] copilot-instructions.md ファイル作成確認
 - [x] プロジェクト要件の明確化（Vite + TypeScript + React）
 - [x] プロジェクトのスキャフォールディング（初期化）

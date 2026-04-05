@@ -45,13 +45,7 @@ describe('schedule-calculator', () => {
   it('builds display dates for only working days in a 7-day window', () => {
     const dates = buildDisplayDates('2026-04-04', schedule);
 
-    expect(dates).toEqual([
-      '2026-04-06',
-      '2026-04-07',
-      '2026-04-08',
-      '2026-04-09',
-      '2026-04-10',
-    ]);
+    expect(dates).toEqual(['2026-04-06', '2026-04-07', '2026-04-08', '2026-04-09', '2026-04-10']);
   });
 
   it('parses valid task range and rejects zero effort by default', () => {
