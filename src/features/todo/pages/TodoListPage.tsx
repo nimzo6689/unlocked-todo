@@ -391,9 +391,6 @@ export const TodoListPage = () => {
             ))}
           </div>
         </div>
-        <p className="text-xs text-slate-500">
-          並び順: 期限（昇順）→ 工数（昇順）
-        </p>
         <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
           <button
             className={`px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition-colors ${
