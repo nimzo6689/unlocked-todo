@@ -12,12 +12,12 @@ export const AboutPage = () => {
         <p className="inline-flex items-center gap-2 text-sm text-slate-600">
           <span>ソースコード:</span>
           <a
-            href="https://github.com/nimzo6689/unlocked-todo"
+            href="https://github.com/nimzo6689/hakaru-todo"
             target="_blank"
             rel="noreferrer"
             className="font-medium text-sky-700 underline decoration-sky-300 underline-offset-2 hover:text-sky-800"
           >
-            github.com/nimzo6689/unlocked-todo
+            github.com/nimzo6689/hakaru-todo
           </a>
         </p>
       </header>

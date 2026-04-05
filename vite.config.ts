@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
   const isE2E = mode === 'e2e';
 
   return {
-    base: isE2E ? '/' : '/unlocked-todo/',
+    base: isE2E ? '/' : '/hakaru-todo/',
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),

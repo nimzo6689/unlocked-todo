@@ -17,7 +17,7 @@
 ## 開発手順
 
 ```
-git clone https://github.com/nimzo6689/unlocked-todo.git
+git clone https://github.com/nimzo6689/hakaru-todo.git
 
 # NPM パッケージのインストール
 npm install
