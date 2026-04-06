@@ -54,7 +54,7 @@ export const AboutPage = () => {
         <ul className="list-disc list-inside space-y-1">
           <li>今すぐ着手できるタスクと、まだ着手できないタスクの区別</li>
           <li>期限と工数をもとにした負荷の見える化</li>
-          <li>自分担当タスクだけに絞った空き状況の確認</li>
+          <li>タスク全体の空き状況の確認</li>
         </ul>
       </section>
     </div>

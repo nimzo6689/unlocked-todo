@@ -96,7 +96,7 @@ describe('AvailabilityPage', () => {
 
     expect(
       screen.getByText(
-        '4/7(火) の業務時間帯 (09:00-17:00 (休憩なし)) に重なる自分のタスクがありません。',
+        '4/7(火) の業務時間帯 (09:00-17:00 (休憩なし)) に重なるタスクがありません。',
       ),
     ).toBeInTheDocument();
     expect(screen.getByText(content => content.includes('稼働時間帯は'))).toBeInTheDocument();

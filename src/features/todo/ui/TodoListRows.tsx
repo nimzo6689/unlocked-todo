@@ -42,7 +42,6 @@ export const TodoListRows: FC<TodoListRowsProps> = ({
             <th className="hidden md:table-cell px-3 py-2">種別</th>
             <th className="hidden sm:table-cell px-3 py-2">期限</th>
             <th className="hidden md:table-cell px-3 py-2">工数</th>
-            <th className="hidden md:table-cell px-3 py-2">担当</th>
             <th className="px-3 py-2 text-right w-40 sm:w-auto">操作</th>
           </tr>
         </thead>
@@ -68,11 +67,7 @@ export const TodoListRows: FC<TodoListRowsProps> = ({
                   <div className="mt-1 text-xs text-slate-500 sm:hidden space-y-0.5">
                     <div>期限: {formatDate(todo.dueDate)}</div>
                     <div>種別: {isMeeting ? 'Meeting' : 'Normal'}</div>
-                    {!isMeeting && (
-                      <div>
-                        工数: {todo.effortMinutes || 0} 分 / 担当: {todo.assignee}
-                      </div>
-                    )}
+                    {!isMeeting && <div>工数: {todo.effortMinutes || 0} 分</div>}
                   </div>
                 </td>
                 <td className="px-3 py-3">
@@ -90,9 +85,6 @@ export const TodoListRows: FC<TodoListRowsProps> = ({
                 </td>
                 <td className="hidden md:table-cell px-3 py-3 whitespace-nowrap">
                   {isMeeting ? '-' : `${todo.effortMinutes || 0} 分`}
-                </td>
-                <td className="hidden md:table-cell px-3 py-3">
-                  {isMeeting ? '-' : todo.assignee}
                 </td>
                 <td className="px-3 py-3 align-top">
                   <div className="flex justify-end sm:justify-end flex-wrap gap-1">

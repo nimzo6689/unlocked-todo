@@ -44,19 +44,13 @@ export const AvailabilityPage = () => {
     : `${formatHourLabel(workSchedule.workStartHour)}-${formatHourLabel(workSchedule.workEndHour)} (休憩なし)`;
 
   const filteredSelfNormalTodos = useMemo(
-    () =>
-      todos.filter(
-        todo => todo.assignee === '自分' && !isMeetingTodo(todo) && todo.status !== 'Completed',
-      ),
+    () => todos.filter(todo => !isMeetingTodo(todo) && todo.status !== 'Completed'),
     [todos],
   );
   const selfNormalTodos = useStableAvailabilityTodos(filteredSelfNormalTodos);
 
   const filteredSelfMeetings = useMemo(
-    () =>
-      todos.filter(
-        todo => todo.assignee === '自分' && isMeetingTodo(todo) && todo.status !== 'Completed',
-      ),
+    () => todos.filter(todo => isMeetingTodo(todo) && todo.status !== 'Completed'),
     [todos],
   );
   const selfMeetings = useStableAvailabilityTodos(filteredSelfMeetings);
@@ -116,9 +110,7 @@ export const AvailabilityPage = () => {
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">空き状況</h1>
-          <p className="text-slate-600">
-            担当「自分」のタスクを 30分単位で積み上げ表示しています。
-          </p>
+          <p className="text-slate-600">タスクを 30分単位で積み上げ表示しています。</p>
         </div>
 
         <label className="text-sm text-slate-700 flex items-center gap-2">
@@ -164,8 +156,7 @@ export const AvailabilityPage = () => {
                   />
                 ) : (
                   <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-500">
-                    {chart.dateLabel} の業務時間帯 ({businessHourText})
-                    に重なる自分のタスクがありません。
+                    {chart.dateLabel} の業務時間帯 ({businessHourText}) に重なるタスクがありません。
                   </p>
                 )}
               </section>
@@ -191,7 +182,6 @@ export const AvailabilityPage = () => {
             各タスクの負荷は、開始可能日時〜期限のうち稼働可能な時間帯に均等配分して計算しています。
           </li>
           <li>Meeting は休憩時間と同様に非稼働時間として除外しています。</li>
-          <li>担当が「自分」に設定されている通常タスクのみが負荷集計対象です。</li>
         </ul>
       </div>
     </div>

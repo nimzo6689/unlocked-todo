@@ -3,7 +3,7 @@ import { BellRing, CalendarClock, CheckSquare, ListChecks } from 'lucide-react';
 const steps = [
   {
     title: 'タスクを作成する',
-    description: 'タイトル、期限、工数、担当者を入力して、必要であれば依存タスクも設定します。',
+    description: 'タイトル、期限、工数を入力して、必要であれば依存タスクも設定します。',
     icon: ListChecks,
   },
   {
@@ -15,7 +15,7 @@ const steps = [
   {
     title: '空き状況を確認する',
     description:
-      '空き状況ページでは、自分担当タスクの負荷を時間帯ごとに確認できます。設定した勤務時間が使われます。',
+      '空き状況ページでは、タスクの負荷を時間帯ごとに確認できます。設定した勤務時間が使われます。',
     icon: CalendarClock,
   },
   {

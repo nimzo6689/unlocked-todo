@@ -18,8 +18,7 @@ const areAvailabilityTodosEqual = (left: Todo[], right: Todo[]) => {
       todo.dueDate === other.dueDate &&
       todo.status === other.status &&
       todo.effortMinutes === other.effortMinutes &&
-      todo.actualWorkSeconds === other.actualWorkSeconds &&
-      todo.assignee === other.assignee
+      todo.actualWorkSeconds === other.actualWorkSeconds
     );
   });
 };

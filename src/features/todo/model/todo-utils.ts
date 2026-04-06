@@ -40,7 +40,6 @@ export const defaultForm: Partial<Todo> = {
   status: 'Unlocked',
   effortMinutes: DEFAULT_EFFORT_MINUTES,
   actualWorkSeconds: 0,
-  assignee: '自分',
   dependency: [],
 };
 
@@ -150,11 +149,6 @@ function validateAndNormalizeTodo(obj: unknown): Todo {
     throw new Error('statusは "Unlocked", "Locked", "Completed" のいずれかである必要があります');
   }
 
-  const assignee = item.assignee as string;
-  if (!['自分', '他人'].includes(assignee)) {
-    throw new Error('assigneeは "自分" または "他人" である必要があります');
-  }
-
   // 数値フィールドの正規化
   const effortMinutes = Number(item.effortMinutes);
   const actualWorkSeconds = Number(item.actualWorkSeconds);
@@ -190,7 +184,6 @@ function validateAndNormalizeTodo(obj: unknown): Todo {
     status: status as Todo['status'],
     effortMinutes: Math.max(0, effortMinutes),
     actualWorkSeconds: Math.max(0, actualWorkSeconds),
-    assignee: assignee as Todo['assignee'],
     dependency,
     completedAt: typeof item.completedAt === 'string' ? item.completedAt : undefined,
   };
@@ -213,8 +206,14 @@ export function normalizeTodo(todo: Todo): Todo {
   const isMeeting = taskType === 'Meeting';
 
   return {
-    ...todo,
+    id: todo.id,
+    title: todo.title,
+    description: todo.description,
     taskType,
+    createdAt: todo.createdAt,
+    startedAt: todo.startedAt,
+    startableAt: todo.startableAt,
+    dueDate: todo.dueDate,
     status: isMeeting ? getMeetingStatus(todo.dueDate, todo.status) : todo.status,
     effortMinutes: isMeeting
       ? 0
@@ -227,5 +226,6 @@ export function normalizeTodo(todo: Todo): Todo {
         ? Math.max(0, Number(todo.actualWorkSeconds))
         : 0,
     dependency: isMeeting ? undefined : todo.dependency,
+    completedAt: todo.completedAt,
   };
 }

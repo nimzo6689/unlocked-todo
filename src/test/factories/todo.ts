@@ -14,6 +14,5 @@ export const createTodo = (override: TodoOverride = {}): Todo => ({
   status: 'Unlocked',
   effortMinutes: 60,
   actualWorkSeconds: 1800,
-  assignee: '自分',
   ...override,
 });

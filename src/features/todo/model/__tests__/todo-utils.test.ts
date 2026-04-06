@@ -78,7 +78,6 @@ describe('todo-utils', () => {
         status: 'Unlocked',
         effortMinutes: 10,
         actualWorkSeconds: 0,
-        assignee: '自分',
       },
     ]);
 
@@ -95,7 +94,6 @@ describe('todo-utils', () => {
       status: 'Unlocked',
       effortMinutes: 10,
       actualWorkSeconds: 0,
-      assignee: '自分',
     };
 
     const invalidCases: Array<{ payload: Record<string, unknown>; message: string }> = [
@@ -115,10 +113,6 @@ describe('todo-utils', () => {
       {
         payload: { ...base, status: 'Unknown' },
         message: 'statusは "Unlocked", "Locked", "Completed" のいずれかである必要があります',
-      },
-      {
-        payload: { ...base, assignee: 'unknown' },
-        message: 'assigneeは "自分" または "他人" である必要があります',
       },
       {
         payload: { ...base, effortMinutes: -1 },
@@ -172,7 +166,6 @@ describe('todo-utils', () => {
         status: 'Unlocked',
         effortMinutes: 20,
         actualWorkSeconds: 30,
-        assignee: '他人',
         dependency: ['', 'dep-1', 100],
         description: 999,
         startedAt: 999,
@@ -188,7 +181,6 @@ describe('todo-utils', () => {
         status: 'Unlocked',
         effortMinutes: 20,
         actualWorkSeconds: 30,
-        assignee: '自分',
         dependency: '',
       },
     ]);

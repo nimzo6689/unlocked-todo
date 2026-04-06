@@ -13,11 +13,6 @@ const statusClasses: Record<string, string> = {
   Completed: 'bg-green-100 text-green-800',
 };
 
-const assigneeClasses: Record<string, string> = {
-  自分: 'bg-indigo-100 text-indigo-800',
-  他人: 'bg-pink-100 text-pink-800',
-};
-
 export type TodoCardProps = {
   todo: Todo;
   dependentTodos?: Todo[];
@@ -157,26 +152,12 @@ export const TodoCard: React.FC<TodoCardProps> = ({
           </div>
           {!isMeeting && (
             <div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span>
-                  <strong>工数:</strong> {todo.effortMinutes || 0} 分
-                </span>
-              </div>
-              <div className="mt-1">
-                <span>
-                  <strong>実作業時間:</strong> {formatDurationFromSeconds(todo.actualWorkSeconds)}
-                </span>
-              </div>
+              <strong>工数:</strong> {todo.effortMinutes || 0} 分
             </div>
           )}
           {!isMeeting && (
             <div>
-              <strong>担当:</strong>{' '}
-              <span
-                className={`font-semibold px-2 py-0.5 rounded-full ${assigneeClasses[todo.assignee]}`}
-              >
-                {todo.assignee}
-              </span>
+              <strong>実作業時間:</strong> {formatDurationFromSeconds(todo.actualWorkSeconds)}
             </div>
           )}
           {!isMeeting && dependencyList.length > 0 && (

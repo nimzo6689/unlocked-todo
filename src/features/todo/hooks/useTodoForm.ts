@@ -243,9 +243,6 @@ export const useTodoForm = ({
               : (form.status as Todo['status']) || todo.status,
             effortMinutes: isMeeting ? 0 : form.effortMinutes || todo.effortMinutes,
             actualWorkSeconds: isMeeting ? 0 : formActualWorkSeconds,
-            assignee: isMeeting
-              ? todo.assignee
-              : (form.assignee as Todo['assignee']) || todo.assignee,
           } as Todo;
         }
 
@@ -281,7 +278,6 @@ export const useTodoForm = ({
           : (form.status as Todo['status']) || 'Unlocked',
         effortMinutes: isMeeting ? 0 : form.effortMinutes || DEFAULT_EFFORT_MINUTES,
         actualWorkSeconds: isMeeting ? 0 : formActualWorkSeconds,
-        assignee: (form.assignee as Todo['assignee']) || '自分',
         dependency: normalizedDependency,
       };
       newTodos.push(newTodo);

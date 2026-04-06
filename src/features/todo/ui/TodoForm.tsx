@@ -320,7 +320,7 @@ export const TodoForm: React.FC<TodoFormProps> = ({
         )}
       </div>
       {!isMeeting && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4 mb-6">
+        <div className="mb-6">
           <div>
             <label
               htmlFor="status"
@@ -337,28 +337,6 @@ export const TodoForm: React.FC<TodoFormProps> = ({
               <option value="Unlocked">Unlocked</option>
               <option value="Locked">Locked</option>
               <option value="Completed">Completed</option>
-            </select>
-          </div>
-          <div>
-            <label
-              htmlFor="assignee"
-              className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
-            >
-              担当
-            </label>
-            <select
-              id="assignee"
-              value={form.assignee || '自分'}
-              onChange={e =>
-                onChange({
-                  ...form,
-                  assignee: e.target.value as Todo['assignee'],
-                })
-              }
-              className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
-            >
-              <option value="自分">自分</option>
-              <option value="他人">他人</option>
             </select>
           </div>
         </div>
