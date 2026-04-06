@@ -41,7 +41,7 @@ export const ImportDialogPresenter = ({
           value={importText}
           onChange={e => onImportTextChange(e.target.value)}
           placeholder='[{"id":"...","title":"..."}]'
-          className="w-full h-56 border border-slate-300 rounded-md p-3 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className={`w-full border border-slate-300 rounded-md p-3 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${importText ? 'h-56' : 'h-32'}`}
         />
       </div>
       <div className="flex justify-end gap-2 mt-4">
@@ -118,7 +118,7 @@ export const ExportDialogPresenter = ({
           value={exportText}
           readOnly
           placeholder="ここにエクスポート用JSONが表示されます"
-          className="w-full h-56 border border-slate-300 rounded-md p-3 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className={`w-full border border-slate-300 rounded-md p-3 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${exportText ? 'h-56' : 'h-32'}`}
         />
       </div>
 
