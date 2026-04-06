@@ -136,6 +136,22 @@ describe('todo-utils', () => {
         payload: { ...base, taskType: 'InvalidType' },
         message: 'taskTypeは "Normal" または "Meeting" である必要があります',
       },
+      {
+        payload: {
+          ...base,
+          startableAt: '2026-01-01T01:00:00.000Z',
+          dueDate: '2026-01-01T00:00:00.000Z',
+        },
+        message: '開始日時は終了日時より前に設定してください',
+      },
+      {
+        payload: {
+          ...base,
+          startableAt: '2026-01-01T00:00:00.000Z',
+          dueDate: '2026-01-01T00:00:00.000Z',
+        },
+        message: '開始日時は終了日時より前に設定してください',
+      },
     ];
 
     invalidCases.forEach(({ payload, message }) => {

@@ -206,6 +206,13 @@ export const useTodoForm = ({
     const taskType = form.taskType || DEFAULT_TASK_TYPE;
     const isMeeting = isMeetingTodo({ taskType });
 
+    if (form.startableAt && form.dueDate) {
+      if (new Date(form.startableAt) >= new Date(form.dueDate)) {
+        toast.error('着手可能日時は期限より前に設定してください');
+        return;
+      }
+    }
+
     const dependency = Array.isArray(form.dependency)
       ? form.dependency.filter(Boolean)
       : form.dependency

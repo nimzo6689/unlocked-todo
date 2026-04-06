@@ -139,6 +139,11 @@ function validateAndNormalizeTodo(obj: unknown): Todo {
   if (typeof item.dueDate !== 'string') {
     throw new Error('dueDateはISO 8601文字列である必要があります');
   }
+  if (item.startableAt && item.dueDate) {
+    if (new Date(item.startableAt as string) >= new Date(item.dueDate as string)) {
+      throw new Error('開始日時は終了日時より前に設定してください');
+    }
+  }
 
   const status = item.status as string;
   if (!['Unlocked', 'Locked', 'Completed'].includes(status)) {
