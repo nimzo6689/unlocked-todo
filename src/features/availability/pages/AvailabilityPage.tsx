@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { useTodoContext } from '@/app/providers/TodoContext';
 import {
@@ -20,6 +20,7 @@ import {
 export const AvailabilityPage = () => {
   const { todos, workSchedule } = useTodoContext();
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue(new Date()));
+  const chartSectionRefs = useRef<Array<HTMLElement | null>>([]);
   const moveSelectedDate = useCallback(
     (deltaDays: number) => {
       const base = new Date(`${selectedDate}T00:00:00`);
@@ -67,6 +68,29 @@ export const AvailabilityPage = () => {
     workSchedule,
   );
 
+  const focusChartSection = useCallback((index: number) => {
+    const target = chartSectionRefs.current[index];
+    if (!target) {
+      return;
+    }
+
+    target.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
+    target.focus();
+  }, []);
+
+  const focusChartShortcuts = useMemo(
+    () =>
+      availabilityCharts.map((chart, index) => ({
+        id: `availability-focus-chart-${index + 1}`,
+        description: `${chart.dateLabel} のグラフにフォーカスする`,
+        category: 'ページ操作' as const,
+        bindings: [`${index + 1}`],
+        keys: [`${index + 1}`],
+        action: () => focusChartSection(index),
+      })),
+    [availabilityCharts, focusChartSection],
+  );
+
   const shortcutRegistration = useMemo(
     () => ({
       pageLabel: '空き状況',
@@ -92,9 +116,10 @@ export const AvailabilityPage = () => {
           bindings: ['t'],
           action: () => setSelectedDate(toDateInputValue(new Date())),
         },
+        ...focusChartShortcuts,
       ],
     }),
-    [moveSelectedDate],
+    [focusChartShortcuts, moveSelectedDate],
   );
 
   useRegisterShortcuts(shortcutRegistration);
@@ -131,9 +156,14 @@ export const AvailabilityPage = () => {
 
         {availabilityCharts.length > 0 ? (
           <div className="space-y-6">
-            {availabilityCharts.map(chart => (
+            {availabilityCharts.map((chart, index) => (
               <section
                 key={chart.dateLabel}
+                ref={node => {
+                  chartSectionRefs.current[index] = node;
+                }}
+                data-testid={`availability-chart-section-${index + 1}`}
+                tabIndex={-1}
                 className="space-y-3 rounded-lg border border-slate-200 p-4"
               >
                 <div className="flex flex-wrap items-center gap-3 text-sm text-slate-700">

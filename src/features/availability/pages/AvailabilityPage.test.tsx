@@ -71,6 +71,38 @@ describe('AvailabilityPage', () => {
     expect(screen.getByText('4/4(土)')).toBeInTheDocument();
   });
 
+  it('focuses chart section by number shortcuts', async () => {
+    const { useAvailabilityCharts } =
+      await import('@/features/availability/hooks/useAvailabilityCharts');
+    vi.mocked(useAvailabilityCharts).mockReturnValue([
+      {
+        dateLabel: '4/4(土)',
+        maxLoad: 1.2,
+        overloadedSlots: 1,
+        hasLoad: true,
+        option: { series: [] },
+      },
+      {
+        dateLabel: '4/5(日)',
+        maxLoad: 0.8,
+        overloadedSlots: 0,
+        hasLoad: true,
+        option: { series: [] },
+      },
+    ] as never);
+
+    render(<AvailabilityPage />);
+
+    const registration = useRegisterShortcutsMock.mock.calls.at(-1)?.[0];
+    expect(registration).toBeDefined();
+
+    act(() => {
+      registration?.shortcuts.find(item => item.id === 'availability-focus-chart-2')?.action();
+    });
+
+    expect(screen.getByTestId('availability-chart-section-2')).toHaveFocus();
+  });
+
   it('renders no-load text and no-break business-hour text', async () => {
     const { useAvailabilityCharts } =
       await import('@/features/availability/hooks/useAvailabilityCharts');
