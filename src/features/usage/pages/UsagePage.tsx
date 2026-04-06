@@ -39,6 +39,7 @@ const shortcutCategories = [
     title: 'タスク一覧',
     items: [
       { keys: 'j / k', description: '選択中タスクを上下に移動します。' },
+      { keys: 'h / l', description: 'カード表示で選択中タスクを折り畳み、展開します。' },
       { keys: 'Enter / o', description: '選択中タスクを編集します。' },
       { keys: 'n / x / c / d', description: '新規作成、着手、中断、完了、削除を行います。' },
       { keys: '1 - 5', description: 'フィルターを切り替えます。' },

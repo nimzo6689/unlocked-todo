@@ -27,7 +27,9 @@ vi.mock('@/features/todo/hooks/useExportImport', () => ({
 }));
 
 vi.mock('@/features/todo/ui/TodoCard', () => ({
-  TodoCard: ({ todo }: { todo: { title: string } }) => <article>{todo.title}</article>,
+  TodoCard: ({ todo, isExpanded }: { todo: { title: string }; isExpanded: boolean }) => (
+    <article>{`${todo.title}:${isExpanded ? 'expanded' : 'collapsed'}`}</article>
+  ),
 }));
 
 vi.mock('@/features/todo/ui/TodoListRows', () => ({
@@ -114,7 +116,7 @@ describe('TodoListPage', () => {
 
     expect(screen.getByRole('heading', { name: 'タスク一覧' })).toBeInTheDocument();
     expect(screen.getByText('現在 1 件のタスクがあります。')).toBeInTheDocument();
-    expect(screen.getByText('一覧テスト')).toBeInTheDocument();
+    expect(screen.getByText('一覧テスト:collapsed')).toBeInTheDocument();
   });
 
   it('shows empty message when filtered todos are empty', async () => {
@@ -341,8 +343,21 @@ describe('TodoListPage', () => {
     const shortcuts = registration!.shortcuts;
     expect(shortcuts.find(item => item.id === 'list-view-list')?.bindings).toEqual(['v l']);
     expect(shortcuts.find(item => item.id === 'list-view-card')?.bindings).toEqual(['v c']);
+    expect(shortcuts.find(item => item.id === 'list-expand-selected')?.bindings).toEqual(['l']);
+    expect(shortcuts.find(item => item.id === 'list-collapse-selected')?.bindings).toEqual(['h']);
 
     shortcuts.find(item => item.id === 'list-start')?.action();
+    act(() => {
+      shortcuts.find(item => item.id === 'list-expand-selected')?.action();
+    });
+    expect(screen.getByText('一覧テスト:expanded')).toBeInTheDocument();
+
+    const updatedRegistration = useRegisterShortcutsMock.mock.calls.at(-1)?.[0];
+    act(() => {
+      updatedRegistration?.shortcuts.find(item => item.id === 'list-collapse-selected')?.action();
+    });
+    expect(screen.getByText('一覧テスト:collapsed')).toBeInTheDocument();
+
     shortcuts.find(item => item.id === 'list-complete')?.action();
     shortcuts.find(item => item.id === 'list-delete')?.action();
     act(() => {

@@ -22,8 +22,10 @@ describe('TodoCard', () => {
         dependentTodos={[dependency]}
         filter="locked"
         selected={false}
+        isExpanded={false}
         currentInProgressId={null}
         onSelect={vi.fn()}
+        onExpandedChange={vi.fn()}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
         onComplete={vi.fn()}
@@ -44,8 +46,10 @@ describe('TodoCard', () => {
         dependentTodos={[]}
         filter="unlocked"
         selected
+        isExpanded={false}
         currentInProgressId={null}
         onSelect={vi.fn()}
+        onExpandedChange={vi.fn()}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
         onComplete={vi.fn()}
@@ -73,8 +77,10 @@ describe('TodoCard', () => {
         dependentTodos={[]}
         filter="unlocked"
         selected={false}
+        isExpanded={false}
         currentInProgressId={null}
         onSelect={vi.fn()}
+        onExpandedChange={vi.fn()}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
         onComplete={vi.fn()}
@@ -92,6 +98,7 @@ describe('TodoCard', () => {
     vi.spyOn(marked, 'parse').mockImplementation((text: string) =>
       Promise.resolve(`<p>${text}</p>`),
     );
+    const onExpandedChange = vi.fn();
 
     const longDescriptionTodo = createTodo({
       description: 'a'.repeat(120),
@@ -103,8 +110,10 @@ describe('TodoCard', () => {
         dependentTodos={[]}
         filter="all"
         selected={false}
+        isExpanded={false}
         currentInProgressId={null}
         onSelect={vi.fn()}
+        onExpandedChange={onExpandedChange}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
         onComplete={vi.fn()}
@@ -114,7 +123,32 @@ describe('TodoCard', () => {
 
     const expandButton = await screen.findByRole('button', { name: '展開' });
     fireEvent.click(expandButton);
-    expect(screen.getByRole('button', { name: '折りたたむ' })).toBeInTheDocument();
+    expect(onExpandedChange).toHaveBeenCalledWith(longDescriptionTodo.id, true);
+  });
+
+  it('renders collapse label when expanded', async () => {
+    const longDescriptionTodo = createTodo({
+      description: 'a'.repeat(120),
+    });
+
+    render(
+      <TodoCard
+        todo={longDescriptionTodo}
+        dependentTodos={[]}
+        filter="all"
+        selected={false}
+        isExpanded
+        currentInProgressId={null}
+        onSelect={vi.fn()}
+        onExpandedChange={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onComplete={vi.fn()}
+        onStartTodo={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findByRole('button', { name: '折りたたむ' })).toBeInTheDocument();
   });
 
   it('invokes select, edit, delete and complete handlers', () => {
@@ -130,8 +164,10 @@ describe('TodoCard', () => {
         dependentTodos={[]}
         filter="unlocked"
         selected={false}
+        isExpanded={false}
         currentInProgressId={null}
         onSelect={onSelect}
+        onExpandedChange={vi.fn()}
         onEdit={onEdit}
         onDelete={onDelete}
         onComplete={onComplete}

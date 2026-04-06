@@ -14,6 +14,9 @@ import { useExportImport } from '../hooks/useExportImport';
 import { ExportDialogPresenter, ImportDialogPresenter } from './TodoListPagePresenters';
 
 export const TodoListPage = () => {
+  const isTodoExpandable = (todo: Todo | null | undefined) =>
+    Boolean(todo && (todo.description || '').length > 100);
+
   const {
     todos,
     getTodo,
@@ -31,6 +34,7 @@ export const TodoListPage = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expandedTodoIds, setExpandedTodoIds] = useState<string[]>([]);
   const [, setTick] = useState(0);
   const filter = searchParams.get('filter') || 'unlocked';
   const view = searchParams.get('view') === 'list' ? 'list' : 'card';
@@ -61,6 +65,22 @@ export const TodoListPage = () => {
   } = useExportImport({ exportTodos, exportTodosToText, importTodos, importTodosFromText });
 
   const isOverlayOpen = Boolean(modal || isExportDialogOpen || isImportDialogOpen || menuOpen);
+  const canExpandSelected = view === 'card' && isTodoExpandable(selectedTodo);
+
+  useEffect(() => {
+    const visibleTodoIds = new Set(filteredTodos.map(todo => todo.id));
+    setExpandedTodoIds(current => current.filter(id => visibleTodoIds.has(id)));
+  }, [filteredTodos]);
+
+  function handleExpandedChange(id: string, expanded: boolean) {
+    setExpandedTodoIds(current => {
+      if (expanded) {
+        return current.includes(id) ? current : [...current, id];
+      }
+
+      return current.filter(currentId => currentId !== id);
+    });
+  }
 
   function handleEdit(id: string) {
     navigate(`/edit/${id}`);
@@ -133,6 +153,22 @@ export const TodoListPage = () => {
           bindings: ['x'],
           action: () => selectedTodo && startTodo(selectedTodo.id),
           enabled: canStartSelected,
+        },
+        {
+          id: 'list-expand-selected',
+          description: '選択中タスクを展開する',
+          category: '一覧操作' as const,
+          bindings: ['l'],
+          action: () => selectedTodo && handleExpandedChange(selectedTodo.id, true),
+          enabled: canExpandSelected && !expandedTodoIds.includes(selectedTodo!.id),
+        },
+        {
+          id: 'list-collapse-selected',
+          description: '選択中タスクを折り畳む',
+          category: '一覧操作' as const,
+          bindings: ['h'],
+          action: () => selectedTodo && handleExpandedChange(selectedTodo.id, false),
+          enabled: canExpandSelected && expandedTodoIds.includes(selectedTodo!.id),
         },
         {
           id: 'list-complete',
@@ -282,6 +318,7 @@ export const TodoListPage = () => {
     };
   }, [
     currentInProgressId,
+    expandedTodoIds,
     exportText,
     filteredTodos.length,
     handleDelete,
@@ -436,8 +473,10 @@ export const TodoListPage = () => {
                   .filter((t): t is Todo => Boolean(t))}
                 filter={filter}
                 selected={selectedTodo?.id === todo.id}
+                isExpanded={expandedTodoIds.includes(todo.id)}
                 currentInProgressId={currentInProgressId}
                 onSelect={setSelectedTodoId}
+                onExpandedChange={handleExpandedChange}
                 onEdit={handleEdit}
                 onDelete={() => handleDelete(todo.id)}
                 onComplete={() => handleComplete(todo.id)}

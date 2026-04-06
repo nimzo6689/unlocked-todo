@@ -18,8 +18,10 @@ export type TodoCardProps = {
   dependentTodos?: Todo[];
   filter: string;
   selected: boolean;
+  isExpanded: boolean;
   currentInProgressId: string | null;
   onSelect: (id: string) => void;
+  onExpandedChange: (id: string, expanded: boolean) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   onComplete: (id: string) => void;
@@ -31,8 +33,10 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   dependentTodos,
   filter,
   selected,
+  isExpanded,
   currentInProgressId,
   onSelect,
+  onExpandedChange,
   onEdit,
   onDelete,
   onComplete,
@@ -79,7 +83,6 @@ export const TodoCard: React.FC<TodoCardProps> = ({
 
   const [previewHtml, setPreviewHtml] = useState('');
   const [truncatedHtml, setTruncatedHtml] = useState('');
-  const [isExpanded, setIsExpanded] = useState(false);
 
   const isLongDescription = (todo.description || '').length > 100;
 
@@ -134,7 +137,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
         />
         {isLongDescription && (
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={() => onExpandedChange(todo.id, !isExpanded)}
             className="text-xs text-blue-500 hover:text-blue-700 mb-3"
           >
             {isExpanded ? '折りたたむ' : '展開'}
