@@ -1,8 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { TodoFormPage } from '@/features/todo/pages/TodoFormPage';
 import { useTodoContext } from '@/app/providers/TodoContext';
+import { useRegisterShortcuts } from '@/features/shortcuts/context/ShortcutContext';
 import { createTodo } from '@/test/factories/todo';
 import { DEFAULT_WORK_SCHEDULE } from '@/features/work-schedule/model/settings';
 
@@ -12,10 +13,6 @@ vi.mock('@/app/providers/TodoContext', () => ({
 
 vi.mock('@/features/shortcuts/context/ShortcutContext', () => ({
   useRegisterShortcuts: vi.fn(),
-}));
-
-vi.mock('@/features/todo/ui/TodoForm', () => ({
-  TodoForm: () => <div data-testid="todo-form" />,
 }));
 
 vi.mock('@/features/todo/hooks/useTodoForm', () => ({
@@ -33,12 +30,28 @@ vi.mock('@/features/todo/hooks/useTodoForm', () => ({
 }));
 
 const useTodoContextMock = vi.mocked(useTodoContext);
+const useRegisterShortcutsMock = vi.mocked(useRegisterShortcuts);
+
+const renderFormPage = (path: string) => {
+  render(
+    <MemoryRouter initialEntries={[path]}>
+      <Routes>
+        <Route path="/new" element={<TodoFormPage />} />
+        <Route path="/edit/:id" element={<TodoFormPage />} />
+      </Routes>
+    </MemoryRouter>,
+  );
+};
 
 describe('TodoFormPage', () => {
   beforeEach(() => {
+    useRegisterShortcutsMock.mockClear();
     useTodoContextMock.mockReturnValue({
-      todos: [createTodo()],
-      form: { title: 'sample', taskType: 'Normal' },
+      todos: [
+        createTodo({ id: 'todo-1', title: '編集中Todo' }),
+        createTodo({ id: 'todo-2', title: '依存先Todo', status: 'Unlocked' }),
+      ],
+      form: { id: 'todo-1', title: 'sample', taskType: 'Normal' },
       setForm: vi.fn(),
       getTodo: vi.fn(),
       fetchTodos: vi.fn(async () => undefined),
@@ -47,27 +60,72 @@ describe('TodoFormPage', () => {
   });
 
   it('renders new form title on /new', () => {
-    render(
-      <MemoryRouter initialEntries={['/new']}>
-        <Routes>
-          <Route path="/new" element={<TodoFormPage />} />
-        </Routes>
-      </MemoryRouter>,
-    );
+    renderFormPage('/new');
 
     expect(screen.getByRole('heading', { name: 'Todoの新規作成' })).toBeInTheDocument();
-    expect(screen.getByTestId('todo-form')).toBeInTheDocument();
+    expect(screen.getByLabelText('タイトル *')).toBeInTheDocument();
   });
 
   it('renders edit form title on /edit/:id', () => {
-    render(
-      <MemoryRouter initialEntries={['/edit/todo-1']}>
-        <Routes>
-          <Route path="/edit/:id" element={<TodoFormPage />} />
-        </Routes>
-      </MemoryRouter>,
-    );
+    renderFormPage('/edit/todo-1');
 
     expect(screen.getByRole('heading', { name: 'Todoの編集' })).toBeInTheDocument();
+  });
+
+  it('registers focus shortcuts with alt+1..9 and quick effort shortcuts with alt+shift+1..5', () => {
+    renderFormPage('/edit/todo-1');
+
+    const registration = useRegisterShortcutsMock.mock.calls.at(-1)?.[0];
+    expect(registration).toBeDefined();
+
+    const shortcuts = registration?.shortcuts ?? [];
+    const byId = (id: string) => shortcuts.find(item => item.id === id);
+
+    expect(byId('form-focus-title')?.bindings).toEqual(['alt+1']);
+    expect(byId('form-focus-task-type')?.bindings).toEqual(['alt+2']);
+    expect(byId('form-focus-description')?.bindings).toEqual(['alt+3']);
+    expect(byId('form-focus-startable-at')?.bindings).toEqual(['alt+4']);
+    expect(byId('form-focus-due-date')?.bindings).toEqual(['alt+5']);
+    expect(byId('form-focus-effort')?.bindings).toEqual(['alt+6']);
+    expect(byId('form-focus-actual-work')?.bindings).toEqual(['alt+7']);
+    expect(byId('form-focus-status')?.bindings).toEqual(['alt+8']);
+    expect(byId('form-focus-dependency')?.bindings).toEqual(['alt+9']);
+    expect(byId('form-focus-title')?.allowInInput).toBe(true);
+
+    expect(byId('form-effort-5')?.bindings).toEqual(['alt+shift+1']);
+    expect(byId('form-effort-10')?.bindings).toEqual(['alt+shift+2']);
+    expect(byId('form-effort-25')?.bindings).toEqual(['alt+shift+3']);
+    expect(byId('form-effort-55')?.bindings).toEqual(['alt+shift+4']);
+    expect(byId('form-effort-115')?.bindings).toEqual(['alt+shift+5']);
+  });
+
+  it('focus shortcuts move focus to target form controls', async () => {
+    renderFormPage('/edit/todo-1');
+
+    const registration = useRegisterShortcutsMock.mock.calls.at(-1)?.[0];
+    expect(registration).toBeDefined();
+
+    act(() => {
+      registration?.shortcuts.find(item => item.id === 'form-focus-title')?.action();
+    });
+    expect(screen.getByLabelText('タイトル *')).toHaveFocus();
+
+    act(() => {
+      registration?.shortcuts.find(item => item.id === 'form-focus-description')?.action();
+    });
+    expect(screen.getByLabelText('説明')).toHaveFocus();
+
+    act(() => {
+      registration?.shortcuts.find(item => item.id === 'form-focus-due-date')?.action();
+    });
+    expect(screen.getByLabelText('期限 *')).toHaveFocus();
+
+    act(() => {
+      registration?.shortcuts.find(item => item.id === 'form-focus-dependency')?.action();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('依存先Todo')).toHaveFocus();
+    });
   });
 });
