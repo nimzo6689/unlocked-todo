@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ChevronDown, ChevronRight, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import {
   getExpandedKeysForPath,
   isNavigationItemActive,
@@ -25,6 +26,7 @@ export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: Dra
   const [expandedKeys, setExpandedKeys] = useState<string[]>(() =>
     getExpandedKeysForPath(items, currentPath),
   );
+  const { t } = useTranslation();
   const bottomAnchoredItemKey = 'settings-help';
   const primaryItems = items.filter(item => item.key !== bottomAnchoredItemKey);
   const bottomItems = items.filter(item => item.key === bottomAnchoredItemKey);
@@ -94,11 +96,11 @@ export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: Dra
     <UiDrawer open={open} onOpenChange={onOpenChange} direction="left">
       <DrawerContent className="flex min-h-screen w-[86vw] max-w-sm flex-col border-r border-slate-200 bg-white sm:min-h-dvh">
         <DrawerHeader className="flex items-center justify-between gap-2 p-4">
-          <DrawerTitle>メニュー</DrawerTitle>
+          <DrawerTitle>{t('drawer.title')}</DrawerTitle>
           <DrawerClose asChild>
             <button
               className="rounded-md p-1 text-slate-500 hover:text-slate-700"
-              aria-label="閉じる"
+              aria-label={t('drawer.close')}
             >
               <X size={18} />
             </button>

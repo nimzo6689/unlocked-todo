@@ -1,3 +1,4 @@
+import i18n, { getIntlLocale, normalizeLocale, type AppLocale } from '@/shared/i18n';
 import type { FilterButton, Todo, TodoTaskType } from './types';
 
 export const DEFAULT_TASK_TYPE: TodoTaskType = 'Normal';
@@ -23,13 +24,18 @@ export const getMeetingStatus = (
   return end.getTime() <= Date.now() ? 'Completed' : 'Unlocked';
 };
 
-export const filterButtons: FilterButton[] = [
-  { key: 'unlocked', label: 'Unlocked' },
-  { key: 'locked', label: 'Locked' },
-  { key: 'meeting', label: 'Meeting' },
-  { key: 'completed', label: 'Completed' },
-  { key: 'all', label: 'All' },
+export const getFilterButtons = (
+  locale: AppLocale = normalizeLocale(i18n.resolvedLanguage),
+): FilterButton[] => [
+  { key: 'unlocked', label: i18n.t('todo.common.filters.unlocked', { lng: locale }) },
+  { key: 'locked', label: i18n.t('todo.common.filters.locked', { lng: locale }) },
+  { key: 'meeting', label: i18n.t('todo.common.filters.meeting', { lng: locale }) },
+  { key: 'completed', label: i18n.t('todo.common.filters.completed', { lng: locale }) },
+  { key: 'all', label: i18n.t('todo.common.filters.all', { lng: locale }) },
 ];
+
+// Backward compatibility for existing imports while migrating todo pages.
+export const filterButtons = getFilterButtons();
 
 export const defaultForm: Partial<Todo> = {
   title: '',
@@ -50,10 +56,13 @@ export const getDependencyIds = (todo: Todo): string[] => {
 };
 
 // 画面への表示用（2023/10/25 14:30）
-export function formatDate(isoString?: string) {
-  if (!isoString) return 'N/A';
+export function formatDate(
+  isoString?: string,
+  locale: AppLocale = normalizeLocale(i18n.resolvedLanguage),
+) {
+  if (!isoString) return i18n.t('todo.common.noDate', { lng: locale });
   const date = new Date(isoString);
-  return date.toLocaleString('ja-JP', {
+  return date.toLocaleString(getIntlLocale(locale), {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -80,6 +89,25 @@ export function formatDurationFromSeconds(totalSeconds?: number) {
   return [hours, minutes, seconds].map(value => String(value).padStart(2, '0')).join(':');
 }
 
+export const getTodoStatusLabel = (
+  status: Todo['status'],
+  locale: AppLocale = normalizeLocale(i18n.resolvedLanguage),
+) => i18n.t(`todo.common.statuses.${status}`, { lng: locale });
+
+export const getTodoTaskTypeLabel = (
+  taskType: TodoTaskType,
+  locale: AppLocale = normalizeLocale(i18n.resolvedLanguage),
+) =>
+  i18n.t(
+    taskType === 'Meeting' ? 'todo.common.taskTypes.meeting' : 'todo.common.taskTypes.normal',
+    {
+      lng: locale,
+    },
+  );
+
+export const getTodoTitleFallback = (locale: AppLocale = normalizeLocale(i18n.resolvedLanguage)) =>
+  i18n.t('todo.common.untitled', { lng: locale });
+
 /**
  * Todo配列をJSON文字列に変換する。
  */
@@ -95,18 +123,23 @@ export function todosFromJSON(jsonString: string): Todo[] {
   try {
     parsed = JSON.parse(jsonString);
   } catch {
-    throw new Error('JSONの解析に失敗しました');
+    throw new Error(i18n.t('todo.validation.jsonParseFailed'));
   }
 
   if (!Array.isArray(parsed)) {
-    throw new Error('JSONはTodo配列である必要があります');
+    throw new Error(i18n.t('todo.validation.arrayRequired'));
   }
 
   return parsed.map((item, index) => {
     try {
       return validateAndNormalizeTodo(item);
     } catch (e) {
-      throw new Error(`行${index + 1}のTodoが不正です: ${(e as Error).message}`);
+      throw new Error(
+        i18n.t('todo.validation.rowInvalid', {
+          index: index + 1,
+          message: (e as Error).message,
+        }),
+      );
     }
   });
 }
@@ -116,7 +149,7 @@ export function todosFromJSON(jsonString: string): Todo[] {
  */
 function validateAndNormalizeTodo(obj: unknown): Todo {
   if (typeof obj !== 'object' || obj === null) {
-    throw new Error('オブジェクトが必須です');
+    throw new Error(i18n.t('todo.validation.objectRequired'));
   }
 
   const item = obj as Record<string, unknown>;
@@ -124,39 +157,39 @@ function validateAndNormalizeTodo(obj: unknown): Todo {
 
   // 必須フィールドの確認
   if (typeof item.id !== 'string' || !item.id) {
-    throw new Error('idは空でない文字列である必要があります');
+    throw new Error(i18n.t('todo.validation.idRequired'));
   }
   if (typeof item.title !== 'string') {
-    throw new Error('titleは文字列である必要があります');
+    throw new Error(i18n.t('todo.validation.titleString'));
   }
   if (typeof item.createdAt !== 'string') {
-    throw new Error('createdAtはISO 8601文字列である必要があります');
+    throw new Error(i18n.t('todo.validation.createdAtIso'));
   }
   if (typeof item.startableAt !== 'string') {
-    throw new Error('startableAtはISO 8601文字列である必要があります');
+    throw new Error(i18n.t('todo.validation.startableAtIso'));
   }
   if (typeof item.dueDate !== 'string') {
-    throw new Error('dueDateはISO 8601文字列である必要があります');
+    throw new Error(i18n.t('todo.validation.dueDateIso'));
   }
   if (item.startableAt && item.dueDate) {
     if (new Date(item.startableAt as string) >= new Date(item.dueDate as string)) {
-      throw new Error('開始日時は終了日時より前に設定してください');
+      throw new Error(i18n.t('todo.validation.startBeforeEnd'));
     }
   }
 
   const status = item.status as string;
   if (!['Unlocked', 'Locked', 'Completed'].includes(status)) {
-    throw new Error('statusは "Unlocked", "Locked", "Completed" のいずれかである必要があります');
+    throw new Error(i18n.t('todo.validation.statusInvalid'));
   }
 
   // 数値フィールドの正規化
   const effortMinutes = Number(item.effortMinutes);
   const actualWorkSeconds = Number(item.actualWorkSeconds);
   if (!Number.isFinite(effortMinutes) || effortMinutes < 0) {
-    throw new Error('effortMinutesは0以上の数値である必要があります');
+    throw new Error(i18n.t('todo.validation.effortNonNegative'));
   }
   if (!Number.isFinite(actualWorkSeconds) || actualWorkSeconds < 0) {
-    throw new Error('actualWorkSecondsは0以上の数値である必要があります');
+    throw new Error(i18n.t('todo.validation.actualNonNegative'));
   }
 
   // dependency の正規化
@@ -168,7 +201,7 @@ function validateAndNormalizeTodo(obj: unknown): Todo {
       const filtered = item.dependency.filter(d => typeof d === 'string' && d);
       dependency = filtered.length > 0 ? filtered : undefined;
     } else {
-      throw new Error('dependencyは文字列または文字列配列である必要があります');
+      throw new Error(i18n.t('todo.validation.dependencyInvalid'));
     }
   }
 
@@ -198,7 +231,7 @@ export function normalizeTaskType(value: unknown): TodoTaskType {
     return value;
   }
 
-  throw new Error('taskTypeは "Normal" または "Meeting" である必要があります');
+  throw new Error(i18n.t('todo.validation.taskTypeInvalid'));
 }
 
 export function normalizeTodo(todo: Todo): Todo {

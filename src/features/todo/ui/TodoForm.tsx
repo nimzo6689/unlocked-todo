@@ -1,12 +1,17 @@
 import React from 'react';
 import { ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { Todo } from '@/features/todo/model/types';
 import {
   DEFAULT_EFFORT_MINUTES,
   formatDateForInput,
   formatDurationFromSeconds,
+  getTodoTaskTypeLabel,
+  getTodoTitleFallback,
+  getTodoStatusLabel,
   isMeetingTodo,
 } from '@/features/todo/model/todo-utils';
+import { useAppLocale } from '@/shared/i18n/useAppLocale';
 
 export type TodoFormProps = {
   form: Partial<Todo>;
@@ -53,6 +58,8 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
     },
     ref,
   ) => {
+    const { t } = useTranslation();
+    const { locale } = useAppLocale();
     const taskType = form.taskType || 'Normal';
     const isMeeting = isMeetingTodo({ taskType });
     const hasDependency = form.dependency
@@ -88,7 +95,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
     React.useEffect(() => {
       setIsPredecessorExpanded(currentDeps.length > 0);
       setIsSuccessorExpanded(successorIds.length > 0);
-    }, [form.id]);
+    }, [form.id, currentDeps.length, successorIds.length]);
 
     React.useEffect(() => {
       if (currentDeps.length > 0) {
@@ -178,7 +185,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
             htmlFor="title"
             className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
           >
-            タイトル <span className="text-red-500">*</span>
+            {t('todo.form.title')} <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -195,7 +202,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
             htmlFor="taskType"
             className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
           >
-            タスク種別
+            {t('todo.form.taskType')}
           </label>
           <select
             id="taskType"
@@ -216,8 +223,8 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
             }
             className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
           >
-            <option value="Normal">Normal</option>
-            <option value="Meeting">Meeting</option>
+            <option value="Normal">{getTodoTaskTypeLabel('Normal', locale)}</option>
+            <option value="Meeting">{getTodoTaskTypeLabel('Meeting', locale)}</option>
           </select>
         </div>
         <div className="mb-4">
@@ -225,7 +232,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
             htmlFor="description"
             className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
           >
-            説明
+            {t('todo.form.description')}
           </label>
           <textarea
             id="description"
@@ -242,7 +249,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
               htmlFor="startableAt"
               className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
             >
-              {isMeeting ? '開始日時' : '着手可能日時'}
+              {isMeeting ? t('todo.form.meetingStart') : t('todo.form.startableAt')}
             </label>
             <input
               type="datetime-local"
@@ -265,7 +272,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                 onClick={() => onApplyStartableAtQuickAction('now')}
                 className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:cursor-not-allowed"
               >
-                現在
+                {t('todo.form.quickActions.now')}
               </button>
               <button
                 type="button"
@@ -273,7 +280,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                 onClick={() => onApplyStartableAtQuickAction('tomorrow')}
                 className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:cursor-not-allowed"
               >
-                明日
+                {t('todo.form.quickActions.tomorrow')}
               </button>
               <button
                 type="button"
@@ -281,7 +288,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                 onClick={() => onApplyStartableAtQuickAction('nextWeek')}
                 className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100 disabled:bg-slate-100 disabled:cursor-not-allowed"
               >
-                来週
+                {t('todo.form.quickActions.nextWeek')}
               </button>
             </div>
           </div>
@@ -290,7 +297,8 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
               htmlFor="dueDate"
               className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
             >
-              {isMeeting ? '終了日時' : '期限'} <span className="text-red-500">*</span>
+              {isMeeting ? t('todo.form.meetingEnd') : t('todo.form.dueDate')}{' '}
+              <span className="text-red-500">*</span>
             </label>
             <input
               type="datetime-local"
@@ -312,21 +320,21 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                 onClick={() => onApplyDueDateQuickAction('today')}
                 className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100"
               >
-                当日まで
+                {t('todo.form.quickActions.today')}
               </button>
               <button
                 type="button"
                 onClick={() => onApplyDueDateQuickAction('tomorrow')}
                 className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100"
               >
-                明日まで
+                {t('todo.form.quickActions.tomorrowDue')}
               </button>
               <button
                 type="button"
                 onClick={() => onApplyDueDateQuickAction('thisWeek')}
                 className="rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-700 hover:bg-slate-100"
               >
-                今週中
+                {t('todo.form.quickActions.thisWeek')}
               </button>
             </div>
           </div>
@@ -337,7 +345,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                   htmlFor="effortMinutes"
                   className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
                 >
-                  工数 (分)
+                  {t('todo.form.effortMinutes')}
                 </label>
                 <input
                   type="number"
@@ -371,7 +379,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                   htmlFor="actualWorkMinutes"
                   className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
                 >
-                  実作業時間 (分)
+                  {t('todo.form.actualWorkMinutes')}
                 </label>
                 <input
                   type="number"
@@ -392,7 +400,9 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                   className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm"
                 />
                 <p className="mt-2 text-[11px] sm:text-xs text-slate-500">
-                  実作業時間表示: {formatDurationFromSeconds(normalizedActualWorkSeconds)}
+                  {t('todo.form.actualWorkDisplay', {
+                    duration: formatDurationFromSeconds(normalizedActualWorkSeconds),
+                  })}
                 </p>
               </div>
             </>
@@ -405,7 +415,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                 htmlFor="status"
                 className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
               >
-                ステータス
+                {t('todo.form.status')}
               </label>
               <select
                 id="status"
@@ -414,9 +424,9 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                 onChange={e => onChange({ ...form, status: e.target.value as Todo['status'] })}
                 className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
               >
-                <option value="Unlocked">Unlocked</option>
-                <option value="Locked">Locked</option>
-                <option value="Completed">Completed</option>
+                <option value="Unlocked">{getTodoStatusLabel('Unlocked', locale)}</option>
+                <option value="Locked">{getTodoStatusLabel('Locked', locale)}</option>
+                <option value="Completed">{getTodoStatusLabel('Completed', locale)}</option>
               </select>
             </div>
           </div>
@@ -430,7 +440,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
               aria-expanded={isPredecessorExpanded}
               aria-controls="predecessor"
             >
-              <span>先行タスク</span>
+              <span>{t('todo.form.predecessor')}</span>
               {isPredecessorExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             </button>
             {isPredecessorExpanded && (
@@ -467,7 +477,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                             className="h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                           />
                           <span className="truncate text-xs sm:text-sm text-slate-700">
-                            {todo.title}
+                            {todo.title || getTodoTitleFallback(locale)}
                           </span>
                         </label>
                         <button
@@ -478,9 +488,11 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                             onOpenTodo(todo.id);
                           }}
                           className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-600 hover:bg-slate-100"
-                          aria-label={`${todo.title} のTodoフォームを開く`}
+                          aria-label={t('todo.form.openTodoAria', {
+                            title: todo.title || getTodoTitleFallback(locale),
+                          })}
                         >
-                          <span>開く</span>
+                          <span>{t('todo.form.openTodo')}</span>
                           <ExternalLink size={14} />
                         </button>
                       </div>
@@ -488,12 +500,12 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                   })
                 ) : (
                   <p className="px-1 py-2 text-xs sm:text-sm text-slate-500">
-                    選択可能なTodoはありません。
+                    {t('todo.form.noSelectableTodos')}
                   </p>
                 )}
               </div>
             )}
-            <p className="mt-1 text-xs text-slate-500">行を押すと先行タスクを複数選択できます。</p>
+            <p className="mt-1 text-xs text-slate-500">{t('todo.form.predecessorHint')}</p>
           </div>
         )}
         {!isMeeting && (
@@ -505,12 +517,12 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
               aria-expanded={isSuccessorExpanded}
               aria-controls="successor"
             >
-              <span>後続タスク</span>
+              <span>{t('todo.form.successor')}</span>
               {isSuccessorExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
             </button>
             {!form.id ? (
               <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs sm:text-sm text-slate-600">
-                後続タスクは保存後に設定できます。
+                {t('todo.form.successorAfterSave')}
               </div>
             ) : isSuccessorExpanded ? (
               <div
@@ -545,7 +557,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                             className="h-4 w-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                           />
                           <span className="truncate text-xs sm:text-sm text-slate-700">
-                            {todo.title}
+                            {todo.title || getTodoTitleFallback(locale)}
                           </span>
                         </label>
                         <button
@@ -556,9 +568,11 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                             onOpenTodo(todo.id);
                           }}
                           className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-300 px-2 py-1 text-xs sm:text-sm text-slate-600 hover:bg-slate-100"
-                          aria-label={`${todo.title} のTodoフォームを開く`}
+                          aria-label={t('todo.form.openTodoAria', {
+                            title: todo.title || getTodoTitleFallback(locale),
+                          })}
                         >
-                          <span>開く</span>
+                          <span>{t('todo.form.openTodo')}</span>
                           <ExternalLink size={14} />
                         </button>
                       </div>
@@ -566,12 +580,12 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                   })
                 ) : (
                   <p className="px-1 py-2 text-xs sm:text-sm text-slate-500">
-                    選択可能なTodoはありません。
+                    {t('todo.form.noSelectableTodos')}
                   </p>
                 )}
               </div>
             ) : null}
-            <p className="mt-1 text-xs text-slate-500">行を押すと後続タスクを複数選択できます。</p>
+            <p className="mt-1 text-xs text-slate-500">{t('todo.form.successorHint')}</p>
           </div>
         )}
         <div className="flex flex-wrap justify-end gap-2 mt-2">
@@ -580,7 +594,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
             onClick={onCancel}
             className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-3 sm:px-4 rounded-lg text-xs sm:text-sm"
           >
-            キャンセル
+            {t('todo.form.cancel')}
           </button>
           <button
             type="button"
@@ -588,7 +602,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
             disabled={saving}
             className="bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
           >
-            保存
+            {t('todo.form.save')}
           </button>
           <button
             type="button"
@@ -596,7 +610,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
             disabled={saving}
             className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
           >
-            完了
+            {t('todo.form.complete')}
           </button>
         </div>
       </form>

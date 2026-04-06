@@ -1,7 +1,13 @@
 import { createTodo, getTodoCard } from '../utils/todo';
 import { expect, test } from '../fixtures/app.fixture';
 
-test('作成した Todo がリロード後も保持される', async ({ page, gotoApp, waitForAppReady }) => {
+test('作成した Todo がリロード後も保持される', async ({
+  page,
+  gotoApp,
+  waitForAppReady,
+  setLocale,
+}) => {
+  await setLocale('ja');
   const title = `Playwright Persist ${Date.now()}`;
 
   await gotoApp('/new');
@@ -14,4 +20,17 @@ test('作成した Todo がリロード後も保持される', async ({ page, go
   await waitForAppReady();
 
   await expect(getTodoCard(page, title)).toBeVisible();
+});
+
+test('言語設定がリロード後も保持される', async ({ page, gotoApp, setLocale }) => {
+  await setLocale('ja');
+  await gotoApp('/settings/notifications');
+
+  await page.getByRole('button', { name: 'English' }).click();
+  await expect(page.getByRole('heading', { name: 'Notifications & Language' })).toBeVisible();
+  await expect(page.getByText('Current: English')).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Notifications & Language' })).toBeVisible();
+  await expect(page.getByText('Current: English')).toBeVisible();
 });

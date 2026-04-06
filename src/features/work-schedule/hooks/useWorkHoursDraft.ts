@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import type { BreakPeriod, WorkSchedule } from '@/features/todo/model/types';
+import i18n from '@/shared/i18n';
 import { normalizeBreakPeriods } from '@/features/work-schedule/model/settings';
 
 const createDefaultBreakPeriod = (workStartHour: number, workEndHour: number): BreakPeriod => {
@@ -90,12 +91,12 @@ export const useWorkHoursDraft = (
 
   const handleSave = () => {
     if (draft.workingDays.length === 0) {
-      setError('少なくとも 1 つの稼働日を選択してください。');
+      setError(i18n.t('workHours.validation.noWorkingDay'));
       return;
     }
 
     if (draft.workStartHour >= draft.workEndHour) {
-      setError('開始時刻は終了時刻より前に設定してください。');
+      setError(i18n.t('workHours.validation.invalidHours'));
       return;
     }
 
@@ -106,14 +107,14 @@ export const useWorkHoursDraft = (
     );
 
     if (normalizedBreakPeriods.length !== draft.breakPeriods.length) {
-      setError('休憩時間は稼働時間内に収まるように設定してください。');
+      setError(i18n.t('workHours.validation.invalidBreaks'));
       return;
     }
 
     const nextSchedule = { ...draft, breakPeriods: normalizedBreakPeriods };
     setWorkSchedule(nextSchedule);
     setDraft(nextSchedule);
-    toast.success('稼働設定を保存しました');
+    toast.success(i18n.t('workHours.saveSuccess'));
   };
 
   return {

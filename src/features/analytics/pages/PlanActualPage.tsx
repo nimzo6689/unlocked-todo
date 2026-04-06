@@ -1,10 +1,12 @@
 import { useCallback, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
+import { useTranslation } from 'react-i18next';
 import { useTodoContext } from '@/app/providers/TodoContext';
 import type { Todo } from '@/features/todo/model/types';
 import { isMeetingTodo } from '@/features/todo/model/todo-utils';
 import { useRegisterShortcuts } from '@/features/shortcuts/context/ShortcutContext';
+import { useAppLocale } from '@/shared/i18n/useAppLocale';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -32,21 +34,32 @@ const toDateInputValue = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-const formatDateLabel = (date: Date) => {
-  const weekdayJa = ['日', '月', '火', '水', '木', '金', '土'];
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  return `${month}/${day}(${weekdayJa[date.getDay()]})`;
+const getIntlLocale = (locale: 'ja' | 'en') => (locale === 'ja' ? 'ja-JP' : 'en-US');
+
+const formatDateLabel = (date: Date, locale: 'ja' | 'en') => {
+  if (locale === 'ja') {
+    const weekdayJa = ['日', '月', '火', '水', '木', '金', '土'];
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${month}/${day}(${weekdayJa[date.getDay()]})`;
+  }
+
+  return new Intl.DateTimeFormat(getIntlLocale(locale), {
+    month: 'short',
+    day: 'numeric',
+    weekday: 'short',
+  }).format(date);
 };
 
-const formatDateTime = (date: Date) => {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, '0');
-  const day = `${date.getDate()}`.padStart(2, '0');
-  const hours = `${date.getHours()}`.padStart(2, '0');
-  const minutes = `${date.getMinutes()}`.padStart(2, '0');
-  return `${year}/${month}/${day} ${hours}:${minutes}`;
-};
+const formatDateTime = (date: Date, locale: 'ja' | 'en') =>
+  new Intl.DateTimeFormat(getIntlLocale(locale), {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date);
 
 const parseStartedAt = (todo: Todo) => {
   const startedAt = new Date(todo.startedAt || todo.createdAt);
@@ -104,6 +117,8 @@ const buildChartOption = (
   baseDateInput: string,
   totalActualMinutes: number,
   totalDiffMinutes: number,
+  locale: 'ja' | 'en',
+  t: (key: string, options?: Record<string, unknown>) => string,
 ): EChartsOption => {
   const categories = rows.map(row => row.title);
   const planned = rows.map(row => Number(row.plannedMinutes.toFixed(1)));
@@ -115,8 +130,14 @@ const buildChartOption = (
       show: false,
     },
     title: {
-      text: '予実管理',
-      subtext: `${formatDateLabel(new Date(`${baseDateInput}T00:00:00`))} 起点7日間 | 完了タスク ${rows.length} 件 | 実績合計 ${totalActualMinutes.toFixed(1)} 分 | 合計差異 ${totalDiffMinutes > 0 ? '+' : ''}${totalDiffMinutes.toFixed(1)} 分`,
+      text: t('analytics.chartTitle'),
+      subtext: t('analytics.chartSubtext', {
+        baseDate: formatDateLabel(new Date(`${baseDateInput}T00:00:00`), locale),
+        count: rows.length,
+        totalActual: totalActualMinutes.toFixed(1),
+        diffPrefix: totalDiffMinutes > 0 ? '+' : '',
+        totalDiff: totalDiffMinutes.toFixed(1),
+      }),
       left: 'center',
       top: 0,
       textStyle: {
@@ -131,7 +152,11 @@ const buildChartOption = (
     },
     legend: {
       top: 54,
-      data: ['予定工数', '実績時間', '乖離(実績-予定)'],
+      data: [
+        t('analytics.legend.planned'),
+        t('analytics.legend.actual'),
+        t('analytics.legend.diff'),
+      ],
     },
     grid: {
       top: 100,
@@ -152,15 +177,16 @@ const buildChartOption = (
           return '';
         }
 
-        const statusLabel = row.diffMinutes > 0 ? '超過' : '予定内';
+        const statusLabel =
+          row.diffMinutes > 0 ? t('analytics.tooltip.over') : t('analytics.tooltip.within');
 
         return [
           `<b>${row.title}</b>`,
-          `実作業開始: ${formatDateTime(row.startedAt)}`,
-          `予定工数: ${row.plannedMinutes.toFixed(1)} 分`,
-          `実績時間: ${row.actualMinutes.toFixed(1)} 分`,
-          `乖離: ${row.diffMinutes > 0 ? '+' : ''}${row.diffMinutes.toFixed(1)} 分`,
-          `判定: ${statusLabel}`,
+          `${t('analytics.tooltip.startedAt')}: ${formatDateTime(row.startedAt, locale)}`,
+          `${t('analytics.tooltip.planned')}: ${row.plannedMinutes.toFixed(1)} min`,
+          `${t('analytics.tooltip.actual')}: ${row.actualMinutes.toFixed(1)} min`,
+          `${t('analytics.tooltip.diff')}: ${row.diffMinutes > 0 ? '+' : ''}${row.diffMinutes.toFixed(1)} min`,
+          `${t('analytics.tooltip.judgement')}: ${statusLabel}`,
         ].join('<br/>');
       },
     },
@@ -179,7 +205,7 @@ const buildChartOption = (
     yAxis: [
       {
         type: 'value',
-        name: '時間 (分)',
+        name: t('analytics.yAxis.timeMinutes'),
         splitLine: {
           lineStyle: {
             color: '#e2e8f0',
@@ -189,7 +215,7 @@ const buildChartOption = (
       },
       {
         type: 'value',
-        name: '差異 (分)',
+        name: t('analytics.yAxis.diffMinutes'),
         nameTextStyle: { color: '#475569' },
         position: 'right',
         axisLine: { show: true, lineStyle: { color: '#475569' } },
@@ -198,7 +224,7 @@ const buildChartOption = (
     ],
     series: [
       {
-        name: '予定工数',
+        name: t('analytics.legend.planned'),
         type: 'bar',
         barMaxWidth: 28,
         itemStyle: {
@@ -208,7 +234,7 @@ const buildChartOption = (
         data: planned,
       },
       {
-        name: '実績時間',
+        name: t('analytics.legend.actual'),
         type: 'bar',
         barMaxWidth: 28,
         itemStyle: {
@@ -218,7 +244,7 @@ const buildChartOption = (
         data: actual,
       },
       {
-        name: '乖離(実績-予定)',
+        name: t('analytics.legend.diff'),
         type: 'line',
         yAxisIndex: 1,
         data: diff.map(value => ({
@@ -258,6 +284,8 @@ const buildChartOption = (
 
 export const PlanActualPage = () => {
   const { todos } = useTodoContext();
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue(new Date()));
 
   const moveSelectedDate = useCallback(
@@ -286,38 +314,38 @@ export const PlanActualPage = () => {
   );
 
   const option = useMemo(
-    () => buildChartOption(rows, selectedDate, totalActualMinutes, totalDiffMinutes),
-    [rows, selectedDate, totalActualMinutes, totalDiffMinutes],
+    () => buildChartOption(rows, selectedDate, totalActualMinutes, totalDiffMinutes, locale, t),
+    [locale, rows, selectedDate, t, totalActualMinutes, totalDiffMinutes],
   );
 
   const shortcutRegistration = useMemo(
     () => ({
-      pageLabel: '予実管理',
+      pageLabel: t('analytics.pageLabel'),
       shortcuts: [
         {
           id: 'plan-actual-prev-day',
-          description: '集計開始日を前日に移動する',
+          description: t('analytics.shortcuts.prevDay'),
           category: 'ページ操作' as const,
           bindings: ['h'],
           action: () => moveSelectedDate(-1),
         },
         {
           id: 'plan-actual-next-day',
-          description: '集計開始日を翌日に移動する',
+          description: t('analytics.shortcuts.nextDay'),
           category: 'ページ操作' as const,
           bindings: ['l'],
           action: () => moveSelectedDate(1),
         },
         {
           id: 'plan-actual-today',
-          description: '集計開始日を今日に戻す',
+          description: t('analytics.shortcuts.today'),
           category: 'ページ操作' as const,
           bindings: ['t'],
           action: () => setSelectedDate(toDateInputValue(new Date())),
         },
       ],
     }),
-    [moveSelectedDate],
+    [moveSelectedDate, t],
   );
 
   useRegisterShortcuts(shortcutRegistration);
@@ -326,14 +354,12 @@ export const PlanActualPage = () => {
     <div className="space-y-4">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">予実管理</h1>
-          <p className="text-slate-600">
-            完了タスクの予定工数と実績時間を、実作業開始日基準で比較します。
-          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{t('analytics.title')}</h1>
+          <p className="text-slate-600">{t('analytics.description')}</p>
         </div>
 
         <label className="text-sm text-slate-700 flex items-center gap-2">
-          集計開始日
+          {t('analytics.startDate')}
           <input
             type="date"
             value={selectedDate}
@@ -353,7 +379,7 @@ export const PlanActualPage = () => {
           />
         ) : (
           <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-slate-500">
-            指定期間内に、表示対象の完了タスクがありません。
+            {t('analytics.empty')}
           </p>
         )}
       </section>

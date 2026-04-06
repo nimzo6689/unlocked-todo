@@ -1,3 +1,5 @@
+import type { TFunction } from 'i18next';
+
 export type ShortcutCategory =
   | 'ナビゲーション'
   | '一覧操作'
@@ -56,6 +58,9 @@ const KEY_LABELS: Record<string, string> = {
   arrowleft: '←',
   arrowright: '→',
 };
+
+export const getShortcutCategoryLabel = (category: ShortcutCategory, t: TFunction) =>
+  t(`shortcuts.categories.${category}`);
 
 export const formatShortcutBinding = (binding: string) =>
   binding

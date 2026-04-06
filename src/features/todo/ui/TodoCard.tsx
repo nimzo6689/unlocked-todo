@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import type { Todo } from '@/features/todo/model/types';
+import { useTranslation } from 'react-i18next';
 import {
   formatDate,
   formatDurationFromSeconds,
+  getTodoStatusLabel,
+  getTodoTitleFallback,
   isMeetingTodo,
 } from '@/features/todo/model/todo-utils';
 import { marked } from 'marked';
+import { useAppLocale } from '@/shared/i18n/useAppLocale';
 
 const statusClasses: Record<string, string> = {
   Unlocked: 'bg-blue-100 text-blue-800',
@@ -42,6 +46,8 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   onComplete,
   onStartTodo,
 }) => {
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
   const isMeeting = isMeetingTodo(todo);
   const now = new Date();
   const dueDate = new Date(todo.dueDate);
@@ -72,12 +78,18 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   let lockedReasonHtml = '';
   if (!isMeeting && filter === 'locked' && (isDependencyIncomplete || isLockedOnTime)) {
     if (isDependencyIncomplete) {
-      const titles = incompleteDependencies.map((t: Todo) => t.title).join('、');
-      lockedReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'>依存タスク「${titles}」が未完了です。</div>`;
+      const separator = locale === 'ja' ? '、' : ', ';
+      const titles = incompleteDependencies
+        .map((dep: Todo) => dep.title || getTodoTitleFallback(locale))
+        .join(separator);
+      lockedReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'>${t('todo.card.lockedByDependency', { titles })}</div>`;
     } else if (isLockedOnTime) {
-      lockedReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'>着手可能日時 (${formatDate(
-        todo.startableAt,
-      )}) になっていません。</div>`;
+      lockedReasonHtml = `<div class='col-span-2 mt-2 p-2 bg-purple-50 border border-purple-200 rounded-md text-purple-700 text-xs'>${t(
+        'todo.card.lockedByStartableAt',
+        {
+          date: formatDate(todo.startableAt, locale),
+        },
+      )}</div>`;
     }
   }
 
@@ -118,14 +130,16 @@ export const TodoCard: React.FC<TodoCardProps> = ({
     >
       <div>
         <div className="flex flex-col sm:flex-row justify-between items-start gap-1 sm:gap-0">
-          <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-2">{todo.title}</h3>
+          <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-2">
+            {todo.title || getTodoTitleFallback(locale)}
+          </h3>
           <div className="flex-shrink-0 ml-2 mt-1 sm:mt-0">
             <span
               className={`text-xs sm:text-sm font-semibold px-2 py-1 rounded-full ${
                 statusClasses[todo.status]
               }`}
             >
-              {todo.status}
+              {getTodoStatusLabel(todo.status, locale)}
             </span>
           </div>
         </div>
@@ -140,44 +154,48 @@ export const TodoCard: React.FC<TodoCardProps> = ({
             onClick={() => onExpandedChange(todo.id, !isExpanded)}
             className="text-xs text-blue-500 hover:text-blue-700 mb-3"
           >
-            {isExpanded ? '折りたたむ' : '展開'}
+            {isExpanded ? t('todo.card.collapse') : t('todo.card.expand')}
           </button>
         )}
       </div>
       <div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm text-slate-500 mt-4 pt-4 border-t">
           <div>
-            <strong>{isMeeting ? '開始日時' : '着手可能日時'}:</strong>{' '}
-            {formatDate(todo.startableAt)}
+            <strong>{isMeeting ? t('todo.form.meetingStart') : t('todo.form.startableAt')}:</strong>{' '}
+            {formatDate(todo.startableAt, locale)}
           </div>
           <div>
-            <strong>{isMeeting ? '終了日時' : '期限'}:</strong> {formatDate(todo.dueDate)}
+            <strong>{isMeeting ? t('todo.form.meetingEnd') : t('todo.form.dueDate')}:</strong>{' '}
+            {formatDate(todo.dueDate, locale)}
           </div>
           {!isMeeting && (
             <div>
-              <strong>工数:</strong> {todo.effortMinutes || 0} 分
+              <strong>{t('todo.form.effortMinutes')}:</strong> {todo.effortMinutes || 0} 分
             </div>
           )}
           {!isMeeting && (
             <div>
-              <strong>実作業時間:</strong> {formatDurationFromSeconds(todo.actualWorkSeconds)}
+              <strong>{t('todo.form.actualWorkMinutes')}:</strong>{' '}
+              {formatDurationFromSeconds(todo.actualWorkSeconds)}
             </div>
           )}
           {!isMeeting && dependencyList.length > 0 && (
             <div className="col-span-1 sm:col-span-2">
-              <strong>依存Todo:</strong>
+              <strong>{t('todo.card.dependencyLabel')}:</strong>
               <div className="mt-1 space-y-1">
                 {dependencyList.map((dep: Todo) => {
                   const displayStatus = dep.status === 'Completed' ? 'Unlocked' : 'Locked';
                   return (
                     <div key={dep.id} className="flex items-center gap-2">
-                      <span className="text-slate-700">{dep.title}</span>
+                      <span className="text-slate-700">
+                        {dep.title || getTodoTitleFallback(locale)}
+                      </span>
                       <span
                         className={`text-xs sm:text-sm font-semibold px-2 py-0.5 rounded-full ${
                           statusClasses[displayStatus]
                         }`}
                       >
-                        {displayStatus}
+                        {getTodoStatusLabel(displayStatus, locale)}
                       </span>
                     </div>
                   );
@@ -202,7 +220,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
                   : 'bg-blue-500 hover:bg-blue-600'
               } text-white font-semibold py-1 px-2 sm:px-3 rounded-md`}
             >
-              {currentInProgressId === todo.id ? '中断' : '着手'}
+              {currentInProgressId === todo.id ? t('todo.card.pause') : t('todo.card.start')}
             </button>
           )}
           {!isMeeting && todo.status !== 'Completed' && (
@@ -210,20 +228,20 @@ export const TodoCard: React.FC<TodoCardProps> = ({
               onClick={() => onComplete(todo.id)}
               className="text-xs sm:text-sm bg-green-500 hover:bg-green-600 text-white font-semibold py-1 px-2 sm:px-3 rounded-md"
             >
-              完了
+              {t('todo.card.complete')}
             </button>
           )}
           <button
             onClick={() => onEdit(todo.id)}
             className="text-xs sm:text-sm bg-slate-500 hover:bg-slate-600 text-white font-semibold py-1 px-2 sm:px-3 rounded-md"
           >
-            編集
+            {t('todo.card.edit')}
           </button>
           <button
             onClick={() => onDelete(todo.id)}
             className="text-xs sm:text-sm bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-2 sm:px-3 rounded-md"
           >
-            削除
+            {t('todo.card.delete')}
           </button>
         </div>
       </div>

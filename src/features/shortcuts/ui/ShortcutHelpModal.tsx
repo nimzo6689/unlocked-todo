@@ -1,11 +1,12 @@
+import { useTranslation } from 'react-i18next';
 import type { ShortcutHelpSection } from '@/shared/config/shortcuts';
 
 type ShortcutHelpModalProps = {
   open: boolean;
   onClose: () => void;
   pageLabel?: string;
-  globalSections: ShortcutHelpSection[];
-  pageSections: ShortcutHelpSection[];
+  globalSections: Array<ShortcutHelpSection & { categoryLabel?: string }>;
+  pageSections: Array<ShortcutHelpSection & { categoryLabel?: string }>;
 };
 
 export const ShortcutHelpModal = ({
@@ -15,6 +16,8 @@ export const ShortcutHelpModal = ({
   globalSections,
   pageSections,
 }: ShortcutHelpModalProps) => {
+  const { t } = useTranslation();
+
   if (!open) {
     return null;
   }
@@ -25,13 +28,13 @@ export const ShortcutHelpModal = ({
         <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-6 py-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-500">
-              Shortcuts
+              {t('shortcuts.heading')}
             </p>
-            <h2 className="mt-1 text-2xl font-bold text-slate-900">キーボードショートカット</h2>
+            <h2 className="mt-1 text-2xl font-bold text-slate-900">{t('shortcuts.title')}</h2>
             <p className="mt-1 text-sm text-slate-600">
               {pageLabel
-                ? `${pageLabel} で使える操作と、全体共通の操作を表示しています。`
-                : '全体共通の操作を表示しています。'}
+                ? t('shortcuts.modalDescriptionWithPage', { pageLabel })
+                : t('shortcuts.modalDescriptionWithoutPage')}
             </p>
           </div>
           <button
@@ -39,16 +42,18 @@ export const ShortcutHelpModal = ({
             onClick={onClose}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100"
           >
-            閉じる
+            {t('common.close')}
           </button>
         </div>
 
         <div className="grid max-h-[calc(90vh-88px)] gap-6 overflow-y-auto p-6 lg:grid-cols-[1.15fr_0.85fr]">
           <section className="space-y-4">
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">この画面</h3>
+              <h3 className="text-lg font-semibold text-slate-900">
+                {t('shortcuts.currentScreen')}
+              </h3>
               <p className="mt-1 text-sm text-slate-500">
-                現在表示中の画面に対して有効なショートカットです。
+                {t('shortcuts.currentScreenDescription')}
               </p>
             </div>
             {pageSections.length > 0 ? (
@@ -57,7 +62,9 @@ export const ShortcutHelpModal = ({
                   key={section.category}
                   className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
                 >
-                  <h4 className="text-sm font-semibold text-slate-900">{section.category}</h4>
+                  <h4 className="text-sm font-semibold text-slate-900">
+                    {section.categoryLabel || section.category}
+                  </h4>
                   <div className="mt-3 space-y-2">
                     {section.items.map(item => (
                       <div
@@ -82,22 +89,24 @@ export const ShortcutHelpModal = ({
               ))
             ) : (
               <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500">
-                この画面専用のショートカットはありません。
+                {t('shortcuts.noPageShortcuts')}
               </div>
             )}
           </section>
 
           <section className="space-y-4">
             <div>
-              <h3 className="text-lg font-semibold text-slate-900">全体共通</h3>
-              <p className="mt-1 text-sm text-slate-500">どの画面でも使える移動とヘルプです。</p>
+              <h3 className="text-lg font-semibold text-slate-900">{t('shortcuts.global')}</h3>
+              <p className="mt-1 text-sm text-slate-500">{t('shortcuts.globalDescription')}</p>
             </div>
             {globalSections.map(section => (
               <section
                 key={section.category}
                 className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm"
               >
-                <h4 className="text-sm font-semibold text-slate-900">{section.category}</h4>
+                <h4 className="text-sm font-semibold text-slate-900">
+                  {section.categoryLabel || section.category}
+                </h4>
                 <div className="mt-3 space-y-2">
                   {section.items.map(item => (
                     <div

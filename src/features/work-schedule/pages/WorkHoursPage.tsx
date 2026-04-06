@@ -1,19 +1,25 @@
 import { useMemo } from 'react';
 import { Clock3, Plus, Save, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTodoContext } from '@/app/providers/TodoContext';
 import {
-  formatMinuteLabel,
   formatHourLabel,
   formatWorkScheduleSummary,
+  getWeekdayOptions,
   normalizeBreakPeriods,
-  WEEKDAY_OPTIONS,
 } from '@/features/work-schedule/model/settings';
 import { useRegisterShortcuts } from '@/features/shortcuts/context/ShortcutContext';
 import { useWorkHoursDraft } from '@/features/work-schedule/hooks/useWorkHoursDraft';
+import { useAppLocale } from '@/shared/i18n/useAppLocale';
 
 const HOUR_OPTIONS = Array.from({ length: 25 }, (_, index) => index);
 
-const formatTimeInputValue = (minuteOfDay: number) => formatMinuteLabel(minuteOfDay);
+const formatTimeInputValue = (minuteOfDay: number) => {
+  const clamped = Math.max(0, Math.min(24 * 60, Math.trunc(minuteOfDay)));
+  const hour = Math.floor(clamped / 60);
+  const minute = clamped % 60;
+  return `${`${hour}`.padStart(2, '0')}:${`${minute}`.padStart(2, '0')}`;
+};
 
 const parseTimeInputValue = (value: string) => {
   const [hourText = '0', minuteText = '0'] = value.split(':');
@@ -40,6 +46,9 @@ const parseTimeInputValue = (value: string) => {
 
 export const WorkHoursPage = () => {
   const { workSchedule, setWorkSchedule } = useTodoContext();
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
+  const weekdayOptions = useMemo(() => getWeekdayOptions(locale), [locale]);
   const {
     draft,
     error,
@@ -55,11 +64,11 @@ export const WorkHoursPage = () => {
 
   const shortcutRegistration = useMemo(
     () => ({
-      pageLabel: '稼働設定',
+      pageLabel: t('workHours.pageLabel'),
       shortcuts: [
         {
           id: 'work-hours-save',
-          description: '稼働設定を保存する',
+          description: t('workHours.saveShortcut'),
           category: 'ページ操作' as const,
           bindings: ['mod+enter'],
           action: handleSave,
@@ -67,21 +76,21 @@ export const WorkHoursPage = () => {
         },
         {
           id: 'work-hours-toggle-break',
-          description: '休憩時間なしを切り替える',
+          description: t('workHours.toggleBreakShortcut'),
           category: 'ページ操作' as const,
           bindings: ['b'],
           action: () => toggleNoBreak(!hasNoBreak),
         },
-        ...WEEKDAY_OPTIONS.map((option, index) => ({
+        ...weekdayOptions.map((option, index) => ({
           id: `work-hours-day-${option.value}`,
-          description: `${option.label} を稼働日に切り替える`,
+          description: t('workHours.toggleWorkingDayShortcut', { day: option.label }),
           category: 'ページ操作' as const,
           bindings: [`${index + 1}`],
           action: () => toggleWorkingDay(option.value),
         })),
       ],
     }),
-    [hasNoBreak, draft],
+    [handleSave, hasNoBreak, t, toggleNoBreak, toggleWorkingDay, weekdayOptions],
   );
 
   useRegisterShortcuts(shortcutRegistration);
@@ -90,24 +99,26 @@ export const WorkHoursPage = () => {
     <div className="mx-auto max-w-5xl space-y-6">
       <header className="space-y-2">
         <p className="text-sm font-medium uppercase tracking-[0.25em] text-slate-500">Settings</p>
-        <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">稼働設定</h1>
+        <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t('workHours.title')}</h1>
         <p className="max-w-3xl text-sm text-slate-600 sm:text-base">
-          空き状況グラフで使用する稼働日の範囲と勤務時間を設定します。保存すると、空き状況ページの表示にすぐ反映されます。
+          {t('workHours.description')}
         </p>
       </header>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
           <Clock3 size={16} />
-          現在の設定: {formatWorkScheduleSummary(workSchedule)}
+          {t('workHours.currentSettings', {
+            summary: formatWorkScheduleSummary(workSchedule, locale),
+          })}
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-6">
             <div className="space-y-3">
-              <h2 className="text-lg font-semibold text-slate-900">稼働日</h2>
+              <h2 className="text-lg font-semibold text-slate-900">{t('workHours.workingDays')}</h2>
               <div className="flex flex-wrap gap-2">
-                {WEEKDAY_OPTIONS.map(option => {
+                {weekdayOptions.map(option => {
                   const selected = draft.workingDays.includes(option.value);
                   return (
                     <button
@@ -136,12 +147,12 @@ export const WorkHoursPage = () => {
                     onChange={event => toggleNoBreak(event.target.checked)}
                     className="h-4 w-4 rounded border-slate-300"
                   />
-                  <span className="font-medium">休憩時間なし</span>
+                  <span className="font-medium">{t('workHours.noBreak')}</span>
                 </label>
               </div>
 
               <label className="space-y-2 text-sm text-slate-700">
-                <span className="font-medium">開始時刻</span>
+                <span className="font-medium">{t('workHours.startTime')}</span>
                 <select
                   value={draft.workStartHour}
                   onChange={event =>
@@ -162,14 +173,14 @@ export const WorkHoursPage = () => {
                 >
                   {HOUR_OPTIONS.slice(0, 24).map(hour => (
                     <option key={hour} value={hour}>
-                      {formatHourLabel(hour)}
+                      {formatHourLabel(hour, locale)}
                     </option>
                   ))}
                 </select>
               </label>
 
               <label className="space-y-2 text-sm text-slate-700">
-                <span className="font-medium">終了時刻</span>
+                <span className="font-medium">{t('workHours.endTime')}</span>
                 <select
                   value={draft.workEndHour}
                   onChange={event =>
@@ -190,7 +201,7 @@ export const WorkHoursPage = () => {
                 >
                   {HOUR_OPTIONS.slice(1).map(hour => (
                     <option key={hour} value={hour}>
-                      {formatHourLabel(hour)}
+                      {formatHourLabel(hour, locale)}
                     </option>
                   ))}
                 </select>
@@ -199,14 +210,14 @@ export const WorkHoursPage = () => {
               {!hasNoBreak && (
                 <div className="sm:col-span-2 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-slate-700">休憩時間</p>
+                    <p className="text-sm font-medium text-slate-700">{t('workHours.breakTime')}</p>
                     <button
                       type="button"
                       onClick={addBreakPeriod}
                       className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
                     >
                       <Plus size={14} />
-                      休憩を追加
+                      {t('workHours.addBreak')}
                     </button>
                   </div>
 
@@ -216,12 +227,12 @@ export const WorkHoursPage = () => {
                       className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-[1fr_1fr_auto]"
                     >
                       <label className="space-y-1 text-sm text-slate-700">
-                        <span className="font-medium">休憩開始</span>
+                        <span className="font-medium">{t('workHours.breakStart')}</span>
                         <input
                           type="time"
                           step={60}
-                          min={formatHourLabel(draft.workStartHour)}
-                          max={formatHourLabel(draft.workEndHour)}
+                          min={formatTimeInputValue(draft.workStartHour * 60)}
+                          max={formatTimeInputValue(draft.workEndHour * 60)}
                           value={formatTimeInputValue(period.startMinute)}
                           onChange={event => {
                             const parsedMinute = parseTimeInputValue(event.target.value);
@@ -238,12 +249,12 @@ export const WorkHoursPage = () => {
                       </label>
 
                       <label className="space-y-1 text-sm text-slate-700">
-                        <span className="font-medium">休憩終了</span>
+                        <span className="font-medium">{t('workHours.breakEnd')}</span>
                         <input
                           type="time"
                           step={60}
-                          min={formatHourLabel(draft.workStartHour)}
-                          max={formatHourLabel(draft.workEndHour)}
+                          min={formatTimeInputValue(draft.workStartHour * 60)}
+                          max={formatTimeInputValue(draft.workEndHour * 60)}
                           value={formatTimeInputValue(period.endMinute)}
                           onChange={event => {
                             const parsedMinute = parseTimeInputValue(event.target.value);
@@ -266,7 +277,7 @@ export const WorkHoursPage = () => {
                           className="inline-flex items-center gap-1 rounded-md border border-rose-300 bg-white px-3 py-2 text-xs font-medium text-rose-700 hover:bg-rose-50"
                         >
                           <Trash2 size={14} />
-                          削除
+                          {t('workHours.deleteBreak')}
                         </button>
                       </div>
                     </div>
@@ -277,11 +288,11 @@ export const WorkHoursPage = () => {
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-            <h2 className="text-lg font-semibold text-slate-900">プレビュー</h2>
-            <p className="mt-3 text-sm text-slate-600">{formatWorkScheduleSummary(draft)}</p>
-            <p className="mt-4 text-sm text-slate-600">
-              空き状況ページでは、上記の勤務時間内だけを 30 分単位で集計します。
+            <h2 className="text-lg font-semibold text-slate-900">{t('workHours.preview')}</h2>
+            <p className="mt-3 text-sm text-slate-600">
+              {formatWorkScheduleSummary(draft, locale)}
             </p>
+            <p className="mt-4 text-sm text-slate-600">{t('workHours.previewDescription')}</p>
 
             {error && (
               <p className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
@@ -295,7 +306,7 @@ export const WorkHoursPage = () => {
               className="mt-6 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-slate-700"
             >
               <Save size={16} />
-              保存する
+              {t('workHours.save')}
             </button>
           </div>
         </div>

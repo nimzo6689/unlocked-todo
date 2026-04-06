@@ -3,6 +3,7 @@ import { todoDB } from '@/features/todo/model/db';
 import type { Todo, ModalState, TodoContextType, ImportResult } from '@/features/todo/model/types';
 import {
   defaultForm,
+  getTodoTitleFallback,
   getDependencyIds,
   isMeetingTodo,
   normalizeTodo,
@@ -14,6 +15,7 @@ import {
   sanitizeWorkSchedule,
   WORK_SCHEDULE_STORAGE_KEY,
 } from '@/features/work-schedule/model/settings';
+import i18n from '@/shared/i18n';
 import { TodoContext } from './TodoContext';
 
 // LocalStorage に保存するキー
@@ -215,8 +217,8 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
         const isReady = todo.status === 'Unlocked' && startableAt <= now && !isDependencyIncomplete;
 
         if (isReady && !notifiedTodoIds.includes(todo.id)) {
-          showNotification('タスクが開始可能です！', {
-            body: `「${todo.title}」に着手できます。`,
+          showNotification(i18n.t('notifications.browserNotificationTitle'), {
+            body: i18n.t('notifications.browserNotificationBody', { title: todo.title }),
             icon: 'https://placehold.co/192x192/0ea5e9/ffffff?text=Todo',
             data: {
               url: `${import.meta.env.BASE_URL}#/?filter=unlocked`,
@@ -259,7 +261,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
   const requestNotificationPermission = () => {
     if (!('Notification' in window)) {
       setModal({
-        message: 'このブラウザは通知をサポートしていません。',
+        message: i18n.t('notifications.unsupportedBrowser'),
         onConfirm: () => setModal(null),
       });
       return;
@@ -405,10 +407,10 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
 
   const handleDelete = (id: string) => {
     const targetTodo = todosRef.current.find(todo => todo.id === id);
-    const todoTitle = targetTodo?.title?.trim() || '（タイトル未設定）';
+    const todoTitle = targetTodo?.title?.trim() || getTodoTitleFallback();
 
     setModal({
-      message: `「${todoTitle}」を本当に削除しますか？\nこの操作は取り消せません。`,
+      message: i18n.t('todo.confirm.delete', { title: todoTitle }),
       onConfirm: async () => {
         if (currentInProgressIdRef.current === id) {
           await syncInProgressActualWork(true);
@@ -434,10 +436,10 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
 
   const handleComplete = (id: string) => {
     const targetTodo = todosRef.current.find(todo => todo.id === id);
-    const todoTitle = targetTodo?.title?.trim() || '（タイトル未設定）';
+    const todoTitle = targetTodo?.title?.trim() || getTodoTitleFallback();
 
     setModal({
-      message: `「${todoTitle}」を完了にしますか？`,
+      message: i18n.t('todo.confirm.complete', { title: todoTitle }),
       onConfirm: async () => {
         if (currentInProgressIdRef.current === id) {
           await syncInProgressActualWork(true);
@@ -569,7 +571,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
         success: true,
         addedCount,
         updatedCount,
-        message: `${addedCount}件追加, ${updatedCount}件更新`,
+        message: i18n.t('todo.importResult.summary', { addedCount, updatedCount }),
       };
     } catch (err) {
       return {

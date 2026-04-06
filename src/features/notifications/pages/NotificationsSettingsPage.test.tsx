@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { NotificationsSettingsPage } from '@/features/notifications/pages/NotificationsSettingsPage';
 import { useTodoContext } from '@/app/providers/TodoContext';
+import i18n from '@/shared/i18n';
 
 vi.mock('@/app/providers/TodoContext', () => ({
   useTodoContext: vi.fn(),
@@ -45,5 +46,17 @@ describe('NotificationsSettingsPage', () => {
 
     expect(screen.getByText('通知は有効です')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '設定済み' })).toBeDisabled();
+  });
+
+  it('switches the page copy to English', async () => {
+    render(<NotificationsSettingsPage />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'English' }));
+
+    expect(
+      await screen.findByRole('heading', { name: 'Notifications & Language' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Enable notifications' })).toBeInTheDocument();
+    expect(i18n.resolvedLanguage).toBe('en');
   });
 });

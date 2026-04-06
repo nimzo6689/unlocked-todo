@@ -1,4 +1,5 @@
 import type { BreakPeriod, WorkSchedule } from '@/features/todo/model/types';
+import i18n, { getIntlLocale, normalizeLocale, type AppLocale } from '@/shared/i18n';
 
 export const WORK_SCHEDULE_STORAGE_KEY = 'workSchedule';
 
@@ -9,23 +10,50 @@ export const DEFAULT_WORK_SCHEDULE: WorkSchedule = {
   breakPeriods: [{ startMinute: 12 * 60, endMinute: 13 * 60 }],
 };
 
-export const WEEKDAY_OPTIONS = [
-  { value: 1, label: '月' },
-  { value: 2, label: '火' },
-  { value: 3, label: '水' },
-  { value: 4, label: '木' },
-  { value: 5, label: '金' },
-  { value: 6, label: '土' },
-  { value: 0, label: '日' },
-];
+export const getWeekdayOptions = (locale: AppLocale = normalizeLocale(i18n.resolvedLanguage)) =>
+  [1, 2, 3, 4, 5, 6, 0].map(value => ({
+    value,
+    label: i18n.t(`workHours.weekdays.short.${value}`, { lng: locale }),
+  }));
 
-export const formatHourLabel = (hour: number) => `${`${hour}`.padStart(2, '0')}:00`;
+export const formatHourLabel = (
+  hour: number,
+  locale: AppLocale = normalizeLocale(i18n.resolvedLanguage),
+) => {
+  const normalizedHour = Math.max(0, Math.min(hour, 24));
 
-export const formatMinuteLabel = (minuteOfDay: number) => {
+  if (normalizedHour === 24) {
+    return '24:00';
+  }
+
+  const date = new Date(Date.UTC(2000, 0, 1, normalizedHour, 0));
+  return new Intl.DateTimeFormat(getIntlLocale(locale), {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'UTC',
+  }).format(date);
+};
+
+export const formatMinuteLabel = (
+  minuteOfDay: number,
+  locale: AppLocale = normalizeLocale(i18n.resolvedLanguage),
+) => {
   const clamped = Math.max(0, Math.min(24 * 60, Math.trunc(minuteOfDay)));
   const hour = Math.floor(clamped / 60);
   const minute = clamped % 60;
-  return `${`${hour}`.padStart(2, '0')}:${`${minute}`.padStart(2, '0')}`;
+
+  if (hour === 24 && minute === 0) {
+    return '24:00';
+  }
+
+  const date = new Date(Date.UTC(2000, 0, 1, hour % 24, minute));
+  return new Intl.DateTimeFormat(getIntlLocale(locale), {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone: 'UTC',
+  }).format(date);
 };
 
 export const normalizeBreakPeriods = (
@@ -69,22 +97,37 @@ export const normalizeBreakPeriods = (
 
 export const hasBreakTime = (schedule: WorkSchedule) => schedule.breakPeriods.length > 0;
 
-export const formatWorkScheduleSummary = (schedule: WorkSchedule) => {
-  const dayLabels = WEEKDAY_OPTIONS.filter(option =>
-    schedule.workingDays.includes(option.value),
-  ).map(option => option.label);
+export const formatWorkScheduleSummary = (
+  schedule: WorkSchedule,
+  locale: AppLocale = normalizeLocale(i18n.resolvedLanguage),
+) => {
+  const dayLabels = getWeekdayOptions(locale)
+    .filter(option => schedule.workingDays.includes(option.value))
+    .map(option => option.label);
 
   if (!hasBreakTime(schedule)) {
-    return `${dayLabels.join('・')} ${formatHourLabel(schedule.workStartHour)}-${formatHourLabel(schedule.workEndHour)} (休憩なし)`;
+    return i18n.t('workHours.summary.noBreak', {
+      lng: locale,
+      days: dayLabels.join(locale === 'ja' ? '・' : ', '),
+      start: formatHourLabel(schedule.workStartHour, locale),
+      end: formatHourLabel(schedule.workEndHour, locale),
+    });
   }
 
   const breakLabels = schedule.breakPeriods
     .map(
-      period => `${formatMinuteLabel(period.startMinute)}-${formatMinuteLabel(period.endMinute)}`,
+      period =>
+        `${formatMinuteLabel(period.startMinute, locale)}-${formatMinuteLabel(period.endMinute, locale)}`,
     )
     .join(', ');
 
-  return `${dayLabels.join('・')} ${formatHourLabel(schedule.workStartHour)}-${formatHourLabel(schedule.workEndHour)} (休憩: ${breakLabels})`;
+  return i18n.t('workHours.summary.withBreak', {
+    lng: locale,
+    days: dayLabels.join(locale === 'ja' ? '・' : ', '),
+    start: formatHourLabel(schedule.workStartHour, locale),
+    end: formatHourLabel(schedule.workEndHour, locale),
+    breaks: breakLabels,
+  });
 };
 
 export const sanitizeWorkSchedule = (value: unknown): WorkSchedule => {

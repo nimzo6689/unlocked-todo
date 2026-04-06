@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import i18n from '@/shared/i18n';
 import type { Todo } from '@/features/todo/model/types';
 import {
   defaultForm,
@@ -119,40 +120,46 @@ export const useTodoForm = ({
     return Math.floor(numeric);
   };
 
-  const getDueDateByQuickAction = (quickAction: 'today' | 'tomorrow' | 'thisWeek', now: Date) => {
-    const withinWorkingHours = isWithinWorkingHours(now, workSchedule);
+  const getDueDateByQuickAction = useCallback(
+    (quickAction: 'today' | 'tomorrow' | 'thisWeek', now: Date) => {
+      const withinWorkingHours = isWithinWorkingHours(now, workSchedule);
 
-    if (quickAction === 'thisWeek') {
-      const weekStart = getStartOfWeek(now);
-      const lastWorkingDay = getLastWorkingDayOfWeek(weekStart, workSchedule);
-      return getDateAtHour(lastWorkingDay, workSchedule.workEndHour);
-    }
+      if (quickAction === 'thisWeek') {
+        const weekStart = getStartOfWeek(now);
+        const lastWorkingDay = getLastWorkingDayOfWeek(weekStart, workSchedule);
+        return getDateAtHour(lastWorkingDay, workSchedule.workEndHour);
+      }
 
-    if (quickAction === 'today') {
-      const target = getWorkingDayByOffset(now, workSchedule, 0, withinWorkingHours);
+      if (quickAction === 'today') {
+        const target = getWorkingDayByOffset(now, workSchedule, 0, withinWorkingHours);
+        return getDateAtHour(target, workSchedule.workEndHour);
+      }
+
+      const target = getWorkingDayByOffset(now, workSchedule, 1, withinWorkingHours);
       return getDateAtHour(target, workSchedule.workEndHour);
-    }
+    },
+    [workSchedule],
+  );
 
-    const target = getWorkingDayByOffset(now, workSchedule, 1, withinWorkingHours);
-    return getDateAtHour(target, workSchedule.workEndHour);
-  };
+  const getStartableAtByQuickAction = useCallback(
+    (quickAction: 'now' | 'tomorrow' | 'nextWeek', now: Date) => {
+      if (quickAction === 'now') {
+        return new Date(now);
+      }
 
-  const getStartableAtByQuickAction = (quickAction: 'now' | 'tomorrow' | 'nextWeek', now: Date) => {
-    if (quickAction === 'now') {
-      return new Date(now);
-    }
+      if (quickAction === 'tomorrow') {
+        const target = getWorkingDayByOffset(now, workSchedule, 0, false);
+        return getDateAtHour(target, workSchedule.workStartHour);
+      }
 
-    if (quickAction === 'tomorrow') {
-      const target = getWorkingDayByOffset(now, workSchedule, 0, false);
-      return getDateAtHour(target, workSchedule.workStartHour);
-    }
-
-    const thisWeekStart = getStartOfWeek(now);
-    const nextWeekStart = new Date(thisWeekStart);
-    nextWeekStart.setDate(thisWeekStart.getDate() + 7);
-    const firstWorkingDay = getFirstWorkingDayOfWeek(nextWeekStart, workSchedule);
-    return getDateAtHour(firstWorkingDay, workSchedule.workStartHour);
-  };
+      const thisWeekStart = getStartOfWeek(now);
+      const nextWeekStart = new Date(thisWeekStart);
+      nextWeekStart.setDate(thisWeekStart.getDate() + 7);
+      const firstWorkingDay = getFirstWorkingDayOfWeek(nextWeekStart, workSchedule);
+      return getDateAtHour(firstWorkingDay, workSchedule.workStartHour);
+    },
+    [workSchedule],
+  );
 
   useEffect(() => {
     if (id) {
@@ -182,7 +189,7 @@ export const useTodoForm = ({
       setSuccessorIds([]);
       initializedFormKeyRef.current = 'new';
     }
-  }, [id, getTodo, setForm, todos, workSchedule]);
+  }, [id, getDueDateByQuickAction, getTodo, setForm, todos]);
 
   const applyDueDateQuickAction = (quickAction: 'today' | 'tomorrow' | 'thisWeek') => {
     const dueDate = getDueDateByQuickAction(quickAction, new Date());
@@ -208,7 +215,7 @@ export const useTodoForm = ({
 
     if (form.startableAt && form.dueDate) {
       if (new Date(form.startableAt) >= new Date(form.dueDate)) {
-        toast.error('着手可能日時は期限より前に設定してください');
+        toast.error(i18n.t('todo.validation.startBeforeDue'));
         return;
       }
     }
@@ -286,7 +293,7 @@ export const useTodoForm = ({
     const { todoDB } = await import('@/features/todo/model/db');
     await todoDB.save(newTodos);
     await fetchTodos();
-    toast.success('保存しました');
+    toast.success(i18n.t('todo.toast.saveSuccess'));
   };
 
   const handleComplete = async () => {

@@ -11,12 +11,14 @@ import {
 } from 'react';
 import {
   SHORTCUT_CATEGORY_ORDER,
+  getShortcutCategoryLabel,
   getShortcutDisplayKeys,
   type ShortcutDefinition,
   type ShortcutHelpSection,
   type ShortcutRegistration,
 } from '@/shared/config/shortcuts';
 import { ShortcutHelpModal } from '@/features/shortcuts/ui/ShortcutHelpModal';
+import { useTranslation } from 'react-i18next';
 
 type ShortcutContextValue = {
   registerShortcuts: (sourceId: string, registration: ShortcutRegistration) => void;
@@ -36,6 +38,10 @@ type ShortcutProviderProps = {
 type SequenceState = {
   firstStroke: string;
   timeoutId: number;
+};
+
+type LocalizedShortcutHelpSection = ShortcutHelpSection & {
+  categoryLabel: string;
 };
 
 const ShortcutContext = createContext<ShortcutContextValue | undefined>(undefined);
@@ -106,8 +112,11 @@ const matchesStroke = (bindingStroke: string, event: KeyboardEvent) => {
   return keyPart === normalizedKey;
 };
 
-const buildHelpSections = (shortcuts: ShortcutDefinition[]) => {
-  const grouped = shortcuts.reduce<Map<string, ShortcutHelpSection>>((map, shortcut) => {
+const buildHelpSections = (
+  shortcuts: ShortcutDefinition[],
+  getCategoryLabel: (category: ShortcutDefinition['category']) => string,
+) => {
+  const grouped = shortcuts.reduce<Map<string, LocalizedShortcutHelpSection>>((map, shortcut) => {
     if (shortcut.visible === false) {
       return map;
     }
@@ -115,6 +124,7 @@ const buildHelpSections = (shortcuts: ShortcutDefinition[]) => {
     const category = shortcut.category;
     const section = map.get(category) || {
       category,
+      categoryLabel: getCategoryLabel(category),
       items: [],
     };
 
@@ -128,7 +138,7 @@ const buildHelpSections = (shortcuts: ShortcutDefinition[]) => {
   }, new Map());
 
   return SHORTCUT_CATEGORY_ORDER.map(category => grouped.get(category)).filter(
-    (section): section is ShortcutHelpSection => Boolean(section),
+    (section): section is LocalizedShortcutHelpSection => Boolean(section),
   );
 };
 
@@ -139,6 +149,7 @@ export const ShortcutProvider = ({
   setDrawerOpen,
   navigate,
 }: ShortcutProviderProps) => {
+  const { t } = useTranslation();
   const [registrations, setRegistrations] = useState<Record<string, ShortcutRegistration>>({});
   const [helpOpen, setHelpOpen] = useState(false);
   const sequenceStateRef = useRef<SequenceState | null>(null);
@@ -184,7 +195,7 @@ export const ShortcutProvider = ({
     () => [
       {
         id: 'shortcut-help',
-        description: 'ショートカットヘルプを開く',
+        description: t('shortcuts.actions.openHelp'),
         category: 'ナビゲーション',
         bindings: ['?'],
         action: () => setHelpOpen(current => !current),
@@ -192,63 +203,63 @@ export const ShortcutProvider = ({
       },
       {
         id: 'nav-todos',
-        description: 'タスク一覧へ移動',
+        description: t('shortcuts.actions.navTodos'),
         category: 'ナビゲーション',
         bindings: ['g i'],
         action: () => handleNavigate('/'),
       },
       {
         id: 'nav-new',
-        description: '新規作成へ移動',
+        description: t('shortcuts.actions.navNew'),
         category: 'ナビゲーション',
         bindings: ['g n'],
         action: () => handleNavigate('/new'),
       },
       {
         id: 'nav-availability',
-        description: '空き状況へ移動',
+        description: t('shortcuts.actions.navAvailability'),
         category: 'ナビゲーション',
         bindings: ['g a'],
         action: () => handleNavigate('/availability'),
       },
       {
         id: 'nav-plan-actual',
-        description: '予実管理へ移動',
+        description: t('shortcuts.actions.navPlanActual'),
         category: 'ナビゲーション',
         bindings: ['g p'],
         action: () => handleNavigate('/plan-actual'),
       },
       {
         id: 'nav-notifications',
-        description: '通知設定へ移動',
+        description: t('shortcuts.actions.navNotifications'),
         category: 'ナビゲーション',
         bindings: ['g t'],
         action: () => handleNavigate('/settings/notifications'),
       },
       {
         id: 'nav-work-hours',
-        description: '稼働設定へ移動',
+        description: t('shortcuts.actions.navWorkHours'),
         category: 'ナビゲーション',
         bindings: ['g w'],
         action: () => handleNavigate('/settings/work-hours'),
       },
       {
         id: 'nav-usage',
-        description: '使い方へ移動',
+        description: t('shortcuts.actions.navUsage'),
         category: 'ナビゲーション',
         bindings: ['g u'],
         action: () => handleNavigate('/help/usage'),
       },
       {
         id: 'nav-about',
-        description: 'アプリ情報へ移動',
+        description: t('shortcuts.actions.navAbout'),
         category: 'ナビゲーション',
         bindings: ['g b'],
         action: () => handleNavigate('/help/about'),
       },
       {
         id: 'close-global-overlay',
-        description: '共通オーバーレイを閉じる',
+        description: t('shortcuts.actions.closeOverlay'),
         category: 'ダイアログ',
         bindings: ['escape'],
         action: () => {
@@ -267,7 +278,7 @@ export const ShortcutProvider = ({
         allowInInput: true,
       },
     ],
-    [drawerOpen, handleNavigate, helpOpen, setDrawerOpen],
+    [drawerOpen, handleNavigate, helpOpen, setDrawerOpen, t],
   );
 
   const pageEntries = useMemo(() => Object.values(registrations), [registrations]);
@@ -281,8 +292,18 @@ export const ShortcutProvider = ({
         .at(-1),
     [pageEntries],
   );
-  const globalHelpSections = useMemo(() => buildHelpSections(globalShortcuts), [globalShortcuts]);
-  const pageHelpSections = useMemo(() => buildHelpSections(pageShortcuts), [pageShortcuts]);
+  const getCategoryLabel = useCallback(
+    (category: ShortcutDefinition['category']) => getShortcutCategoryLabel(category, t),
+    [t],
+  );
+  const globalHelpSections = useMemo(
+    () => buildHelpSections(globalShortcuts, getCategoryLabel),
+    [getCategoryLabel, globalShortcuts],
+  );
+  const pageHelpSections = useMemo(
+    () => buildHelpSections(pageShortcuts, getCategoryLabel),
+    [getCategoryLabel, pageShortcuts],
+  );
 
   useEffect(() => {
     const handleCompositionStart = () => {

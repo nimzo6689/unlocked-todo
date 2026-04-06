@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import toast from 'react-hot-toast';
+import i18n from '@/shared/i18n';
 import type { ImportResult } from '@/features/todo/model/types';
 
 type UseExportImportOptions = {
@@ -36,10 +37,10 @@ export const useExportImport = ({
   const handleFileExport = async () => {
     try {
       await exportTodos();
-      toast.success('タスクをエクスポートしました');
+      toast.success(i18n.t('todo.toast.exportSuccess'));
       setIsExportDialogOpen(false);
     } catch {
-      toast.error('エクスポートに失敗しました');
+      toast.error(i18n.t('todo.toast.exportFailed'));
     }
   };
 
@@ -47,14 +48,14 @@ export const useExportImport = ({
 
   const handleCopyExportText = async () => {
     if (!exportText) {
-      toast.error('出力するテキストがありません');
+      toast.error(i18n.t('todo.toast.noExportText'));
       return;
     }
     try {
       await navigator.clipboard.writeText(exportText);
-      toast.success('エクスポートテキストをコピーしました');
+      toast.success(i18n.t('todo.toast.exportCopied'));
     } catch {
-      toast.error('コピーに失敗しました');
+      toast.error(i18n.t('todo.toast.copyFailed'));
     }
   };
 
@@ -65,14 +66,19 @@ export const useExportImport = ({
     const result = await importTodos(file);
     if (result.success) {
       if (result.addedCount === 0 && result.updatedCount === 0) {
-        toast.success('ファイルを読み込みましたが、取り込むタスクはありませんでした');
+        toast.success(i18n.t('todo.toast.importNoChangesFile'));
       } else {
-        toast.success(`${result.addedCount}件追加、${result.updatedCount}件更新しました`);
+        toast.success(
+          i18n.t('todo.toast.importSummary', {
+            addedCount: result.addedCount,
+            updatedCount: result.updatedCount,
+          }),
+        );
       }
       setIsImportDialogOpen(false);
       setImportText('');
     } else {
-      toast.error(`インポートに失敗しました: ${result.message}`);
+      toast.error(i18n.t('todo.toast.importFailed', { message: result.message }));
     }
 
     e.target.value = '';
@@ -80,21 +86,26 @@ export const useExportImport = ({
 
   const handleTextImport = async () => {
     if (!importText.trim()) {
-      toast.error('インポートするJSONテキストを入力してください');
+      toast.error(i18n.t('todo.toast.importTextRequired'));
       return;
     }
 
     const result = await importTodosFromText(importText);
     if (result.success) {
       if (result.addedCount === 0 && result.updatedCount === 0) {
-        toast.success('テキストを読み込みましたが、取り込むタスクはありませんでした');
+        toast.success(i18n.t('todo.toast.importNoChangesText'));
       } else {
-        toast.success(`${result.addedCount}件追加、${result.updatedCount}件更新しました`);
+        toast.success(
+          i18n.t('todo.toast.importSummary', {
+            addedCount: result.addedCount,
+            updatedCount: result.updatedCount,
+          }),
+        );
       }
       setImportText('');
       setIsImportDialogOpen(false);
     } else {
-      toast.error(`インポートに失敗しました: ${result.message}`);
+      toast.error(i18n.t('todo.toast.importFailed', { message: result.message }));
     }
   };
 

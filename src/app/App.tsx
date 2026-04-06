@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { TodoFormPage } from '@/features/todo/pages/TodoFormPage';
 import { TodoListPage } from '@/features/todo/pages/TodoListPage';
 import { AvailabilityPage } from '@/features/availability/pages/AvailabilityPage';
@@ -13,13 +14,15 @@ import { TodoProvider } from '@/app/providers/TodoProvider';
 import { Toaster } from 'react-hot-toast';
 import { Sidebar } from '@/widgets/navigation/Sidebar';
 import { Drawer } from '@/widgets/navigation/Drawer';
-import { navigationItems } from '@/shared/config/navigation';
+import { getNavigationItems } from '@/shared/config/navigation';
 import { ShortcutProvider } from '@/features/shortcuts/context/ShortcutContext';
 
 const AppContent = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { t } = useTranslation();
+  const navigationItems = useMemo(() => getNavigationItems(t), [t]);
 
   return (
     <ShortcutProvider
@@ -49,16 +52,18 @@ const AppContent = () => {
           <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-slate-200 bg-slate-50/95 px-4 py-3 backdrop-blur md:hidden">
             <button
               onClick={() => setDrawerOpen(true)}
-              aria-label="メニューを開く"
+              aria-label={t('app.mobileHeader.openMenu')}
               className="rounded-lg border border-slate-200 bg-white p-2 text-slate-700 shadow-sm transition-colors hover:bg-slate-100"
             >
               <Menu size={20} />
             </button>
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-slate-500">
-                Hakaru Todo
+                {t('common.appName')}
               </p>
-              <p className="text-sm font-semibold text-slate-900">ナビゲーション</p>
+              <p className="text-sm font-semibold text-slate-900">
+                {t('app.mobileHeader.navigation')}
+              </p>
             </div>
           </header>
 

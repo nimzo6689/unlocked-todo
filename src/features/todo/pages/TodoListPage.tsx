@@ -1,19 +1,27 @@
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { MoreVertical } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import type { Todo } from '@/features/todo/model/types';
 import { TodoCard } from '@/features/todo/ui/TodoCard';
 import { TodoListRows } from '@/features/todo/ui/TodoListRows';
 import { Modal } from '@/shared/ui/Modal';
-import { filterButtons, getDependencyIds, isMeetingTodo } from '@/features/todo/model/todo-utils';
+import {
+  getDependencyIds,
+  getFilterButtons,
+  isMeetingTodo,
+} from '@/features/todo/model/todo-utils';
 import { useTodoContext } from '@/app/providers/TodoContext';
 import { useRegisterShortcuts } from '@/features/shortcuts/context/ShortcutContext';
 import { useTodoListFilter } from '../hooks/useTodoListFilter';
 import { useTodoSelection } from '../hooks/useTodoSelection';
 import { useExportImport } from '../hooks/useExportImport';
 import { ExportDialogPresenter, ImportDialogPresenter } from './TodoListPagePresenters';
+import { useAppLocale } from '@/shared/i18n/useAppLocale';
 
 export const TodoListPage = () => {
+  const { t } = useTranslation();
+  const { locale } = useAppLocale();
   const isTodoExpandable = (todo: Todo | null | undefined) =>
     Boolean(todo && (todo.description || '').length > 100);
 
@@ -38,6 +46,7 @@ export const TodoListPage = () => {
   const [, setTick] = useState(0);
   const filter = searchParams.get('filter') || 'unlocked';
   const view = searchParams.get('view') === 'list' ? 'list' : 'card';
+  const filterButtons = useMemo(() => getFilterButtons(locale), [locale]);
 
   // 時刻経過による Locked→Unlocked / Meeting→Unlocked 等の遷移を自動反映するため定期再レンダリング
   useEffect(() => {
@@ -82,27 +91,36 @@ export const TodoListPage = () => {
     });
   }
 
-  function handleEdit(id: string) {
-    navigate(`/edit/${id}`);
-  }
+  const handleEdit = useCallback(
+    (id: string) => {
+      navigate(`/edit/${id}`);
+    },
+    [navigate],
+  );
 
-  function handleNew() {
+  const handleNew = useCallback(() => {
     navigate('/new');
-  }
+  }, [navigate]);
 
-  function handleFilterChange(f: string) {
-    setSearchParams({
-      ...Object.fromEntries(searchParams.entries()),
-      filter: f,
-    });
-  }
+  const handleFilterChange = useCallback(
+    (f: string) => {
+      setSearchParams({
+        ...Object.fromEntries(searchParams.entries()),
+        filter: f,
+      });
+    },
+    [searchParams, setSearchParams],
+  );
 
-  function handleViewChange(nextView: 'card' | 'list') {
-    setSearchParams({
-      ...Object.fromEntries(searchParams.entries()),
-      view: nextView,
-    });
-  }
+  const handleViewChange = useCallback(
+    (nextView: 'card' | 'list') => {
+      setSearchParams({
+        ...Object.fromEntries(searchParams.entries()),
+        view: nextView,
+      });
+    },
+    [searchParams, setSearchParams],
+  );
 
   const shortcutRegistration = useMemo(() => {
     const canStartSelected = Boolean(
@@ -112,12 +130,12 @@ export const TodoListPage = () => {
     );
 
     return {
-      pageLabel: 'タスク一覧',
+      pageLabel: t('todo.list.pageLabel'),
       overlayOpen: isOverlayOpen,
       shortcuts: [
         {
           id: 'list-next',
-          description: '次のタスクを選択',
+          description: t('todo.list.shortcuts.next'),
           category: '一覧操作' as const,
           bindings: ['j'],
           action: () => selectRelativeTodo(1),
@@ -125,7 +143,7 @@ export const TodoListPage = () => {
         },
         {
           id: 'list-previous',
-          description: '前のタスクを選択',
+          description: t('todo.list.shortcuts.previous'),
           category: '一覧操作' as const,
           bindings: ['k'],
           action: () => selectRelativeTodo(-1),
@@ -133,7 +151,7 @@ export const TodoListPage = () => {
         },
         {
           id: 'list-edit-enter',
-          description: '選択中タスクを開く',
+          description: t('todo.list.shortcuts.open'),
           category: '一覧操作' as const,
           bindings: ['enter', 'o'],
           action: () => selectedTodo && handleEdit(selectedTodo.id),
@@ -141,14 +159,14 @@ export const TodoListPage = () => {
         },
         {
           id: 'list-new',
-          description: '新規タスクを作成',
+          description: t('todo.list.shortcuts.create'),
           category: '一覧操作' as const,
           bindings: ['n'],
           action: handleNew,
         },
         {
           id: 'list-start',
-          description: '選択中タスクを着手または中断',
+          description: t('todo.list.shortcuts.startOrPause'),
           category: '一覧操作' as const,
           bindings: ['x'],
           action: () => selectedTodo && startTodo(selectedTodo.id),
@@ -156,7 +174,7 @@ export const TodoListPage = () => {
         },
         {
           id: 'list-expand-selected',
-          description: '選択中タスクを展開する',
+          description: t('todo.list.shortcuts.expand'),
           category: '一覧操作' as const,
           bindings: ['l'],
           action: () => selectedTodo && handleExpandedChange(selectedTodo.id, true),
@@ -164,7 +182,7 @@ export const TodoListPage = () => {
         },
         {
           id: 'list-collapse-selected',
-          description: '選択中タスクを折り畳む',
+          description: t('todo.list.shortcuts.collapse'),
           category: '一覧操作' as const,
           bindings: ['h'],
           action: () => selectedTodo && handleExpandedChange(selectedTodo.id, false),
@@ -172,7 +190,7 @@ export const TodoListPage = () => {
         },
         {
           id: 'list-complete',
-          description: '選択中タスクを完了にする',
+          description: t('todo.list.shortcuts.complete'),
           category: '一覧操作' as const,
           bindings: ['c'],
           action: () => selectedTodo && handleComplete(selectedTodo.id),
@@ -180,7 +198,7 @@ export const TodoListPage = () => {
         },
         {
           id: 'list-delete',
-          description: '選択中タスクを削除する',
+          description: t('todo.list.shortcuts.delete'),
           category: '一覧操作' as const,
           bindings: ['d'],
           action: () => selectedTodo && handleDelete(selectedTodo.id),
@@ -188,21 +206,21 @@ export const TodoListPage = () => {
         },
         {
           id: 'list-export-open',
-          description: 'エクスポートダイアログを開く',
+          description: t('todo.list.shortcuts.openExport'),
           category: '一覧操作' as const,
           bindings: ['e'],
           action: handleExport,
         },
         {
           id: 'list-import-open',
-          description: 'インポートダイアログを開く',
+          description: t('todo.list.shortcuts.openImport'),
           category: '一覧操作' as const,
           bindings: ['i'],
           action: handleImport,
         },
         {
           id: 'list-view-list',
-          description: 'リスト表示に切り替える',
+          description: t('todo.list.shortcuts.switchList'),
           category: '一覧操作' as const,
           bindings: ['v l'],
           action: () => handleViewChange('list'),
@@ -210,7 +228,7 @@ export const TodoListPage = () => {
         },
         {
           id: 'list-view-card',
-          description: 'カード表示に切り替える',
+          description: t('todo.list.shortcuts.switchCard'),
           category: '一覧操作' as const,
           bindings: ['v c'],
           action: () => handleViewChange('card'),
@@ -218,14 +236,14 @@ export const TodoListPage = () => {
         },
         ...filterButtons.map((button, index) => ({
           id: `list-filter-${button.key}`,
-          description: `${button.label} フィルターに切り替える`,
+          description: t('todo.list.shortcuts.switchFilter', { label: button.label }),
           category: '一覧操作' as const,
           bindings: [`${index + 1}`],
           action: () => handleFilterChange(button.key),
         })),
         {
           id: 'dialog-confirm-modal',
-          description: '確認ダイアログで実行する',
+          description: t('todo.list.shortcuts.confirmModal'),
           category: 'ダイアログ' as const,
           bindings: ['enter', 'y'],
           action: () => modal?.onConfirm(),
@@ -234,7 +252,7 @@ export const TodoListPage = () => {
         },
         {
           id: 'dialog-close-modal',
-          description: '確認ダイアログを閉じる',
+          description: t('todo.list.shortcuts.closeModal'),
           category: 'ダイアログ' as const,
           bindings: ['escape'],
           action: () => setModal(null),
@@ -244,7 +262,7 @@ export const TodoListPage = () => {
         },
         {
           id: 'dialog-export-file',
-          description: 'エクスポートをファイル保存する',
+          description: t('todo.list.shortcuts.exportFile'),
           category: 'ダイアログ' as const,
           bindings: ['f'],
           action: () => {
@@ -255,7 +273,7 @@ export const TodoListPage = () => {
         },
         {
           id: 'dialog-export-text',
-          description: 'エクスポートテキストを表示する',
+          description: t('todo.list.shortcuts.exportText'),
           category: 'ダイアログ' as const,
           bindings: ['t'],
           action: handleTextExport,
@@ -264,7 +282,7 @@ export const TodoListPage = () => {
         },
         {
           id: 'dialog-export-copy',
-          description: 'エクスポートテキストをコピーする',
+          description: t('todo.list.shortcuts.exportCopy'),
           category: 'ダイアログ' as const,
           bindings: ['y'],
           action: () => {
@@ -275,7 +293,7 @@ export const TodoListPage = () => {
         },
         {
           id: 'dialog-import-submit',
-          description: 'インポートを実行する',
+          description: t('todo.list.shortcuts.importSubmit'),
           category: 'ダイアログ' as const,
           bindings: ['enter'],
           action: () => {
@@ -287,7 +305,7 @@ export const TodoListPage = () => {
         },
         {
           id: 'dialog-close-export',
-          description: 'エクスポートダイアログを閉じる',
+          description: t('todo.list.shortcuts.closeExport'),
           category: 'ダイアログ' as const,
           bindings: ['escape'],
           action: closeExportDialog,
@@ -297,7 +315,7 @@ export const TodoListPage = () => {
         },
         {
           id: 'dialog-close-import',
-          description: 'インポートダイアログを閉じる',
+          description: t('todo.list.shortcuts.closeImport'),
           category: 'ダイアログ' as const,
           bindings: ['escape'],
           action: closeImportDialog,
@@ -307,7 +325,7 @@ export const TodoListPage = () => {
         },
         {
           id: 'dialog-close-menu',
-          description: 'メニューを閉じる',
+          description: t('todo.list.shortcuts.closeMenu'),
           category: 'ダイアログ' as const,
           bindings: ['escape'],
           action: () => setMenuOpen(false),
@@ -317,19 +335,36 @@ export const TodoListPage = () => {
       ],
     };
   }, [
+    canExpandSelected,
+    closeExportDialog,
+    closeImportDialog,
     currentInProgressId,
     expandedTodoIds,
     exportText,
+    filterButtons,
     filteredTodos.length,
+    handleCopyExportText,
     handleDelete,
     handleComplete,
+    handleEdit,
+    handleExport,
+    handleFileExport,
+    handleFilterChange,
+    handleImport,
+    handleNew,
+    handleTextExport,
+    handleTextImport,
+    handleViewChange,
     isExportDialogOpen,
     isImportDialogOpen,
     isOverlayOpen,
     menuOpen,
     modal,
+    selectRelativeTodo,
+    setModal,
     selectedTodo,
     startTodo,
+    t,
     view,
   ]);
 
@@ -364,9 +399,9 @@ export const TodoListPage = () => {
       )}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
         <div className="text-left w-full sm:w-auto">
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">タスク一覧</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">{t('todo.list.title')}</h1>
           <p className="text-slate-500 mt-1 text-sm sm:text-base">
-            現在 {filteredTodos.length} 件のタスクがあります。
+            {t('todo.list.count', { count: filteredTodos.length })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 sm:mt-0 w-full sm:w-auto">
@@ -374,7 +409,7 @@ export const TodoListPage = () => {
             className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base h-10 flex items-center justify-center"
             onClick={handleNew}
           >
-            新規作成
+            {t('todo.list.new')}
           </button>
           <div className="relative">
             <button
@@ -392,7 +427,7 @@ export const TodoListPage = () => {
                     setMenuOpen(false);
                   }}
                 >
-                  エクスポート
+                  {t('todo.list.export')}
                 </button>
                 <button
                   className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors"
@@ -401,7 +436,7 @@ export const TodoListPage = () => {
                     setMenuOpen(false);
                   }}
                 >
-                  インポート
+                  {t('todo.list.import')}
                 </button>
               </div>
             )}
@@ -410,7 +445,9 @@ export const TodoListPage = () => {
       </header>
       <div className="bg-white rounded-lg shadow p-3 sm:p-4 mb-6 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-4">
         <div className="flex items-center flex-wrap gap-1 sm:gap-2">
-          <span className="text-xs sm:text-sm font-medium text-slate-600">フィルター:</span>
+          <span className="text-xs sm:text-sm font-medium text-slate-600">
+            {t('todo.list.filter')}
+          </span>
           <div className="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-lg">
             {filterButtons.map((btn: import('@/features/todo/model/types').FilterButton) => (
               <button
@@ -437,7 +474,7 @@ export const TodoListPage = () => {
             onClick={() => handleViewChange('card')}
             aria-pressed={view === 'card'}
           >
-            カード表示
+            {t('todo.list.cardView')}
           </button>
           <button
             className={`px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition-colors ${
@@ -448,14 +485,14 @@ export const TodoListPage = () => {
             onClick={() => handleViewChange('list')}
             aria-pressed={view === 'list'}
           >
-            リスト表示
+            {t('todo.list.listView')}
           </button>
         </div>
       </div>
       <main
         id="todo-list"
         role="listbox"
-        aria-label="タスク一覧"
+        aria-label={t('todo.list.ariaLabel')}
         className={
           view === 'card'
             ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'
@@ -497,7 +534,7 @@ export const TodoListPage = () => {
             />
           )
         ) : (
-          <p className="text-slate-500 col-span-full text-center py-10">タスクはありません。</p>
+          <p className="text-slate-500 col-span-full text-center py-10">{t('todo.list.empty')}</p>
         )}
       </main>
     </>

@@ -1,5 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { TodoForm, type TodoFormFocusHandle } from '@/features/todo/ui/TodoForm';
 import { DEFAULT_TASK_TYPE, isMeetingTodo } from '@/features/todo/model/todo-utils';
 import { useTodoContext } from '@/app/providers/TodoContext';
@@ -9,6 +10,7 @@ import { useTodoForm } from '../hooks/useTodoForm';
 const QUICK_EFFORT_VALUES = [5, 10, 25, 55, 115];
 
 export const TodoFormPage = () => {
+  const { t } = useTranslation();
   const { todos, form, setForm, getTodo, fetchTodos, workSchedule } = useTodoContext();
   const { id } = useParams();
   const formFocusRef = useRef<TodoFormFocusHandle>(null);
@@ -31,11 +33,11 @@ export const TodoFormPage = () => {
     );
 
     return {
-      pageLabel: id ? 'Todo 編集' : 'Todo 新規作成',
+      pageLabel: id ? t('todo.formPage.editPageLabel') : t('todo.formPage.newPageLabel'),
       shortcuts: [
         {
           id: 'form-focus-title',
-          description: 'タイトルへフォーカスする',
+          description: t('todo.form.shortcuts.focusTitle'),
           category: 'フォーム操作' as const,
           bindings: ['alt+1'],
           action: () => formFocusRef.current?.focusTitle(),
@@ -43,7 +45,7 @@ export const TodoFormPage = () => {
         },
         {
           id: 'form-focus-task-type',
-          description: 'タスク種別へフォーカスする',
+          description: t('todo.form.shortcuts.focusTaskType'),
           category: 'フォーム操作' as const,
           bindings: ['alt+2'],
           action: () => formFocusRef.current?.focusTaskType(),
@@ -51,7 +53,7 @@ export const TodoFormPage = () => {
         },
         {
           id: 'form-focus-description',
-          description: '説明へフォーカスする',
+          description: t('todo.form.shortcuts.focusDescription'),
           category: 'フォーム操作' as const,
           bindings: ['alt+3'],
           action: () => formFocusRef.current?.focusDescription(),
@@ -59,7 +61,7 @@ export const TodoFormPage = () => {
         },
         {
           id: 'form-focus-startable-at',
-          description: '着手可能日時へフォーカスする',
+          description: t('todo.form.shortcuts.focusStartableAt'),
           category: 'フォーム操作' as const,
           bindings: ['alt+4'],
           action: () => formFocusRef.current?.focusStartableAt(),
@@ -67,7 +69,7 @@ export const TodoFormPage = () => {
         },
         {
           id: 'form-focus-due-date',
-          description: '期限へフォーカスする',
+          description: t('todo.form.shortcuts.focusDueDate'),
           category: 'フォーム操作' as const,
           bindings: ['alt+5'],
           action: () => formFocusRef.current?.focusDueDate(),
@@ -75,7 +77,7 @@ export const TodoFormPage = () => {
         },
         {
           id: 'form-focus-effort',
-          description: '工数へフォーカスする',
+          description: t('todo.form.shortcuts.focusEffort'),
           category: 'フォーム操作' as const,
           bindings: ['alt+6'],
           action: () => formFocusRef.current?.focusEffortMinutes(),
@@ -84,7 +86,7 @@ export const TodoFormPage = () => {
         },
         {
           id: 'form-focus-actual-work',
-          description: '実作業時間へフォーカスする',
+          description: t('todo.form.shortcuts.focusActualWork'),
           category: 'フォーム操作' as const,
           bindings: ['alt+7'],
           action: () => formFocusRef.current?.focusActualWorkMinutes(),
@@ -93,7 +95,7 @@ export const TodoFormPage = () => {
         },
         {
           id: 'form-focus-status',
-          description: 'ステータスへフォーカスする',
+          description: t('todo.form.shortcuts.focusStatus'),
           category: 'フォーム操作' as const,
           bindings: ['alt+8'],
           action: () => formFocusRef.current?.focusStatus(),
@@ -102,7 +104,7 @@ export const TodoFormPage = () => {
         },
         {
           id: 'form-focus-dependency',
-          description: '依存タスクへフォーカスする',
+          description: t('todo.form.shortcuts.focusDependency'),
           category: 'フォーム操作' as const,
           bindings: ['alt+9'],
           action: () => formFocusRef.current?.focusDependency(),
@@ -111,7 +113,7 @@ export const TodoFormPage = () => {
         },
         {
           id: 'form-save',
-          description: 'フォームを保存する',
+          description: t('todo.form.shortcuts.save'),
           category: 'フォーム操作' as const,
           bindings: ['mod+enter'],
           action: () => {
@@ -121,7 +123,7 @@ export const TodoFormPage = () => {
         },
         {
           id: 'form-complete',
-          description: '保存して一覧へ戻る',
+          description: t('todo.form.shortcuts.complete'),
           category: 'フォーム操作' as const,
           bindings: ['mod+shift+enter'],
           action: () => {
@@ -131,7 +133,7 @@ export const TodoFormPage = () => {
         },
         {
           id: 'form-cancel',
-          description: '編集をキャンセルする',
+          description: t('todo.form.shortcuts.cancel'),
           category: 'フォーム操作' as const,
           bindings: ['escape'],
           action: handleCancel,
@@ -139,7 +141,7 @@ export const TodoFormPage = () => {
         },
         ...QUICK_EFFORT_VALUES.map((value, index) => ({
           id: `form-effort-${value}`,
-          description: `工数を ${value} 分に設定する`,
+          description: t('todo.form.shortcuts.setEffort', { value }),
           category: 'ページ操作' as const,
           bindings: [`alt+shift+${index + 1}`],
           action: () => setForm({ ...form, effortMinutes: value }),
@@ -148,13 +150,15 @@ export const TodoFormPage = () => {
         })),
       ],
     };
-  }, [form, handleCancel, handleComplete, handleSave, id, setForm, todos]);
+  }, [form, handleCancel, handleComplete, handleSave, id, setForm, t, todos]);
 
   useRegisterShortcuts(shortcutRegistration);
 
   return (
     <div className="bg-white p-4 sm:p-6 md:p-8 rounded-lg shadow-xl max-w-md sm:max-w-2xl md:max-w-3xl mx-auto">
-      <h1 className="text-xl sm:text-2xl font-bold mb-6">{id ? 'Todoの編集' : 'Todoの新規作成'}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold mb-6">
+        {id ? t('todo.formPage.editTitle') : t('todo.formPage.newTitle')}
+      </h1>
       <TodoForm
         ref={formFocusRef}
         form={form}

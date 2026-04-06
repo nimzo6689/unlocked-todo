@@ -9,6 +9,7 @@ import {
   Settings2,
   type LucideIcon,
 } from 'lucide-react';
+import type { TFunction } from 'i18next';
 
 export type NavigationItem = {
   key: string;
@@ -18,36 +19,46 @@ export type NavigationItem = {
   children?: NavigationItem[];
 };
 
-export const navigationItems: NavigationItem[] = [
-  { key: 'todos', label: 'タスク一覧', path: '/', icon: ListTodo },
-  { key: 'availability', label: '空き状況', path: '/availability', icon: CalendarDays },
-  { key: 'plan-actual', label: '予実管理', path: '/plan-actual', icon: BarChart3 },
+export const getNavigationItems = (t: TFunction): NavigationItem[] => [
+  { key: 'todos', label: t('navigation.todos'), path: '/', icon: ListTodo },
+  {
+    key: 'availability',
+    label: t('navigation.availability'),
+    path: '/availability',
+    icon: CalendarDays,
+  },
+  {
+    key: 'plan-actual',
+    label: t('navigation.planActual'),
+    path: '/plan-actual',
+    icon: BarChart3,
+  },
   {
     key: 'settings-help',
-    label: '設定とヘルプ',
+    label: t('navigation.settingsHelp'),
     icon: Settings2,
     children: [
       {
         key: 'settings-notifications',
-        label: '通知設定',
+        label: t('navigation.notifications'),
         path: '/settings/notifications',
         icon: Bell,
       },
       {
         key: 'settings-work-hours',
-        label: '稼働設定',
+        label: t('navigation.workHours'),
         path: '/settings/work-hours',
         icon: Clock3,
       },
       {
         key: 'help-usage',
-        label: '使い方',
+        label: t('navigation.usage'),
         path: '/help/usage',
         icon: BookOpen,
       },
       {
         key: 'help-about',
-        label: 'アプリ情報',
+        label: t('navigation.about'),
         path: '/help/about',
         icon: Info,
       },

@@ -1,12 +1,15 @@
 import { useMemo } from 'react';
 import type { Todo } from '@/features/todo/model/types';
 import { getDependencyIds, isMeetingTodo } from '@/features/todo/model/todo-utils';
+import { useAppLocale } from '@/shared/i18n/useAppLocale';
 
 export const useTodoListFilter = (
   todos: Todo[],
   filter: string,
   getTodo: (id: string) => Todo | undefined,
 ) => {
+  const { locale } = useAppLocale();
+
   return useMemo(() => {
     return todos
       .filter(todo => {
@@ -45,9 +48,9 @@ export const useTodoListFilter = (
         const dueDiff = new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
         if (dueDiff !== 0) return dueDiff;
         if (isMeetingTodo(a) || isMeetingTodo(b)) {
-          return a.title.localeCompare(b.title, 'ja');
+          return a.title.localeCompare(b.title, locale);
         }
         return (a.effortMinutes ?? 0) - (b.effortMinutes ?? 0);
       });
-  }, [todos, filter, getTodo]);
+  }, [todos, filter, getTodo, locale]);
 };

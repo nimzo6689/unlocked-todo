@@ -1,8 +1,14 @@
 import { expect, test } from '../fixtures/app.fixture';
 
-test('サイドバーから主要ページへ遷移できる', async ({ page, gotoApp, waitForAppReady }) => {
+test('サイドバーから主要ページへ遷移できる', async ({
+  page,
+  gotoApp,
+  waitForAppReady,
+  setLocale,
+}) => {
+  await setLocale('ja');
   await gotoApp('/');
-  await waitForAppReady();
+  await waitForAppReady('タスク一覧');
 
   await page.getByRole('button', { name: 'サイドバーを展開' }).click();
 
@@ -14,8 +20,8 @@ test('サイドバーから主要ページへ遷移できる', async ({ page, go
 
   await page.getByRole('button', { name: '設定とヘルプ' }).click();
 
-  await page.getByRole('button', { name: '通知設定' }).click();
-  await waitForAppReady('通知設定');
+  await page.getByRole('button', { name: '通知と言語' }).click();
+  await waitForAppReady('通知と言語');
 
   await page.getByRole('button', { name: '稼働設定' }).click();
   await waitForAppReady('稼働設定');
