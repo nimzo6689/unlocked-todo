@@ -439,6 +439,9 @@ export const resources = {
         toast: {
           exportSuccess: 'タスクをエクスポートしました',
           exportFailed: 'エクスポートに失敗しました',
+          migrationFailed:
+            'データ移行に失敗しました。保存データを確認できないため処理を停止しました。',
+          persistenceFailed: 'データの保存に失敗しました。しばらくしてから再試行してください。',
           noExportText: '出力するテキストがありません',
           exportCopied: 'エクスポートテキストをコピーしました',
           copyFailed: 'コピーに失敗しました',
@@ -921,6 +924,9 @@ export const resources = {
         toast: {
           exportSuccess: 'Tasks exported',
           exportFailed: 'Failed to export tasks',
+          migrationFailed:
+            'Data migration failed. Loading was stopped because saved data could not be validated.',
+          persistenceFailed: 'Failed to save data. Please try again in a moment.',
           noExportText: 'There is no text to export',
           exportCopied: 'Exported text copied',
           copyFailed: 'Failed to copy text',

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import toast from 'react-hot-toast';
 import { todoDB } from '@/features/todo/model/db';
 import type { Todo, ModalState, TodoContextType, ImportResult } from '@/features/todo/model/types';
 import {
@@ -60,73 +61,98 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
   const trackedElapsedSecondsRef = useRef(0);
   const hasRestoredInProgressRef = useRef(false);
 
-  const fetchTodos = useCallback(async () => {
-    const data = await todoDB.fetch();
-    const normalizedTodos = data.map(normalizeTodo);
-    todosRef.current = normalizedTodos;
-    setTodos(normalizedTodos);
-    setIsTodosLoaded(true);
+  const notifyPersistenceError = useCallback((error: unknown, messageKey: string) => {
+    console.error('Todo persistence error:', error);
+    toast.error(i18n.t(messageKey));
   }, []);
-  const completeTodos = useCallback(async (ids: string[]) => {
-    const targetIds = new Set(ids);
-    if (targetIds.size === 0) {
-      return false;
+
+  const persistTodos = useCallback(
+    async (nextTodos: Todo[]) => {
+      try {
+        await todoDB.save(nextTodos);
+        return true;
+      } catch (error) {
+        notifyPersistenceError(error, 'todo.toast.persistenceFailed');
+        return false;
+      }
+    },
+    [notifyPersistenceError],
+  );
+
+  const fetchTodos = useCallback(async () => {
+    try {
+      const data = await todoDB.fetch();
+      const normalizedTodos = data.map(normalizeTodo);
+      todosRef.current = normalizedTodos;
+      setTodos(normalizedTodos);
+    } catch (error) {
+      notifyPersistenceError(error, 'todo.toast.migrationFailed');
+      setIsInProgressRestoreDone(true);
     }
-
-    const completedAt = new Date().toISOString();
-    let changed = false;
-
-    let newTodos = todosRef.current.map(todo => {
-      if (!targetIds.has(todo.id) || todo.status === 'Completed') {
-        return todo;
+    setIsTodosLoaded(true);
+  }, [notifyPersistenceError]);
+  const completeTodos = useCallback(
+    async (ids: string[]) => {
+      const targetIds = new Set(ids);
+      if (targetIds.size === 0) {
+        return false;
       }
 
-      changed = true;
-      return { ...todo, status: 'Completed' as const, completedAt };
-    });
+      const completedAt = new Date().toISOString();
+      let changed = false;
 
-    newTodos = newTodos.map(todo => {
-      if (!todo.dependsOn) {
-        return todo;
-      }
+      let newTodos = todosRef.current.map(todo => {
+        if (!targetIds.has(todo.id) || todo.status === 'Completed') {
+          return todo;
+        }
 
-      const depIds = getDependencyIds(todo);
-      if (!depIds.some(depId => targetIds.has(depId))) {
-        return todo;
-      }
-
-      const allDepsCompleted = depIds.every(depId => {
-        const depTodo = newTodos.find(item => item.id === depId);
-        return depTodo?.status === 'Completed';
+        changed = true;
+        return { ...todo, status: 'Completed' as const, completedAt };
       });
 
-      if (!allDepsCompleted) {
+      newTodos = newTodos.map(todo => {
+        if (!todo.dependsOn) {
+          return todo;
+        }
+
+        const depIds = getDependencyIds(todo);
+        if (!depIds.some(depId => targetIds.has(depId))) {
+          return todo;
+        }
+
+        const allDepsCompleted = depIds.every(depId => {
+          const depTodo = newTodos.find(item => item.id === depId);
+          return depTodo?.status === 'Completed';
+        });
+
+        if (!allDepsCompleted) {
+          return todo;
+        }
+
+        const maxCompletedAt = depIds
+          .map(depId => newTodos.find(item => item.id === depId)?.completedAt)
+          .filter(Boolean)
+          .sort()
+          .pop();
+
+        if (maxCompletedAt && maxCompletedAt !== todo.startableAt) {
+          changed = true;
+          return { ...todo, startableAt: maxCompletedAt };
+        }
+
         return todo;
+      });
+
+      if (!changed) {
+        return false;
       }
 
-      const maxCompletedAt = depIds
-        .map(depId => newTodos.find(item => item.id === depId)?.completedAt)
-        .filter(Boolean)
-        .sort()
-        .pop();
-
-      if (maxCompletedAt && maxCompletedAt !== todo.startableAt) {
-        changed = true;
-        return { ...todo, startableAt: maxCompletedAt };
-      }
-
-      return todo;
-    });
-
-    if (!changed) {
-      return false;
-    }
-
-    todosRef.current = newTodos;
-    setTodos(newTodos);
-    await todoDB.save(newTodos);
-    return true;
-  }, []);
+      todosRef.current = newTodos;
+      setTodos(newTodos);
+      return persistTodos(newTodos);
+    },
+    [persistTodos],
+  );
 
   useEffect(() => {
     todosRef.current = todos;
@@ -278,11 +304,41 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     });
   };
 
-  const syncInProgressActualWork = useCallback(async (stopAfterSync = false) => {
-    const activeId = currentInProgressIdRef.current;
-    const startedAt = currentInProgressStartedAtRef.current;
+  const syncInProgressActualWork = useCallback(
+    async (stopAfterSync = false) => {
+      const activeId = currentInProgressIdRef.current;
+      const startedAt = currentInProgressStartedAtRef.current;
 
-    if (!activeId || startedAt === null) {
+      if (!activeId || startedAt === null) {
+        if (stopAfterSync) {
+          trackedElapsedSecondsRef.current = 0;
+          currentInProgressIdRef.current = null;
+          currentInProgressStartedAtRef.current = null;
+          setCurrentInProgressId(null);
+          setCurrentInProgressStartedAt(null);
+        }
+        return;
+      }
+
+      const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+      const deltaSeconds = elapsedSeconds - trackedElapsedSecondsRef.current;
+
+      if (deltaSeconds > 0) {
+        const newTodos = todosRef.current.map(todo =>
+          todo.id === activeId
+            ? {
+                ...todo,
+                actualWorkSeconds: (todo.actualWorkSeconds || 0) + deltaSeconds,
+              }
+            : todo,
+        );
+
+        trackedElapsedSecondsRef.current = elapsedSeconds;
+        todosRef.current = newTodos;
+        setTodos(newTodos);
+        await persistTodos(newTodos);
+      }
+
       if (stopAfterSync) {
         trackedElapsedSecondsRef.current = 0;
         currentInProgressIdRef.current = null;
@@ -290,36 +346,9 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
         setCurrentInProgressId(null);
         setCurrentInProgressStartedAt(null);
       }
-      return;
-    }
-
-    const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
-    const deltaSeconds = elapsedSeconds - trackedElapsedSecondsRef.current;
-
-    if (deltaSeconds > 0) {
-      const newTodos = todosRef.current.map(todo =>
-        todo.id === activeId
-          ? {
-              ...todo,
-              actualWorkSeconds: (todo.actualWorkSeconds || 0) + deltaSeconds,
-            }
-          : todo,
-      );
-
-      trackedElapsedSecondsRef.current = elapsedSeconds;
-      todosRef.current = newTodos;
-      setTodos(newTodos);
-      await todoDB.save(newTodos);
-    }
-
-    if (stopAfterSync) {
-      trackedElapsedSecondsRef.current = 0;
-      currentInProgressIdRef.current = null;
-      currentInProgressStartedAtRef.current = null;
-      setCurrentInProgressId(null);
-      setCurrentInProgressStartedAt(null);
-    }
-  }, []);
+    },
+    [persistTodos],
+  );
 
   useEffect(() => {
     if (!isTodosLoaded || hasRestoredInProgressRef.current) {
@@ -377,7 +406,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
       );
       todosRef.current = updatedTodos;
       setTodos(updatedTodos);
-      void todoDB.save(updatedTodos);
+      void persistTodos(updatedTodos);
     }
 
     trackedElapsedSecondsRef.current = 0;
@@ -391,7 +420,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
       JSON.stringify({ id: parsedState.id, startedAt: now }),
     );
     setIsInProgressRestoreDone(true);
-  }, [isTodosLoaded]);
+  }, [isTodosLoaded, persistTodos]);
 
   useEffect(() => {
     if (!currentInProgressId || currentInProgressStartedAt === null) {
@@ -426,8 +455,10 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
             todo.startableAt = deletedAt;
           }
         });
-        const { todoDB } = await import('@/features/todo/model/db');
-        await todoDB.save(newTodos);
+        const saved = await persistTodos(newTodos);
+        if (!saved) {
+          return;
+        }
         setTodos(newTodos);
         setModal(null);
       },
@@ -472,7 +503,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
       );
       todosRef.current = updatedTodos;
       setTodos(updatedTodos);
-      await todoDB.save(updatedTodos);
+      await persistTodos(updatedTodos);
     }
 
     trackedElapsedSecondsRef.current = 0;
@@ -564,7 +595,15 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
         }
       }
 
-      await todoDB.save(mergedTodos);
+      const saved = await persistTodos(mergedTodos);
+      if (!saved) {
+        return {
+          success: false,
+          addedCount: 0,
+          updatedCount: 0,
+          message: i18n.t('todo.toast.persistenceFailed'),
+        };
+      }
       await fetchTodos();
 
       return {
