@@ -26,7 +26,7 @@ const createTodo = (overrides: Partial<Todo>): Todo => ({
   status: 'Unlocked',
   effortMinutes: 60,
   actualWorkSeconds: 0,
-  dependency: undefined,
+  dependsOn: undefined,
   completedAt: undefined,
   ...overrides,
 });

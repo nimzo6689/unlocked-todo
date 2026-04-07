@@ -5,7 +5,7 @@ import type { ImportResult } from '@/features/todo/model/types';
 
 type UseExportImportOptions = {
   exportTodos: () => Promise<void>;
-  exportTodosToText: () => string;
+  exportTodosToText: () => Promise<string>;
   importTodos: (file: File) => Promise<ImportResult>;
   importTodosFromText: (text: string) => Promise<ImportResult>;
 };
@@ -44,7 +44,14 @@ export const useExportImport = ({
     }
   };
 
-  const handleTextExport = () => setExportText(exportTodosToText());
+  const handleTextExport = async () => {
+    try {
+      const text = await exportTodosToText();
+      setExportText(text);
+    } catch {
+      toast.error(i18n.t('todo.toast.exportFailed'));
+    }
+  };
 
   const handleCopyExportText = async () => {
     if (!exportText) {

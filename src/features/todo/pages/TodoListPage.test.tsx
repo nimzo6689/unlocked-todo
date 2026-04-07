@@ -89,7 +89,7 @@ describe('TodoListPage', () => {
       currentInProgressId: null,
       startTodo: vi.fn(),
       exportTodos: vi.fn(async () => undefined),
-      exportTodosToText: vi.fn(() => '[]'),
+      exportTodosToText: vi.fn(async () => '[]'),
       importTodos: vi.fn(async () => ({
         success: true,
         addedCount: 0,
@@ -228,7 +228,7 @@ describe('TodoListPage', () => {
       currentInProgressId: null,
       startTodo: vi.fn(),
       exportTodos: vi.fn(async () => undefined),
-      exportTodosToText: vi.fn(() => '[]'),
+      exportTodosToText: vi.fn(async () => '[]'),
       importTodos: vi.fn(async () => ({
         success: true,
         addedCount: 0,
@@ -316,7 +316,7 @@ describe('TodoListPage', () => {
       currentInProgressId: null,
       startTodo,
       exportTodos: vi.fn(async () => undefined),
-      exportTodosToText: vi.fn(() => '[]'),
+      exportTodosToText: vi.fn(async () => '[]'),
       importTodos: vi.fn(async () => ({
         success: true,
         addedCount: 0,

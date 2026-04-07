@@ -57,6 +57,8 @@ export type TodoContextType = {
   setWorkSchedule: (value: WorkSchedule) => void;
   currentInProgressId: string | null;
   fetchTodos: () => Promise<void>;
+  loadMoreTodos: () => Promise<void>;
+  hasMoreTodos: boolean;
   getTodo: (id: string) => Todo | undefined;
   setTodos: (todos: Todo[]) => void;
   requestNotificationPermission: () => void;
@@ -64,7 +66,7 @@ export type TodoContextType = {
   handleComplete: (id: string) => void;
   startTodo: (id: string) => void;
   exportTodos: () => Promise<void>;
-  exportTodosToText: () => string;
+  exportTodosToText: () => Promise<string>;
   importTodos: (file: File) => Promise<ImportResult>;
   importTodosFromText: (text: string) => Promise<ImportResult>;
 };

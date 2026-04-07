@@ -33,6 +33,8 @@ export const TodoListPage = () => {
     handleDelete,
     handleComplete,
     currentInProgressId,
+    hasMoreTodos,
+    loadMoreTodos,
     startTodo,
     exportTodos,
     exportTodosToText,
@@ -276,7 +278,9 @@ export const TodoListPage = () => {
           description: t('todo.list.shortcuts.exportText'),
           category: 'ダイアログ' as const,
           bindings: ['t'],
-          action: handleTextExport,
+          action: () => {
+            void handleTextExport();
+          },
           enabled: isExportDialogOpen,
           allowInDialog: true,
         },
@@ -537,6 +541,18 @@ export const TodoListPage = () => {
           <p className="text-slate-500 col-span-full text-center py-10">{t('todo.list.empty')}</p>
         )}
       </main>
+      {hasMoreTodos && (
+        <div className="mt-6 flex justify-center">
+          <button
+            className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-5 rounded-lg border border-slate-300 transition-colors"
+            onClick={() => {
+              void loadMoreTodos();
+            }}
+          >
+            {t('todo.list.loadMore')}
+          </button>
+        </div>
+      )}
     </>
   );
 };

@@ -4,6 +4,7 @@ import { AvailabilityPage } from '@/features/availability/pages/AvailabilityPage
 import { useTodoContext } from '@/app/providers/TodoContext';
 import { DEFAULT_WORK_SCHEDULE } from '@/features/work-schedule/model/settings';
 import { useRegisterShortcuts } from '@/features/shortcuts/context/ShortcutContext';
+import { todoDB } from '@/features/todo/model/db';
 
 const chartSpy = vi.fn();
 
@@ -30,8 +31,15 @@ vi.mock('@/features/availability/hooks/useAvailabilityCharts', () => ({
   useAvailabilityCharts: vi.fn(),
 }));
 
+vi.mock('@/features/todo/model/db', () => ({
+  todoDB: {
+    fetchForAvailability: vi.fn(),
+  },
+}));
+
 const useTodoContextMock = vi.mocked(useTodoContext);
 const useRegisterShortcutsMock = vi.mocked(useRegisterShortcuts);
+const fetchForAvailabilityMock = vi.mocked(todoDB.fetchForAvailability);
 
 describe('AvailabilityPage', () => {
   beforeEach(async () => {
@@ -39,6 +47,7 @@ describe('AvailabilityPage', () => {
     const { useAvailabilityCharts } =
       await import('@/features/availability/hooks/useAvailabilityCharts');
     vi.mocked(useAvailabilityCharts).mockReturnValue([]);
+    fetchForAvailabilityMock.mockResolvedValue([]);
 
     useTodoContextMock.mockReturnValue({
       todos: [],

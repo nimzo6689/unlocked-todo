@@ -209,7 +209,6 @@ export const useTodoForm = ({
 
   const handleSave = async () => {
     const now = new Date().toISOString();
-    let newTodos = [...todos];
     const taskType = form.taskType || DEFAULT_TASK_TYPE;
     const isMeeting = isMeetingTodo({ taskType });
 
@@ -227,49 +226,84 @@ export const useTodoForm = ({
         : [];
     const normalizedDependency = isMeeting ? [] : dependency;
     const hasDependency = normalizedDependency.length > 0;
+    const { todoDB } = await import('@/features/todo/model/db');
 
     if (form.id) {
       const currentTodoId = form.id;
+      const currentTodo = getTodo(currentTodoId);
+      if (!currentTodo) {
+        toast.error(i18n.t('todo.validation.dependencyInvalid'));
+        return;
+      }
+
       const safeSuccessorIds = isMeeting
         ? []
         : successorIds.filter(todoId => todoId !== currentTodoId);
 
-      newTodos = newTodos.map(todo => {
-        if (todo.id === currentTodoId) {
-          const formActualWorkSeconds = normalizeActualWorkSeconds(form.actualWorkSeconds);
-          return {
-            ...todo,
-            ...form,
-            taskType,
-            dependsOn: normalizedDependency,
-            startableAt: hasDependency
-              ? form.startableAt || ''
-              : form.startableAt || todo.startableAt,
-            status: isMeeting
-              ? getMeetingStatus(form.dueDate || todo.dueDate, todo.status)
-              : (form.status as Todo['status']) || todo.status,
-            effortMinutes: isMeeting ? 0 : form.effortMinutes || todo.effortMinutes,
-            actualWorkSeconds: isMeeting ? 0 : formActualWorkSeconds,
-          } as Todo;
-        }
+      const formActualWorkSeconds = normalizeActualWorkSeconds(form.actualWorkSeconds);
+      const updatedCurrentTodo: Todo = {
+        ...currentTodo,
+        ...form,
+        taskType,
+        dependsOn: normalizedDependency,
+        startableAt: hasDependency
+          ? form.startableAt || ''
+          : form.startableAt || currentTodo.startableAt,
+        status: isMeeting
+          ? getMeetingStatus(form.dueDate || currentTodo.dueDate, currentTodo.status)
+          : (form.status as Todo['status']) || currentTodo.status,
+        effortMinutes: isMeeting ? 0 : form.effortMinutes || currentTodo.effortMinutes,
+        actualWorkSeconds: isMeeting ? 0 : formActualWorkSeconds,
+      };
 
+      const dependentTodos = await todoDB.fetchDependentsByDependencyIds([currentTodoId]);
+      const successorFromContext = safeSuccessorIds
+        .map(successorId => getTodo(successorId))
+        .filter((todo): todo is Todo => Boolean(todo));
+      const missingSuccessorIds = safeSuccessorIds.filter(
+        successorId => !successorFromContext.some(todo => todo.id === successorId),
+      );
+      const successorFromDB = await todoDB.bulkGetByIds(missingSuccessorIds);
+
+      const successorTargets = new Map<string, Todo>();
+      [...dependentTodos, ...successorFromContext, ...successorFromDB].forEach(todo => {
+        if (todo.id !== currentTodoId) {
+          successorTargets.set(todo.id, todo);
+        }
+      });
+
+      const updatedSuccessors: Todo[] = [];
+      [...successorTargets.values()].forEach(todo => {
         const depIds = getDependencyIds(todo);
         const shouldDependOnCurrent = safeSuccessorIds.includes(todo.id);
         const alreadyDependsOnCurrent = depIds.includes(currentTodoId);
 
-        if (!shouldDependOnCurrent && !alreadyDependsOnCurrent) return todo;
+        if (!shouldDependOnCurrent && !alreadyDependsOnCurrent) {
+          return;
+        }
 
         if (shouldDependOnCurrent && !alreadyDependsOnCurrent) {
-          return { ...todo, dependsOn: [...depIds, currentTodoId], startableAt: '' };
+          updatedSuccessors.push({
+            ...todo,
+            dependsOn: [...depIds, currentTodoId],
+            startableAt: '',
+          });
+          return;
         }
 
         if (!shouldDependOnCurrent && alreadyDependsOnCurrent) {
           const nextDeps = depIds.filter(depId => depId !== currentTodoId);
-          return { ...todo, dependsOn: nextDeps.length > 0 ? nextDeps : undefined };
+          updatedSuccessors.push({
+            ...todo,
+            dependsOn: nextDeps.length > 0 ? nextDeps : undefined,
+          });
         }
-
-        return todo;
       });
+
+      await todoDB.put(updatedCurrentTodo);
+      if (updatedSuccessors.length > 0) {
+        await todoDB.bulkPut(updatedSuccessors);
+      }
     } else {
       const formActualWorkSeconds = normalizeActualWorkSeconds(form.actualWorkSeconds);
       const newTodo: Todo = {
@@ -287,11 +321,9 @@ export const useTodoForm = ({
         actualWorkSeconds: isMeeting ? 0 : formActualWorkSeconds,
         dependsOn: normalizedDependency,
       };
-      newTodos.push(newTodo);
+      await todoDB.put(newTodo);
     }
 
-    const { todoDB } = await import('@/features/todo/model/db');
-    await todoDB.save(newTodos);
     await fetchTodos();
     toast.success(i18n.t('todo.toast.saveSuccess'));
   };

@@ -62,6 +62,11 @@ const MIGRATION_CHAIN: MigrationStep[] = [
     to: 2,
     transform: migrateV1toV2,
   },
+  {
+    from: 2,
+    to: 3,
+    transform: todos => todos,
+  },
 ];
 
 export const applyMigrationChain = (todos: Todo[], from: number, to: number): Todo[] => {

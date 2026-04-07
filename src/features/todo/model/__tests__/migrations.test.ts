@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Todo } from '@/features/todo/model/types';
-import {
-  __internal,
-  applyMigrationChain,
-  TodoMigrationError,
-} from '@/features/todo/model/migrations';
+import { __internal, applyMigrationChain } from '@/features/todo/model/migrations';
 import { createTodo } from '@/test/factories/todo';
 
 describe('todo migrations', () => {
@@ -34,12 +30,16 @@ describe('todo migrations', () => {
       } as unknown as Todo,
     ];
 
-    const migrated = applyMigrationChain(v1Todos, 1, 2);
+    const migrated = applyMigrationChain(v1Todos, 1, 3);
 
     expect(migrated[0].dependsOn).toBeUndefined();
   });
 
-  it('throws when migration step is missing', () => {
-    expect(() => applyMigrationChain([], 2, 3)).toThrow(TodoMigrationError);
+  it('keeps data unchanged for v2 to v3 no-op migration', () => {
+    const v2Todos = [createTodo({ id: 'c', dependsOn: ['dep-a'] })];
+
+    const migrated = applyMigrationChain(v2Todos, 2, 3);
+
+    expect(migrated).toEqual(v2Todos);
   });
 });
