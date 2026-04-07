@@ -6,6 +6,8 @@ import { useTodoContext } from '@/app/providers/TodoContext';
 import { useRegisterShortcuts } from '@/features/shortcuts/context/ShortcutContext';
 import { createTodo } from '@/test/factories/todo';
 
+const TODO_LIST_VIEW_STORAGE_KEY = 'todo-list-view';
+
 vi.mock('@/app/providers/TodoContext', () => ({
   useTodoContext: vi.fn(),
 }));
@@ -47,6 +49,8 @@ const useRegisterShortcutsMock = vi.mocked(useRegisterShortcuts);
 
 describe('TodoListPage', () => {
   beforeEach(async () => {
+    localStorage.removeItem(TODO_LIST_VIEW_STORAGE_KEY);
+
     const { useTodoListFilter } = await import('@/features/todo/hooks/useTodoListFilter');
     const { useTodoSelection } = await import('@/features/todo/hooks/useTodoSelection');
     const { useExportImport } = await import('@/features/todo/hooks/useExportImport');
@@ -143,9 +147,34 @@ describe('TodoListPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'リスト表示' }));
     expect(screen.getByLabelText('todo-list-rows')).toBeInTheDocument();
+    expect(localStorage.getItem(TODO_LIST_VIEW_STORAGE_KEY)).toBe('list');
 
     fireEvent.click(screen.getByRole('button', { name: 'カード表示' }));
     expect(screen.queryByLabelText('todo-list-rows')).not.toBeInTheDocument();
+    expect(localStorage.getItem(TODO_LIST_VIEW_STORAGE_KEY)).toBe('card');
+  });
+
+  it('uses saved list view when query has no view parameter', () => {
+    localStorage.setItem(TODO_LIST_VIEW_STORAGE_KEY, 'list');
+
+    render(
+      <MemoryRouter initialEntries={['/?filter=unlocked']}>
+        <TodoListPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByLabelText('todo-list-rows')).toBeInTheDocument();
+  });
+
+  it('defaults to card view when saved view does not exist', () => {
+    render(
+      <MemoryRouter initialEntries={['/?filter=unlocked']}>
+        <TodoListPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByLabelText('todo-list-rows')).not.toBeInTheDocument();
+    expect(localStorage.getItem(TODO_LIST_VIEW_STORAGE_KEY)).toBe('card');
   });
 
   it('opens menu and invokes export/import handlers', async () => {

@@ -19,6 +19,13 @@ import { useExportImport } from '../hooks/useExportImport';
 import { ExportDialogPresenter, ImportDialogPresenter } from './TodoListPagePresenters';
 import { useAppLocale } from '@/shared/i18n/useAppLocale';
 
+const TODO_LIST_VIEW_STORAGE_KEY = 'todo-list-view';
+
+type TodoListView = 'card' | 'list';
+
+const parseTodoListView = (value: string | null): TodoListView =>
+  value === 'list' ? 'list' : 'card';
+
 export const TodoListPage = () => {
   const { t } = useTranslation();
   const { locale } = useAppLocale();
@@ -45,9 +52,16 @@ export const TodoListPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [menuOpen, setMenuOpen] = useState(false);
   const [expandedTodoIds, setExpandedTodoIds] = useState<string[]>([]);
+  const [savedView] = useState<TodoListView>(() => {
+    if (typeof window === 'undefined') {
+      return 'card';
+    }
+    return parseTodoListView(localStorage.getItem(TODO_LIST_VIEW_STORAGE_KEY));
+  });
   const [, setTick] = useState(0);
   const filter = searchParams.get('filter') || 'unlocked';
-  const view = searchParams.get('view') === 'list' ? 'list' : 'card';
+  const view = parseTodoListView(searchParams.get('view'));
+  const effectiveView = searchParams.has('view') ? view : savedView;
   const filterButtons = useMemo(() => getFilterButtons(locale), [locale]);
 
   // 時刻経過による Locked→Unlocked / Meeting→Unlocked 等の遷移を自動反映するため定期再レンダリング
@@ -76,12 +90,19 @@ export const TodoListPage = () => {
   } = useExportImport({ exportTodos, exportTodosToText, importTodos, importTodosFromText });
 
   const isOverlayOpen = Boolean(modal || isExportDialogOpen || isImportDialogOpen || menuOpen);
-  const canExpandSelected = view === 'card' && isTodoExpandable(selectedTodo);
+  const canExpandSelected = effectiveView === 'card' && isTodoExpandable(selectedTodo);
 
   useEffect(() => {
     const visibleTodoIds = new Set(filteredTodos.map(todo => todo.id));
     setExpandedTodoIds(current => current.filter(id => visibleTodoIds.has(id)));
   }, [filteredTodos]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    localStorage.setItem(TODO_LIST_VIEW_STORAGE_KEY, effectiveView);
+  }, [effectiveView]);
 
   function handleExpandedChange(id: string, expanded: boolean) {
     setExpandedTodoIds(current => {
@@ -226,7 +247,7 @@ export const TodoListPage = () => {
           category: '一覧操作' as const,
           bindings: ['v l'],
           action: () => handleViewChange('list'),
-          enabled: view !== 'list',
+          enabled: effectiveView !== 'list',
         },
         {
           id: 'list-view-card',
@@ -234,7 +255,7 @@ export const TodoListPage = () => {
           category: '一覧操作' as const,
           bindings: ['v c'],
           action: () => handleViewChange('card'),
-          enabled: view !== 'card',
+          enabled: effectiveView !== 'card',
         },
         ...filterButtons.map((button, index) => ({
           id: `list-filter-${button.key}`,
@@ -369,7 +390,7 @@ export const TodoListPage = () => {
     selectedTodo,
     startTodo,
     t,
-    view,
+    effectiveView,
   ]);
 
   useRegisterShortcuts(shortcutRegistration);
@@ -471,23 +492,23 @@ export const TodoListPage = () => {
         <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
           <button
             className={`px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition-colors ${
-              view === 'card'
+              effectiveView === 'card'
                 ? 'bg-white text-blue-600 shadow'
                 : 'text-slate-600 hover:bg-slate-200'
             }`}
             onClick={() => handleViewChange('card')}
-            aria-pressed={view === 'card'}
+            aria-pressed={effectiveView === 'card'}
           >
             {t('todo.list.cardView')}
           </button>
           <button
             className={`px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition-colors ${
-              view === 'list'
+              effectiveView === 'list'
                 ? 'bg-white text-blue-600 shadow'
                 : 'text-slate-600 hover:bg-slate-200'
             }`}
             onClick={() => handleViewChange('list')}
-            aria-pressed={view === 'list'}
+            aria-pressed={effectiveView === 'list'}
           >
             {t('todo.list.listView')}
           </button>
@@ -498,13 +519,13 @@ export const TodoListPage = () => {
         role="listbox"
         aria-label={t('todo.list.ariaLabel')}
         className={
-          view === 'card'
+          effectiveView === 'card'
             ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'
             : 'space-y-2'
         }
       >
         {filteredTodos.length > 0 ? (
-          view === 'card' ? (
+          effectiveView === 'card' ? (
             filteredTodos.map(todo => (
               <TodoCard
                 key={todo.id}
