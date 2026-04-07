@@ -470,7 +470,7 @@ export const resources = {
             'statusは "Unlocked", "Locked", "Completed" のいずれかである必要があります',
           effortNonNegative: 'effortMinutesは0以上の数値である必要があります',
           actualNonNegative: 'actualWorkSecondsは0以上の数値である必要があります',
-          dependencyInvalid: 'dependencyは文字列または文字列配列である必要があります',
+          dependencyInvalid: 'dependsOnは文字列または文字列配列である必要があります',
           taskTypeInvalid: 'taskTypeは "Normal" または "Meeting" である必要があります',
         },
         importResult: {

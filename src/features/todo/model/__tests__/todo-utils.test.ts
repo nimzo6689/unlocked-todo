@@ -34,12 +34,12 @@ describe('todo-utils', () => {
   });
 
   it('normalizes dependencies from string, array and empty value', () => {
-    expect(getDependencyIds(createTodo({ dependency: 'id-1' }))).toEqual(['id-1']);
-    expect(getDependencyIds(createTodo({ dependency: ['id-1', '', 'id-2'] }))).toEqual([
+    expect(getDependencyIds(createTodo({ dependsOn: 'id-1' }))).toEqual(['id-1']);
+    expect(getDependencyIds(createTodo({ dependsOn: ['id-1', '', 'id-2'] }))).toEqual([
       'id-1',
       'id-2',
     ]);
-    expect(getDependencyIds(createTodo({ dependency: undefined }))).toEqual([]);
+    expect(getDependencyIds(createTodo({ dependsOn: undefined }))).toEqual([]);
   });
 
   it('formats date, datetime-local and duration safely', () => {
@@ -55,13 +55,13 @@ describe('todo-utils', () => {
   });
 
   it('converts todos to JSON and back', () => {
-    const todos = [createTodo({ id: '1' }), createTodo({ id: '2', dependency: ['1'] })];
+    const todos = [createTodo({ id: '1' }), createTodo({ id: '2', dependsOn: ['1'] })];
 
     const json = todosToJSON(todos);
     const parsed = todosFromJSON(json);
 
     expect(parsed).toHaveLength(2);
-    expect(parsed[1].dependency).toEqual(['1']);
+    expect(parsed[1].dependsOn).toEqual(['1']);
   });
 
   it('throws for invalid JSON payloads', () => {
@@ -123,8 +123,8 @@ describe('todo-utils', () => {
         message: 'actualWorkSecondsは0以上の数値である必要があります',
       },
       {
-        payload: { ...base, dependency: { id: 'x' } },
-        message: 'dependencyは文字列または文字列配列である必要があります',
+        payload: { ...base, dependsOn: { id: 'x' } },
+        message: 'dependsOnは文字列または文字列配列である必要があります',
       },
       {
         payload: { ...base, taskType: 'InvalidType' },
@@ -166,7 +166,7 @@ describe('todo-utils', () => {
         status: 'Unlocked',
         effortMinutes: 20,
         actualWorkSeconds: 30,
-        dependency: ['', 'dep-1', 100],
+        dependsOn: ['', 'dep-1', 100],
         description: 999,
         startedAt: 999,
         completedAt: 999,
@@ -181,7 +181,7 @@ describe('todo-utils', () => {
         status: 'Unlocked',
         effortMinutes: 20,
         actualWorkSeconds: 30,
-        dependency: '',
+        dependsOn: '',
       },
     ]);
 
@@ -190,9 +190,9 @@ describe('todo-utils', () => {
     expect(parsed[0].description).toBe('');
     expect(parsed[0].startedAt).toBeUndefined();
     expect(parsed[0].completedAt).toBeUndefined();
-    expect(parsed[0].dependency).toEqual(['dep-1']);
+    expect(parsed[0].dependsOn).toEqual(['dep-1']);
     expect(parsed[1].taskType).toBe('Normal');
-    expect(parsed[1].dependency).toBeUndefined();
+    expect(parsed[1].dependsOn).toBeUndefined();
   });
 
   it('normalizes taskType variants', () => {
@@ -211,14 +211,14 @@ describe('todo-utils', () => {
         dueDate: '2026-04-04T08:00:00.000Z',
         effortMinutes: 30,
         actualWorkSeconds: 120,
-        dependency: ['x'],
+        dependsOn: ['x'],
       }),
     );
 
     expect(meeting.status).toBe('Completed');
     expect(meeting.effortMinutes).toBe(0);
     expect(meeting.actualWorkSeconds).toBe(0);
-    expect(meeting.dependency).toBeUndefined();
+    expect(meeting.dependsOn).toBeUndefined();
 
     const normal = normalizeTodo(
       createTodo({

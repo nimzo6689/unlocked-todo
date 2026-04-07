@@ -86,7 +86,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     });
 
     newTodos = newTodos.map(todo => {
-      if (!todo.dependency) {
+      if (!todo.dependsOn) {
         return todo;
       }
 
@@ -421,7 +421,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
           const originalDeps = getDependencyIds(todo);
           const newDeps = originalDeps.filter(depId => depId !== id);
           const dependencyChanged = newDeps.length < originalDeps.length;
-          todo.dependency = newDeps.length > 0 ? newDeps : undefined;
+          todo.dependsOn = newDeps.length > 0 ? newDeps : undefined;
           if (dependencyChanged) {
             todo.startableAt = deletedAt;
           }

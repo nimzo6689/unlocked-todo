@@ -12,7 +12,7 @@ export type Todo = {
   status: 'Unlocked' | 'Locked' | 'Completed';
   effortMinutes: number;
   actualWorkSeconds: number;
-  dependency?: string | string[];
+  dependsOn?: string | string[];
   completedAt?: string;
 };
 

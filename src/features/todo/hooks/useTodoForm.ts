@@ -220,10 +220,10 @@ export const useTodoForm = ({
       }
     }
 
-    const dependency = Array.isArray(form.dependency)
-      ? form.dependency.filter(Boolean)
-      : form.dependency
-        ? [form.dependency]
+    const dependency = Array.isArray(form.dependsOn)
+      ? form.dependsOn.filter(Boolean)
+      : form.dependsOn
+        ? [form.dependsOn]
         : [];
     const normalizedDependency = isMeeting ? [] : dependency;
     const hasDependency = normalizedDependency.length > 0;
@@ -241,7 +241,7 @@ export const useTodoForm = ({
             ...todo,
             ...form,
             taskType,
-            dependency: normalizedDependency,
+            dependsOn: normalizedDependency,
             startableAt: hasDependency
               ? form.startableAt || ''
               : form.startableAt || todo.startableAt,
@@ -260,12 +260,12 @@ export const useTodoForm = ({
         if (!shouldDependOnCurrent && !alreadyDependsOnCurrent) return todo;
 
         if (shouldDependOnCurrent && !alreadyDependsOnCurrent) {
-          return { ...todo, dependency: [...depIds, currentTodoId], startableAt: '' };
+          return { ...todo, dependsOn: [...depIds, currentTodoId], startableAt: '' };
         }
 
         if (!shouldDependOnCurrent && alreadyDependsOnCurrent) {
           const nextDeps = depIds.filter(depId => depId !== currentTodoId);
-          return { ...todo, dependency: nextDeps.length > 0 ? nextDeps : undefined };
+          return { ...todo, dependsOn: nextDeps.length > 0 ? nextDeps : undefined };
         }
 
         return todo;
@@ -285,7 +285,7 @@ export const useTodoForm = ({
           : (form.status as Todo['status']) || 'Unlocked',
         effortMinutes: isMeeting ? 0 : form.effortMinutes || DEFAULT_EFFORT_MINUTES,
         actualWorkSeconds: isMeeting ? 0 : formActualWorkSeconds,
-        dependency: normalizedDependency,
+        dependsOn: normalizedDependency,
       };
       newTodos.push(newTodo);
     }

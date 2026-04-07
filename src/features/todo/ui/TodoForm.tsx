@@ -62,18 +62,18 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
     const { locale } = useAppLocale();
     const taskType = form.taskType || 'Normal';
     const isMeeting = isMeetingTodo({ taskType });
-    const hasDependency = form.dependency
-      ? Array.isArray(form.dependency)
-        ? form.dependency.length > 0
+    const hasDependency = form.dependsOn
+      ? Array.isArray(form.dependsOn)
+        ? form.dependsOn.length > 0
         : true
       : false;
     const availableDependencyTodos = todos.filter(
       t => t.id !== form.id && t.status !== 'Completed',
     );
-    const currentDeps = Array.isArray(form.dependency)
-      ? form.dependency
-      : form.dependency
-        ? [form.dependency]
+    const currentDeps = Array.isArray(form.dependsOn)
+      ? form.dependsOn
+      : form.dependsOn
+        ? [form.dependsOn]
         : [];
 
     const [isPredecessorExpanded, setIsPredecessorExpanded] = React.useState(false);
@@ -157,7 +157,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
 
       onChange({
         ...form,
-        dependency: newDeps,
+        dependsOn: newDeps,
         ...(newDeps.length > 0 ? { startableAt: '' } : {}),
       });
     }
@@ -216,7 +216,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                   ? {
                       effortMinutes: 0,
                       actualWorkSeconds: 0,
-                      dependency: [],
+                      dependsOn: [],
                     }
                   : {}),
               })
