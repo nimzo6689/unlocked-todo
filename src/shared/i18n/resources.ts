@@ -285,10 +285,9 @@ export const resources = {
         common: {
           noDate: 'N/A',
           untitled: '（タイトル未設定）',
-          enableNotifications: {
-            description:
-              '設定とヘルプ > 通知と言語から、開始可能になったタスクの通知をオンにできます。',
-            meeting: 'ミーティング',
+          taskTypes: {
+            normal: '普通',
+            meeting: '会議',
           },
           statuses: {
             Unlocked: '着手可能',
