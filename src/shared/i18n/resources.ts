@@ -379,6 +379,9 @@ export const resources = {
           cancel: 'キャンセル',
           save: '保存',
           complete: '完了',
+          saveAndClose: '保存して閉じる',
+          completeAndClose: '完了にして閉じる',
+          markIncompleteAndClose: '未完了にして閉じる',
           shortcuts: {
             focusTitle: 'タイトルへフォーカスする',
             focusTaskType: 'タスク種別へフォーカスする',
@@ -866,6 +869,9 @@ export const resources = {
           cancel: 'Cancel',
           save: 'Save',
           complete: 'Done',
+          saveAndClose: 'Save and close',
+          completeAndClose: 'Complete and close',
+          markIncompleteAndClose: 'Mark incomplete and close',
           shortcuts: {
             focusTitle: 'Focus title',
             focusTaskType: 'Focus task type',

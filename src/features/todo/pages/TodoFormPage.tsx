@@ -21,7 +21,9 @@ export const TodoFormPage = () => {
     applyDueDateQuickAction,
     applyStartableAtQuickAction,
     handleSave,
-    handleComplete,
+    handleSaveAndClose,
+    handleMarkCompletedAndClose,
+    handleMarkIncompleteAndClose,
     handleCancel,
     handleOpenTodo,
   } = useTodoForm({ todos, form, setForm, getTodo, fetchTodos, id, workSchedule });
@@ -94,15 +96,6 @@ export const TodoFormPage = () => {
           enabled: !isMeeting,
         },
         {
-          id: 'form-focus-status',
-          description: t('todo.form.shortcuts.focusStatus'),
-          category: 'フォーム操作' as const,
-          bindings: ['alt+8'],
-          action: () => formFocusRef.current?.focusStatus(),
-          allowInInput: true,
-          enabled: !isMeeting,
-        },
-        {
           id: 'form-focus-dependency',
           description: t('todo.form.shortcuts.focusDependency'),
           category: 'フォーム操作' as const,
@@ -127,7 +120,7 @@ export const TodoFormPage = () => {
           category: 'フォーム操作' as const,
           bindings: ['mod+shift+enter'],
           action: () => {
-            void handleComplete();
+            void handleSaveAndClose();
           },
           allowInInput: true,
         },
@@ -150,7 +143,7 @@ export const TodoFormPage = () => {
         })),
       ],
     };
-  }, [form, handleCancel, handleComplete, handleSave, id, setForm, t, todos]);
+  }, [form, handleCancel, handleSave, handleSaveAndClose, id, setForm, t, todos]);
 
   useRegisterShortcuts(shortcutRegistration);
 
@@ -169,7 +162,9 @@ export const TodoFormPage = () => {
         onApplyDueDateQuickAction={applyDueDateQuickAction}
         onApplyStartableAtQuickAction={applyStartableAtQuickAction}
         onSave={handleSave}
-        onComplete={handleComplete}
+        onSaveAndClose={handleSaveAndClose}
+        onMarkCompletedAndClose={handleMarkCompletedAndClose}
+        onMarkIncompleteAndClose={handleMarkIncompleteAndClose}
         onCancel={handleCancel}
         onOpenTodo={handleOpenTodo}
         saving={saving}

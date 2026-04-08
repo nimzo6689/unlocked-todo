@@ -120,6 +120,16 @@ export const useTodoForm = ({
     return Math.floor(numeric);
   };
 
+  const resolveIncompleteStatus = (
+    dependency: string[],
+    currentStatus?: Todo['status'],
+  ): Todo['status'] => {
+    if (currentStatus === 'Locked') {
+      return 'Locked';
+    }
+    return dependency.length > 0 ? 'Locked' : 'Unlocked';
+  };
+
   const getDueDateByQuickAction = useCallback(
     (quickAction: 'today' | 'tomorrow' | 'thisWeek', now: Date) => {
       const withinWorkingHours = isWithinWorkingHours(now, workSchedule);
@@ -207,7 +217,7 @@ export const useTodoForm = ({
     });
   };
 
-  const handleSave = async () => {
+  const handleSave = async (options?: { overrideStatus?: Todo['status'] }) => {
     const now = new Date().toISOString();
     const taskType = form.taskType || DEFAULT_TASK_TYPE;
     const isMeeting = isMeetingTodo({ taskType });
@@ -215,7 +225,7 @@ export const useTodoForm = ({
     if (form.startableAt && form.dueDate) {
       if (new Date(form.startableAt) >= new Date(form.dueDate)) {
         toast.error(i18n.t('todo.validation.startBeforeDue'));
-        return;
+        return false;
       }
     }
 
@@ -233,8 +243,10 @@ export const useTodoForm = ({
       const currentTodo = getTodo(currentTodoId);
       if (!currentTodo) {
         toast.error(i18n.t('todo.validation.dependencyInvalid'));
-        return;
+        return false;
       }
+
+      const overrideStatus = options?.overrideStatus;
 
       const safeSuccessorIds = isMeeting
         ? []
@@ -251,7 +263,7 @@ export const useTodoForm = ({
           : form.startableAt || currentTodo.startableAt,
         status: isMeeting
           ? getMeetingStatus(form.dueDate || currentTodo.dueDate, currentTodo.status)
-          : (form.status as Todo['status']) || currentTodo.status,
+          : overrideStatus || (form.status as Todo['status']) || currentTodo.status,
         effortMinutes: isMeeting ? 0 : form.effortMinutes || currentTodo.effortMinutes,
         actualWorkSeconds: isMeeting ? 0 : formActualWorkSeconds,
       };
@@ -306,6 +318,7 @@ export const useTodoForm = ({
       }
     } else {
       const formActualWorkSeconds = normalizeActualWorkSeconds(form.actualWorkSeconds);
+      const overrideStatus = options?.overrideStatus;
       const newTodo: Todo = {
         id: crypto.randomUUID(),
         createdAt: now,
@@ -316,7 +329,7 @@ export const useTodoForm = ({
         dueDate: form.dueDate || '',
         status: isMeeting
           ? getMeetingStatus(form.dueDate || '')
-          : (form.status as Todo['status']) || 'Unlocked',
+          : overrideStatus || (form.status as Todo['status']) || 'Unlocked',
         effortMinutes: isMeeting ? 0 : form.effortMinutes || DEFAULT_EFFORT_MINUTES,
         actualWorkSeconds: isMeeting ? 0 : formActualWorkSeconds,
         dependsOn: normalizedDependency,
@@ -326,12 +339,16 @@ export const useTodoForm = ({
 
     await fetchTodos();
     toast.success(i18n.t('todo.toast.saveSuccess'));
+    return true;
   };
 
-  const handleComplete = async () => {
+  const handleSaveAndClose = async (options?: { overrideStatus?: Todo['status'] }) => {
     setSaving(true);
     try {
-      await handleSave();
+      const saved = await handleSave(options);
+      if (!saved) {
+        return;
+      }
       initializedFormKeyRef.current = null;
       setForm(defaultForm);
       setSuccessorIds([]);
@@ -339,6 +356,21 @@ export const useTodoForm = ({
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleMarkCompletedAndClose = async () => {
+    await handleSaveAndClose({ overrideStatus: 'Completed' });
+  };
+
+  const handleMarkIncompleteAndClose = async () => {
+    const dependency = Array.isArray(form.dependsOn)
+      ? form.dependsOn.filter(Boolean)
+      : form.dependsOn
+        ? [form.dependsOn]
+        : [];
+    const currentStatus = (form.status as Todo['status']) || getTodo(form.id || '')?.status;
+    const nextStatus = resolveIncompleteStatus(dependency, currentStatus);
+    await handleSaveAndClose({ overrideStatus: nextStatus });
   };
 
   const handleCancel = () => {
@@ -362,7 +394,9 @@ export const useTodoForm = ({
     applyDueDateQuickAction,
     applyStartableAtQuickAction,
     handleSave,
-    handleComplete,
+    handleSaveAndClose,
+    handleMarkCompletedAndClose,
+    handleMarkIncompleteAndClose,
     handleCancel,
     handleOpenTodo,
   };
