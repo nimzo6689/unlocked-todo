@@ -284,7 +284,7 @@ export const resources = {
           saveForm: 'フォームや設定を保存します。',
           saveAndBack: 'フォームを保存して一覧に戻ります。',
           closeDialog: 'ダイアログやフォーム編集を閉じます。',
-          quickEffort: 'Todo フォームの工数をクイック設定します。',
+          quickEffort: 'タスクの工数をクイック設定します。',
           dateMove: '空き状況・予実管理の日付を前日、翌日、今日へ切り替えます。',
         },
       },
