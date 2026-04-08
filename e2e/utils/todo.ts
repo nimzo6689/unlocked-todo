@@ -11,7 +11,7 @@ export const createTodo = async (
   page: Page,
   {
     title,
-    description = 'Playwright で作成した Todo です。',
+    description = 'Playwright で作成したタスクです。',
     dueDate = '2026-04-10T10:00',
     effortMinutes = 25,
   }: CreateTodoOptions,

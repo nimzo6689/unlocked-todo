@@ -1,7 +1,12 @@
 import { createTodo, getTodoCard } from '../utils/todo';
 import { expect, test } from '../fixtures/app.fixture';
 
-test('Todo を作成して編集し、削除できる', async ({ page, gotoApp, waitForAppReady, setLocale }) => {
+test('タスクを作成して編集し、削除できる', async ({
+  page,
+  gotoApp,
+  waitForAppReady,
+  setLocale,
+}) => {
   await setLocale('ja');
   const initialTitle = `Playwright CRUD ${Date.now()}`;
   const updatedTitle = `${initialTitle} Updated`;

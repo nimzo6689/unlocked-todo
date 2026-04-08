@@ -1,7 +1,7 @@
 import { createTodo, getTodoCard } from '../utils/todo';
 import { expect, test } from '../fixtures/app.fixture';
 
-test('作成した Todo がリロード後も保持される', async ({
+test('作成したタスクがリロード後も保持される', async ({
   page,
   gotoApp,
   waitForAppReady,
