@@ -130,6 +130,14 @@ html[data-theme='dark'] #root .todo-list-button-neutral:hover {
   background-color: #1e293b;
 }
 
+html[data-theme='dark'] #root .todo-list-menu-button {
+  color: #f8fafc;
+}
+
+html[data-theme='dark'] #root .todo-list-menu-button svg {
+  filter: none;
+}
+
 html[data-theme='dark'] #root .todo-list-button-muted {
   background-color: #1e293b;
   color: #e2e8f0;

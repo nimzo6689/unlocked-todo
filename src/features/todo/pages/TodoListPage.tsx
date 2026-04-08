@@ -438,7 +438,7 @@ export const TodoListPage = () => {
           </button>
           <div className="relative">
             <button
-              className="todo-list-action-button todo-list-button-neutral bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base h-10 flex items-center justify-center"
+              className="todo-list-menu-button todo-list-action-button todo-list-button-neutral bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base h-10 flex items-center justify-center"
               onClick={() => setMenuOpen(!menuOpen)}
             >
               <MoreVertical size={20} />
