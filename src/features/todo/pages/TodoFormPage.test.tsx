@@ -64,14 +64,14 @@ describe('TodoFormPage', () => {
   it('renders new form title on /new', () => {
     renderFormPage('/new');
 
-    expect(screen.getByRole('heading', { name: 'Todoの新規作成' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'タスクの新規作成' })).toBeInTheDocument();
     expect(screen.getByLabelText('タイトル *')).toBeInTheDocument();
   });
 
   it('renders edit form title on /edit/:id', () => {
     renderFormPage('/edit/todo-1');
 
-    expect(screen.getByRole('heading', { name: 'Todoの編集' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'タスクの編集' })).toBeInTheDocument();
   });
 
   it('registers focus shortcuts and quick effort shortcuts with expected bindings', () => {

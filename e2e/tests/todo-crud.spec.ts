@@ -14,7 +14,7 @@ test('Todo を作成して編集し、削除できる', async ({ page, gotoApp, 
   await expect(createdCard).toBeVisible();
 
   await createdCard.getByRole('button', { name: /編集|Edit/ }).click();
-  await expect(page.getByRole('heading', { name: 'Todoの編集' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'タスクの編集' })).toBeVisible();
   await page.locator('#title').fill(updatedTitle);
   await page.getByRole('button', { name: /完了|Done/ }).click();
 

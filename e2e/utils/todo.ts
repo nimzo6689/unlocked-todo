@@ -16,7 +16,7 @@ export const createTodo = async (
     effortMinutes = 25,
   }: CreateTodoOptions,
 ) => {
-  await expect(page.getByRole('heading', { name: /Todoの新規作成|Create Todo/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /タスクの新規作成|Create Task/ })).toBeVisible();
   await page.locator('#title').fill(title);
   await page.locator('#description').fill(description);
   await page.locator('#dueDate').fill(dueDate);

@@ -352,8 +352,8 @@ export const resources = {
         formPage: {
           newPageLabel: 'Todo 新規作成',
           editPageLabel: 'Todo 編集',
-          newTitle: 'Todoの新規作成',
-          editTitle: 'Todoの編集',
+          newTitle: 'タスクの新規作成',
+          editTitle: 'タスクの編集',
         },
         form: {
           title: 'タイトル',
