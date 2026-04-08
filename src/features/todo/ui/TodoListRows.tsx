@@ -73,7 +73,7 @@ export const TodoListRows: FC<TodoListRowsProps> = ({
                 tabIndex={isSelected ? 0 : -1}
                 onClick={() => onSelect(todo.id)}
                 onFocus={() => onSelect(todo.id)}
-                className={`${isSelected ? 'bg-blue-50 ring-1 ring-inset ring-blue-300' : ''} ${isInProgress ? 'bg-blue-50/60' : ''} border-t border-slate-100 hover:bg-slate-50 cursor-pointer`}
+                className={`${isSelected ? 'bg-blue-50 ring-1 ring-inset ring-blue-300' : ''} ${isInProgress ? 'bg-blue-50/60' : ''} border-t border-slate-100 hover:bg-slate-50`}
               >
                 <td className="px-3 py-3 align-top">
                   <div className="font-medium text-slate-900 break-words">
