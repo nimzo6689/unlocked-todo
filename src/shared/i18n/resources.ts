@@ -7,6 +7,10 @@ export const resources = {
         close: '閉じる',
         cancel: 'キャンセル',
         ok: 'OK',
+        theme: {
+          light: 'ライト',
+          dark: 'ダーク',
+        },
         locale: {
           label: '表示言語',
           description:
@@ -26,7 +30,7 @@ export const resources = {
         availability: '空き状況',
         planActual: '予実管理',
         settingsHelp: '設定とヘルプ',
-        notifications: '通知と言語',
+        notifications: '一般',
         workHours: '稼働設定',
         usage: '使い方',
         about: 'アプリ情報',
@@ -66,7 +70,7 @@ export const resources = {
           navNew: '新規作成へ移動',
           navAvailability: '空き状況へ移動',
           navPlanActual: '予実管理へ移動',
-          navNotifications: '通知と言語へ移動',
+          navNotifications: '一般へ移動',
           navWorkHours: '稼働設定へ移動',
           navUsage: '使い方へ移動',
           navAbout: 'アプリ情報へ移動',
@@ -74,11 +78,11 @@ export const resources = {
         },
       },
       notifications: {
-        pageLabel: '通知と言語',
+        pageLabel: '一般',
         enableShortcut: '通知を有効にする',
-        title: '通知と言語',
+        title: '一般',
         description:
-          '開始可能になったタスクの通知を管理します。通知はこのブラウザ内でのみ有効になり、Todo データは外部へ送信されません。',
+          '通知・表示言語・テーマを管理します。設定はこのブラウザに保存され、すぐに反映されます。',
         enabled: '通知は有効です',
         disabled: '通知はまだ有効ではありません',
         targetDescription: '対象は「開始可能」になったタスクです。',
@@ -94,6 +98,10 @@ export const resources = {
         },
         languageSectionTitle: '言語設定',
         languageCurrent: '現在: {{language}}',
+        themeSectionTitle: 'テーマ',
+        themeDescription:
+          'アプリ全体の表示テーマを切り替えます。カードやグラフを含む画面全体に反映されます。',
+        themeCurrent: '現在: {{theme}}',
         unsupportedBrowser: 'このブラウザは通知をサポートしていません。',
         browserNotificationTitle: 'タスクが開始可能です！',
         browserNotificationBody: '「{{title}}」に着手できます。',
@@ -250,8 +258,7 @@ export const resources = {
           },
           enableNotifications: {
             title: '通知を有効にする',
-            description:
-              '設定とヘルプ > 通知と言語から、開始可能になったタスクの通知をオンにできます。',
+            description: '設定とヘルプ > 一般から、開始可能になったタスクの通知をオンにできます。',
           },
         },
         shortcutTitle: 'ショートカット早見表',
@@ -493,6 +500,10 @@ export const resources = {
         close: 'Close',
         cancel: 'Cancel',
         ok: 'OK',
+        theme: {
+          light: 'Light',
+          dark: 'Dark',
+        },
         locale: {
           label: 'Display language',
           description:
@@ -512,7 +523,7 @@ export const resources = {
         availability: 'Availability',
         planActual: 'Plan vs Actual',
         settingsHelp: 'Settings & Help',
-        notifications: 'Notifications & Language',
+        notifications: 'General',
         workHours: 'Work Hours',
         usage: 'Usage',
         about: 'About',
@@ -552,7 +563,7 @@ export const resources = {
           navNew: 'Go to new todo',
           navAvailability: 'Go to availability',
           navPlanActual: 'Go to plan vs actual',
-          navNotifications: 'Go to notifications and language',
+          navNotifications: 'Go to general settings',
           navWorkHours: 'Go to work hours settings',
           navUsage: 'Go to usage',
           navAbout: 'Go to about',
@@ -560,11 +571,11 @@ export const resources = {
         },
       },
       notifications: {
-        pageLabel: 'Notifications & Language',
+        pageLabel: 'General',
         enableShortcut: 'Enable notifications',
-        title: 'Notifications & Language',
+        title: 'General',
         description:
-          'Manage notifications for tasks that become ready to start. Notifications stay inside this browser, and todo data is not sent externally.',
+          'Manage notifications, language, and theme. Changes are saved in this browser and applied immediately.',
         enabled: 'Notifications are enabled',
         disabled: 'Notifications are not enabled yet',
         targetDescription: 'Notifications target tasks that become ready to start.',
@@ -581,6 +592,10 @@ export const resources = {
         },
         languageSectionTitle: 'Language',
         languageCurrent: 'Current: {{language}}',
+        themeSectionTitle: 'Theme',
+        themeDescription:
+          'Switch the app theme. It applies across the whole app, including cards and charts.',
+        themeCurrent: 'Current: {{theme}}',
         unsupportedBrowser: 'This browser does not support notifications.',
         browserNotificationTitle: 'A task is ready to start!',
         browserNotificationBody: 'You can start "{{title}}" now.',
@@ -740,7 +755,7 @@ export const resources = {
           enableNotifications: {
             title: 'Enable notifications',
             description:
-              'From Settings & Help > Notifications, turn on alerts when tasks become startable.',
+              'From Settings & Help > General, turn on alerts when tasks become startable.',
           },
         },
         shortcutTitle: 'Shortcut reference',

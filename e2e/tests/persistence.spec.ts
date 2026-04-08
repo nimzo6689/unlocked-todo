@@ -24,13 +24,13 @@ test('作成した Todo がリロード後も保持される', async ({
 
 test('言語設定がリロード後も保持される', async ({ page, gotoApp, setLocale }) => {
   await setLocale('ja');
-  await gotoApp('/settings/notifications');
+  await gotoApp('/settings/general');
 
   await page.getByRole('button', { name: 'English' }).click();
-  await expect(page.getByRole('heading', { name: 'Notifications & Language' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'General' })).toBeVisible();
   await expect(page.getByText('Current: English')).toBeVisible();
 
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Notifications & Language' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'General' })).toBeVisible();
   await expect(page.getByText('Current: English')).toBeVisible();
 });

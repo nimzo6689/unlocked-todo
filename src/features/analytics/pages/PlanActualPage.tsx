@@ -120,6 +120,10 @@ const buildChartOption = (
   locale: 'ja' | 'en',
   t: (key: string, options?: Record<string, unknown>) => string,
 ): EChartsOption => {
+  const isDarkTheme =
+    typeof document !== 'undefined' && document.documentElement.dataset.theme === 'dark';
+  const titleColor = isDarkTheme ? '#f8fafc' : '#0f172a';
+  const subTitleColor = isDarkTheme ? '#cbd5e1' : '#475569';
   const categories = rows.map(row => row.title);
   const planned = rows.map(row => Number(row.plannedMinutes.toFixed(1)));
   const actual = rows.map(row => Number(row.actualMinutes.toFixed(1)));
@@ -143,11 +147,11 @@ const buildChartOption = (
       textStyle: {
         fontSize: 20,
         fontWeight: 700,
-        color: '#0f172a',
+        color: titleColor,
       },
       subtextStyle: {
         fontSize: 12,
-        color: '#475569',
+        color: subTitleColor,
       },
     },
     legend: {

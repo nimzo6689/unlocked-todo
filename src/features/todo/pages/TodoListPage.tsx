@@ -431,14 +431,14 @@ export const TodoListPage = () => {
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 sm:mt-0 w-full sm:w-auto">
           <button
-            className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base h-10 flex items-center justify-center"
+            className="todo-list-action-button todo-list-button-primary bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base h-10 flex items-center justify-center"
             onClick={handleNew}
           >
             {t('todo.list.new')}
           </button>
           <div className="relative">
             <button
-              className="bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base h-10 flex items-center justify-center"
+              className="todo-list-action-button todo-list-button-neutral bg-slate-500 hover:bg-slate-600 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md transition-transform hover:scale-105 text-sm sm:text-base h-10 flex items-center justify-center"
               onClick={() => setMenuOpen(!menuOpen)}
             >
               <MoreVertical size={20} />
@@ -446,7 +446,7 @@ export const TodoListPage = () => {
             {menuOpen && (
               <div className="absolute right-0 mt-2 w-40 bg-white border border-slate-200 rounded-lg shadow-lg z-50">
                 <button
-                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 border-b border-slate-100 transition-colors"
+                  className="todo-list-action-button todo-list-button-neutral w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 border-b border-slate-100 transition-colors"
                   onClick={() => {
                     handleExport();
                     setMenuOpen(false);
@@ -455,7 +455,7 @@ export const TodoListPage = () => {
                   {t('todo.list.export')}
                 </button>
                 <button
-                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors"
+                  className="todo-list-action-button todo-list-button-neutral w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors"
                   onClick={() => {
                     handleImport();
                     setMenuOpen(false);
@@ -477,7 +477,9 @@ export const TodoListPage = () => {
             {filterButtons.map((btn: import('@/features/todo/model/types').FilterButton) => (
               <button
                 key={btn.key}
-                className={`px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition-colors ${
+                className={`todo-list-action-button ${
+                  filter === btn.key ? 'todo-list-button-selected' : 'todo-list-button-muted'
+                } px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition-colors ${
                   filter === btn.key
                     ? 'bg-white text-blue-600 shadow'
                     : 'text-slate-600 hover:bg-slate-200'
@@ -491,7 +493,9 @@ export const TodoListPage = () => {
         </div>
         <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
           <button
-            className={`px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition-colors ${
+            className={`todo-list-action-button ${
+              effectiveView === 'card' ? 'todo-list-button-selected' : 'todo-list-button-muted'
+            } px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition-colors ${
               effectiveView === 'card'
                 ? 'bg-white text-blue-600 shadow'
                 : 'text-slate-600 hover:bg-slate-200'
@@ -502,7 +506,9 @@ export const TodoListPage = () => {
             {t('todo.list.cardView')}
           </button>
           <button
-            className={`px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition-colors ${
+            className={`todo-list-action-button ${
+              effectiveView === 'list' ? 'todo-list-button-selected' : 'todo-list-button-muted'
+            } px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-md transition-colors ${
               effectiveView === 'list'
                 ? 'bg-white text-blue-600 shadow'
                 : 'text-slate-600 hover:bg-slate-200'
@@ -565,7 +571,7 @@ export const TodoListPage = () => {
       {hasMoreTodos && (
         <div className="mt-6 flex justify-center">
           <button
-            className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-5 rounded-lg border border-slate-300 transition-colors"
+            className="todo-list-action-button todo-list-button-muted bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-5 rounded-lg border border-slate-300 transition-colors"
             onClick={() => {
               void loadMoreTodos();
             }}

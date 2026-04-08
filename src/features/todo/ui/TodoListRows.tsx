@@ -114,7 +114,9 @@ export const TodoListRows: FC<TodoListRowsProps> = ({
                   <div className="flex justify-end sm:justify-end flex-wrap gap-1">
                     {!isMeeting && filter === 'unlocked' && todo.status === 'Unlocked' && (
                       <button
-                        className={`text-xs ${
+                        className={`todo-list-action-button ${
+                          isInProgress ? 'todo-list-button-warning' : 'todo-list-button-primary'
+                        } text-xs ${
                           isInProgress
                             ? 'bg-yellow-500 hover:bg-yellow-600'
                             : 'bg-blue-500 hover:bg-blue-600'
@@ -135,7 +137,7 @@ export const TodoListRows: FC<TodoListRowsProps> = ({
                     )}
                     {!isMeeting && todo.status !== 'Completed' && (
                       <button
-                        className="text-xs bg-green-500 hover:bg-green-600 text-white font-semibold py-1 px-2 rounded-md inline-flex items-center justify-center"
+                        className="todo-list-action-button todo-list-button-success text-xs bg-green-500 hover:bg-green-600 text-white font-semibold py-1 px-2 rounded-md inline-flex items-center justify-center"
                         aria-label={t('todo.card.complete')}
                         onClick={event => {
                           event.stopPropagation();
@@ -149,7 +151,7 @@ export const TodoListRows: FC<TodoListRowsProps> = ({
                       </button>
                     )}
                     <button
-                      className="text-xs bg-slate-500 hover:bg-slate-600 text-white font-semibold py-1 px-2 rounded-md inline-flex items-center justify-center"
+                      className="todo-list-action-button todo-list-button-neutral text-xs bg-slate-500 hover:bg-slate-600 text-white font-semibold py-1 px-2 rounded-md inline-flex items-center justify-center"
                       aria-label={t('todo.card.edit')}
                       onClick={event => {
                         event.stopPropagation();
@@ -162,7 +164,7 @@ export const TodoListRows: FC<TodoListRowsProps> = ({
                       <span className="hidden sm:inline">{t('todo.card.edit')}</span>
                     </button>
                     <button
-                      className="text-xs bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-2 rounded-md inline-flex items-center justify-center"
+                      className="todo-list-action-button todo-list-button-danger text-xs bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-2 rounded-md inline-flex items-center justify-center"
                       aria-label={t('todo.card.delete')}
                       onClick={event => {
                         event.stopPropagation();

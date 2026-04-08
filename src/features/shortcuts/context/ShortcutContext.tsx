@@ -234,7 +234,7 @@ export const ShortcutProvider = ({
         description: t('shortcuts.actions.navNotifications'),
         category: 'ナビゲーション',
         bindings: ['g t'],
-        action: () => handleNavigate('/settings/notifications'),
+        action: () => handleNavigate('/settings/general'),
       },
       {
         id: 'nav-work-hours',

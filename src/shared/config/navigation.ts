@@ -41,7 +41,7 @@ export const getNavigationItems = (t: TFunction): NavigationItem[] => [
       {
         key: 'settings-notifications',
         label: t('navigation.notifications'),
-        path: '/settings/notifications',
+        path: '/settings/general',
         icon: Bell,
       },
       {

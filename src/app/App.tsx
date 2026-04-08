@@ -74,6 +74,7 @@ const AppContent = () => {
               <Route path="/edit/:id" element={<TodoFormPage />} />
               <Route path="/availability" element={<AvailabilityPage />} />
               <Route path="/plan-actual" element={<PlanActualPage />} />
+              <Route path="/settings/general" element={<NotificationsSettingsPage />} />
               <Route path="/settings/notifications" element={<NotificationsSettingsPage />} />
               <Route path="/settings/work-hours" element={<WorkHoursPage />} />
               <Route path="/help/about" element={<AboutPage />} />
