@@ -11,6 +11,7 @@ import {
   todosToJSON,
   todosFromJSON,
 } from '@/features/todo/model/todo-utils';
+import { getRecurringHorizonRange } from '@/features/todo/model/recurring-utils';
 import {
   DEFAULT_WORK_SCHEDULE,
   sanitizeWorkSchedule,
@@ -23,6 +24,7 @@ import { TodoContext } from './TodoContext';
 const NOTIFIED_TODOS_KEY = 'notified-todos';
 const NOTIFICATION_PERMISSION_KEY = 'notificationPermission';
 const IN_PROGRESS_TODO_KEY = 'in-progress-todo';
+const RECURRING_SYNC_LAST_RUN_DATE_KEY = 'recurring-sync-last-run-date';
 const MEETING_AUTOCOMPLETE_INTERVAL_MS = 30_000;
 const TODO_PAGE_SIZE = 20;
 
@@ -319,6 +321,36 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
   useEffect(() => {
     fetchTodos();
   }, [fetchTodos]);
+
+  useEffect(() => {
+    if (!isTodosLoaded) {
+      return;
+    }
+
+    const runRecurringSync = async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const lastRunDate = localStorage.getItem(RECURRING_SYNC_LAST_RUN_DATE_KEY);
+
+      if (lastRunDate === today) {
+        return;
+      }
+
+      try {
+        const { from, to } = getRecurringHorizonRange(new Date());
+        const generatedTodos = await todoDB.syncRecurringTodosInRange(from, to);
+
+        localStorage.setItem(RECURRING_SYNC_LAST_RUN_DATE_KEY, today);
+
+        if (generatedTodos.length > 0) {
+          await fetchTodos();
+        }
+      } catch (error) {
+        notifyPersistenceError(error, 'todo.toast.persistenceFailed');
+      }
+    };
+
+    void runRecurringSync();
+  }, [fetchTodos, isTodosLoaded, notifyPersistenceError]);
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {

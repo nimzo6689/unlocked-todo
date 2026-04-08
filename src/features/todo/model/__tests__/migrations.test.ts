@@ -30,15 +30,15 @@ describe('todo migrations', () => {
       } as unknown as Todo,
     ];
 
-    const migrated = applyMigrationChain(v1Todos, 1, 3);
+    const migrated = applyMigrationChain(v1Todos, 1, 4);
 
     expect(migrated[0].dependsOn).toBeUndefined();
   });
 
-  it('keeps data unchanged for v2 to v3 no-op migration', () => {
+  it('keeps data unchanged for v2 to v4 no-op migration', () => {
     const v2Todos = [createTodo({ id: 'c', dependsOn: ['dep-a'] })];
 
-    const migrated = applyMigrationChain(v2Todos, 2, 3);
+    const migrated = applyMigrationChain(v2Todos, 2, 4);
 
     expect(migrated).toEqual(v2Todos);
   });

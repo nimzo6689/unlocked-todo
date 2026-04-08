@@ -26,6 +26,7 @@ export type TodoFormProps = {
   onMarkIncompleteAndClose: () => void;
   onCancel: () => void;
   onOpenTodo: (id: string) => void;
+  onRegisterRecurringTask?: () => void;
   saving?: boolean;
 };
 
@@ -56,6 +57,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
       onMarkIncompleteAndClose,
       onCancel,
       onOpenTodo,
+      onRegisterRecurringTask,
       saving = false,
     },
     ref,
@@ -563,6 +565,15 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
           </div>
         )}
         <div className="flex flex-wrap justify-end gap-2 mt-2">
+          {form.id && onRegisterRecurringTask && (
+            <button
+              type="button"
+              onClick={onRegisterRecurringTask}
+              className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
+            >
+              {t('todo.form.registerRecurringTask')}
+            </button>
+          )}
           <button
             type="button"
             onClick={onCancel}

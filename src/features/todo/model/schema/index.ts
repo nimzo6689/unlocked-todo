@@ -8,7 +8,7 @@ export const TODO_STORE_SCHEMA: TodoStoreSchema = {
   keyPath: 'id',
 };
 
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 export { TODO_SCHEMA_V1 } from './v1';
 export { TODO_SCHEMA_V2 } from './v2';

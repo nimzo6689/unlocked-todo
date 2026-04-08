@@ -67,6 +67,11 @@ const MIGRATION_CHAIN: MigrationStep[] = [
     to: 3,
     transform: todos => todos,
   },
+  {
+    from: 3,
+    to: 4,
+    transform: todos => todos,
+  },
 ];
 
 export const applyMigrationChain = (todos: Todo[], from: number, to: number): Todo[] => {

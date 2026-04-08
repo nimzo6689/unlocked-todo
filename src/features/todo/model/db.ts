@@ -1,11 +1,21 @@
 import Dexie, { type Table } from 'dexie';
-import type { Todo } from '@/features/todo/model/types';
+import type {
+  RecurringTaskDefinition,
+  RecurringTaskInstanceKey,
+  Todo,
+} from '@/features/todo/model/types';
 import { CURRENT_SCHEMA_VERSION, TODO_STORE_SCHEMA } from '@/features/todo/model/schema';
 import { applyMigrationChain } from '@/features/todo/model/migrations';
 import { getDependencyIds } from '@/features/todo/model/todo-utils';
+import {
+  buildTodoFromRecurring,
+  expandRecurringStartTimes,
+} from '@/features/todo/model/recurring-utils';
 
 const DB_NAME = 'hakaruTodoDB';
 const META_STORE_NAME = 'meta';
+const RECURRING_DEFINITION_STORE_NAME = 'recurringTaskDefinitions';
+const RECURRING_INSTANCE_STORE_NAME = 'recurringTaskInstances';
 const SCHEMA_VERSION_KEY = 'todoSchemaVersion';
 
 type MetaValue = {
@@ -16,6 +26,8 @@ type MetaValue = {
 class HakaruTodoDB extends Dexie {
   todos!: Table<Todo, string>;
   meta!: Table<MetaValue, string>;
+  recurringTaskDefinitions!: Table<RecurringTaskDefinition, string>;
+  recurringTaskInstances!: Table<RecurringTaskInstanceKey, string>;
 
   constructor() {
     super(DB_NAME);
@@ -33,6 +45,12 @@ class HakaruTodoDB extends Dexie {
     this.version(3).stores({
       [TODO_STORE_SCHEMA.name]: 'id, dueDate, startableAt, completedAt',
       [META_STORE_NAME]: 'key',
+    });
+    this.version(4).stores({
+      [TODO_STORE_SCHEMA.name]: 'id, dueDate, startableAt, completedAt',
+      [META_STORE_NAME]: 'key',
+      [RECURRING_DEFINITION_STORE_NAME]: 'id, updatedAt, startAt, endAt',
+      [RECURRING_INSTANCE_STORE_NAME]: 'id, recurringTaskId, startableAt, generatedAt',
     });
   }
 }
@@ -72,6 +90,10 @@ const toBoundary = (value: string, fallback: string) => {
     return fallback;
   }
   return value.includes('T') ? value : `${value}${fallback}`;
+};
+
+const createRecurringInstanceId = (recurringTaskId: string, startableAt: string) => {
+  return `${recurringTaskId}:${startableAt}`;
 };
 
 export const todoDB = {
@@ -155,6 +177,76 @@ export const todoDB = {
         await db.todos.clear();
         await db.todos.bulkPut(todos);
       });
+    });
+  },
+  fetchRecurringTaskDefinitions: async (): Promise<RecurringTaskDefinition[]> => {
+    return runWithMigration(() => db.recurringTaskDefinitions.toArray());
+  },
+  putRecurringTaskDefinition: async (definition: RecurringTaskDefinition): Promise<void> => {
+    await runWithMigration(async () => {
+      await db.recurringTaskDefinitions.put(definition);
+    });
+  },
+  deleteRecurringTaskDefinition: async (id: string): Promise<void> => {
+    await runWithMigration(async () => {
+      await db.transaction(
+        'rw',
+        db.recurringTaskDefinitions,
+        db.recurringTaskInstances,
+        async () => {
+          await db.recurringTaskDefinitions.delete(id);
+          await db.recurringTaskInstances.where('recurringTaskId').equals(id).delete();
+        },
+      );
+    });
+  },
+  syncRecurringTodosInRange: async (from: Date, to: Date): Promise<Todo[]> => {
+    return runWithMigration(async () => {
+      const recurringDefinitions = await db.recurringTaskDefinitions.toArray();
+
+      if (recurringDefinitions.length === 0) {
+        return [];
+      }
+
+      const generatedTodos: Todo[] = [];
+      const generatedInstances: RecurringTaskInstanceKey[] = [];
+
+      await db.transaction(
+        'rw',
+        db.recurringTaskDefinitions,
+        db.recurringTaskInstances,
+        db.todos,
+        async () => {
+          for (const definition of recurringDefinitions) {
+            const startTimes = expandRecurringStartTimes(definition, from, to);
+
+            for (const startableAt of startTimes) {
+              const instanceId = createRecurringInstanceId(definition.id, startableAt);
+              const existingInstance = await db.recurringTaskInstances.get(instanceId);
+
+              if (existingInstance) {
+                continue;
+              }
+
+              const nextTodo = buildTodoFromRecurring(definition, startableAt);
+              generatedTodos.push(nextTodo);
+              generatedInstances.push({
+                id: instanceId,
+                recurringTaskId: definition.id,
+                startableAt,
+                generatedAt: new Date().toISOString(),
+              });
+            }
+          }
+
+          if (generatedTodos.length > 0) {
+            await db.todos.bulkPut(generatedTodos);
+            await db.recurringTaskInstances.bulkPut(generatedInstances);
+          }
+        },
+      );
+
+      return generatedTodos;
     });
   },
 };

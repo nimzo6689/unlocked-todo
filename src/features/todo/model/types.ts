@@ -1,5 +1,29 @@
 export type TodoTaskType = 'Normal' | 'Meeting';
 
+export type RecurringTaskUnit = 'day' | 'week' | 'month';
+
+export type RecurringTaskDefinition = {
+  id: string;
+  title: string;
+  description: string;
+  taskType: TodoTaskType;
+  effortMinutes: number;
+  startAt: string;
+  endAt?: string;
+  firstDueAt: string;
+  interval: number;
+  unit: RecurringTaskUnit;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RecurringTaskInstanceKey = {
+  id: string;
+  recurringTaskId: string;
+  startableAt: string;
+  generatedAt: string;
+};
+
 export type Todo = {
   id: string;
   title: string;

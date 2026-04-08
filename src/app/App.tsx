@@ -10,6 +10,7 @@ import { NotificationsSettingsPage } from '@/features/notifications/pages/Notifi
 import { WorkHoursPage } from '@/features/work-schedule/pages/WorkHoursPage';
 import { AboutPage } from '@/features/about/pages/AboutPage';
 import { UsagePage } from '@/features/usage/pages/UsagePage';
+import { RecurringTaskPage } from '@/features/todo/pages/RecurringTaskPage';
 import { TodoProvider } from '@/app/providers/TodoProvider';
 import { Toaster } from 'react-hot-toast';
 import { Sidebar } from '@/widgets/navigation/Sidebar';
@@ -77,6 +78,7 @@ const AppContent = () => {
               <Route path="/settings/general" element={<NotificationsSettingsPage />} />
               <Route path="/settings/notifications" element={<NotificationsSettingsPage />} />
               <Route path="/settings/work-hours" element={<WorkHoursPage />} />
+              <Route path="/settings/recurring" element={<RecurringTaskPage />} />
               <Route path="/help/about" element={<AboutPage />} />
               <Route path="/help/usage" element={<UsagePage />} />
             </Routes>

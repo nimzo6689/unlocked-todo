@@ -6,6 +6,7 @@ import {
   Clock3,
   Info,
   ListTodo,
+  Repeat,
   Settings2,
   type LucideIcon,
 } from 'lucide-react';
@@ -49,6 +50,12 @@ export const getNavigationItems = (t: TFunction): NavigationItem[] => [
         label: t('navigation.workHours'),
         path: '/settings/work-hours',
         icon: Clock3,
+      },
+      {
+        key: 'settings-recurring',
+        label: t('navigation.recurring'),
+        path: '/settings/recurring',
+        icon: Repeat,
       },
       {
         key: 'help-usage',

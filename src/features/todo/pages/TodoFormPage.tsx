@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { TodoForm, type TodoFormFocusHandle } from '@/features/todo/ui/TodoForm';
 import { DEFAULT_TASK_TYPE, isMeetingTodo } from '@/features/todo/model/todo-utils';
@@ -13,6 +13,7 @@ export const TodoFormPage = () => {
   const { t } = useTranslation();
   const { todos, form, setForm, getTodo, fetchTodos, workSchedule } = useTodoContext();
   const { id } = useParams();
+  const navigate = useNavigate();
   const formFocusRef = useRef<TodoFormFocusHandle>(null);
   const {
     saving,
@@ -147,6 +148,20 @@ export const TodoFormPage = () => {
 
   useRegisterShortcuts(shortcutRegistration);
 
+  const handleRegisterRecurringTask = () => {
+    navigate('/settings/recurring', {
+      state: {
+        sourceTodoId: form.id,
+        title: form.title,
+        taskType: form.taskType,
+        description: form.description,
+        effortMinutes: form.effortMinutes,
+        startableAt: form.startableAt,
+        dueDate: form.dueDate,
+      },
+    });
+  };
+
   return (
     <div className="bg-white p-4 sm:p-6 md:p-8 rounded-lg shadow-xl max-w-md sm:max-w-2xl md:max-w-3xl mx-auto">
       <h1 className="todo-form-page-title text-xl sm:text-2xl font-bold mb-6">
@@ -167,6 +182,7 @@ export const TodoFormPage = () => {
         onMarkIncompleteAndClose={handleMarkIncompleteAndClose}
         onCancel={handleCancel}
         onOpenTodo={handleOpenTodo}
+        onRegisterRecurringTask={id ? handleRegisterRecurringTask : undefined}
         saving={saving}
       />
     </div>
