@@ -174,7 +174,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
           event.preventDefault();
           onSave();
         }}
-        className="p-2 sm:p-4"
+        className="todo-form p-2 sm:p-4"
       >
         <input type="hidden" value={form.id || ''} />
         <div className="mb-4">
@@ -574,7 +574,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
             type="button"
             onClick={onSave}
             disabled={saving}
-            className="bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
+            className="todo-form-button-save bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
           >
             {t('todo.form.save')}
           </button>
@@ -582,7 +582,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
             type="button"
             onClick={onSaveAndClose}
             disabled={saving}
-            className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
+            className="todo-form-button-save-close bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
           >
             {t('todo.form.saveAndClose')}
           </button>
@@ -591,7 +591,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
               type="button"
               onClick={onMarkCompletedAndClose}
               disabled={saving}
-              className="bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-300 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
+              className="todo-form-button-complete-close bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-300 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
             >
               {t('todo.form.completeAndClose')}
             </button>

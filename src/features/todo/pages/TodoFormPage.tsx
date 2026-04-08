@@ -149,7 +149,7 @@ export const TodoFormPage = () => {
 
   return (
     <div className="bg-white p-4 sm:p-6 md:p-8 rounded-lg shadow-xl max-w-md sm:max-w-2xl md:max-w-3xl mx-auto">
-      <h1 className="text-xl sm:text-2xl font-bold mb-6">
+      <h1 className="todo-form-page-title text-xl sm:text-2xl font-bold mb-6">
         {id ? t('todo.formPage.editTitle') : t('todo.formPage.newTitle')}
       </h1>
       <TodoForm
