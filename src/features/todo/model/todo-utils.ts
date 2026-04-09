@@ -154,9 +154,15 @@ function validateAndNormalizeTodo(obj: unknown): Todo {
 
   const item = obj as Record<string, unknown>;
   const taskType = normalizeTaskType(item.taskType);
+  const id =
+    typeof item.id === 'string' && item.id.trim().length > 0
+      ? item.id
+      : item.id === undefined || item.id === null || item.id === ''
+        ? crypto.randomUUID()
+        : null;
 
   // 必須フィールドの確認
-  if (typeof item.id !== 'string' || !item.id) {
+  if (id === null) {
     throw new Error(i18n.t('todo.validation.idRequired'));
   }
   if (typeof item.title !== 'string') {
@@ -206,7 +212,7 @@ function validateAndNormalizeTodo(obj: unknown): Todo {
   }
 
   return {
-    id: item.id,
+    id,
     title: item.title,
     description: typeof item.description === 'string' ? item.description : '',
     taskType,

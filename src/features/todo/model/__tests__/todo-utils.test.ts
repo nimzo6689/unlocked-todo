@@ -67,11 +67,22 @@ describe('todo-utils', () => {
   it('throws for invalid JSON payloads', () => {
     expect(() => todosFromJSON('not-json')).toThrow('JSONの解析に失敗しました');
     expect(() => todosFromJSON('{"id":"1"}')).toThrow('JSONはTodo配列である必要があります');
+  });
 
-    const invalidTodoArray = JSON.stringify([
+  it('creates a new id when imported todo id is missing or empty', () => {
+    const json = JSON.stringify([
       {
         id: '',
-        title: 'x',
+        title: 'empty-id',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        startableAt: '2026-01-01T00:00:00.000Z',
+        dueDate: '2026-01-01T01:00:00.000Z',
+        status: 'Unlocked',
+        effortMinutes: 10,
+        actualWorkSeconds: 0,
+      },
+      {
+        title: 'missing-id',
         createdAt: '2026-01-01T00:00:00.000Z',
         startableAt: '2026-01-01T00:00:00.000Z',
         dueDate: '2026-01-01T01:00:00.000Z',
@@ -81,7 +92,14 @@ describe('todo-utils', () => {
       },
     ]);
 
-    expect(() => todosFromJSON(invalidTodoArray)).toThrow('行1のTodoが不正です');
+    const parsed = todosFromJSON(json);
+
+    expect(parsed).toHaveLength(2);
+    expect(parsed[0].id).toBeTruthy();
+    expect(parsed[1].id).toBeTruthy();
+    expect(parsed[0].id).not.toBe('');
+    expect(parsed[1].id).not.toBe('');
+    expect(parsed[0].id).not.toBe(parsed[1].id);
   });
 
   it('validates required fields and value domains in import payload', () => {
