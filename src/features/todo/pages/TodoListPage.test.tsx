@@ -91,6 +91,8 @@ describe('TodoListPage', () => {
       handleDelete: vi.fn(),
       handleComplete: vi.fn(),
       currentInProgressId: null,
+      hasMoreTodos: false,
+      loadMoreTodos: vi.fn(async () => undefined),
       startTodo: vi.fn(),
       exportTodos: vi.fn(async () => undefined),
       exportTodosToText: vi.fn(async () => '[]'),
@@ -255,6 +257,8 @@ describe('TodoListPage', () => {
       handleDelete: vi.fn(),
       handleComplete: vi.fn(),
       currentInProgressId: null,
+      hasMoreTodos: false,
+      loadMoreTodos: vi.fn(async () => undefined),
       startTodo: vi.fn(),
       exportTodos: vi.fn(async () => undefined),
       exportTodosToText: vi.fn(async () => '[]'),
@@ -343,6 +347,8 @@ describe('TodoListPage', () => {
       handleDelete,
       handleComplete,
       currentInProgressId: null,
+      hasMoreTodos: false,
+      loadMoreTodos: vi.fn(async () => undefined),
       startTodo,
       exportTodos: vi.fn(async () => undefined),
       exportTodosToText: vi.fn(async () => '[]'),
@@ -413,5 +419,95 @@ describe('TodoListPage', () => {
     expect(handleTextImport).toHaveBeenCalledTimes(1);
     expect(closeExportDialog).toHaveBeenCalledTimes(1);
     expect(closeImportDialog).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides load more button when displayed todo count is less than page size', async () => {
+    const { useTodoListFilter } = await import('@/features/todo/hooks/useTodoListFilter');
+    const loadMoreTodos = vi.fn(async () => undefined);
+    const displayedTodos = Array.from({ length: 19 }, (_, index) =>
+      createTodo({ id: `todo-${index}`, title: `タスク ${index}` }),
+    );
+
+    vi.mocked(useTodoListFilter).mockReturnValue(displayedTodos);
+    useTodoContextMock.mockReturnValue({
+      todos: displayedTodos,
+      getTodo: vi.fn(),
+      modal: null,
+      setModal: vi.fn(),
+      handleDelete: vi.fn(),
+      handleComplete: vi.fn(),
+      currentInProgressId: null,
+      hasMoreTodos: true,
+      loadMoreTodos,
+      startTodo: vi.fn(),
+      exportTodos: vi.fn(async () => undefined),
+      exportTodosToText: vi.fn(async () => '[]'),
+      importTodos: vi.fn(async () => ({
+        success: true,
+        addedCount: 0,
+        updatedCount: 0,
+        message: '',
+      })),
+      importTodosFromText: vi.fn(async () => ({
+        success: true,
+        addedCount: 0,
+        updatedCount: 0,
+        message: '',
+      })),
+    } as never);
+
+    render(
+      <MemoryRouter initialEntries={['/?filter=unlocked']}>
+        <TodoListPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole('button', { name: 'もっと見る' })).not.toBeInTheDocument();
+    expect(loadMoreTodos).not.toHaveBeenCalled();
+  });
+
+  it('shows load more button when displayed todo count reaches page size', async () => {
+    const { useTodoListFilter } = await import('@/features/todo/hooks/useTodoListFilter');
+    const loadMoreTodos = vi.fn(async () => undefined);
+    const displayedTodos = Array.from({ length: 20 }, (_, index) =>
+      createTodo({ id: `todo-${index}`, title: `タスク ${index}` }),
+    );
+
+    vi.mocked(useTodoListFilter).mockReturnValue(displayedTodos);
+    useTodoContextMock.mockReturnValue({
+      todos: displayedTodos,
+      getTodo: vi.fn(),
+      modal: null,
+      setModal: vi.fn(),
+      handleDelete: vi.fn(),
+      handleComplete: vi.fn(),
+      currentInProgressId: null,
+      hasMoreTodos: true,
+      loadMoreTodos,
+      startTodo: vi.fn(),
+      exportTodos: vi.fn(async () => undefined),
+      exportTodosToText: vi.fn(async () => '[]'),
+      importTodos: vi.fn(async () => ({
+        success: true,
+        addedCount: 0,
+        updatedCount: 0,
+        message: '',
+      })),
+      importTodosFromText: vi.fn(async () => ({
+        success: true,
+        addedCount: 0,
+        updatedCount: 0,
+        message: '',
+      })),
+    } as never);
+
+    render(
+      <MemoryRouter initialEntries={['/?filter=unlocked']}>
+        <TodoListPage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'もっと見る' }));
+    expect(loadMoreTodos).toHaveBeenCalledTimes(1);
   });
 });

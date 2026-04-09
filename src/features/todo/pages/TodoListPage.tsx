@@ -20,6 +20,7 @@ import { ExportDialogPresenter, ImportDialogPresenter } from './TodoListPagePres
 import { useAppLocale } from '@/shared/i18n/useAppLocale';
 
 const TODO_LIST_VIEW_STORAGE_KEY = 'todo-list-view';
+const TODO_PAGE_SIZE = 20;
 
 type TodoListView = 'card' | 'list';
 
@@ -71,6 +72,7 @@ export const TodoListPage = () => {
   }, []);
 
   const filteredTodos = useTodoListFilter(todos, filter, getTodo);
+  const shouldShowLoadMore = hasMoreTodos && filteredTodos.length >= TODO_PAGE_SIZE;
   const { setSelectedTodoId, selectedTodo, selectRelativeTodo } = useTodoSelection(filteredTodos);
   const {
     isExportDialogOpen,
@@ -568,7 +570,7 @@ export const TodoListPage = () => {
           <p className="text-slate-500 col-span-full text-center py-10">{t('todo.list.empty')}</p>
         )}
       </main>
-      {hasMoreTodos && (
+      {shouldShowLoadMore && (
         <div className="mt-6 flex justify-center">
           <button
             className="todo-list-action-button todo-list-button-muted bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2 px-5 rounded-lg border border-slate-300 transition-colors"
