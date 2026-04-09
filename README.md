@@ -1,44 +1,50 @@
 # Hakaru Todo
 
-今、着手可能な Todo が一目でわかる ToDo アプリです。  
-ブラウザ（ IndexedDB, LocalStorage ）にデータが保存されるため、ネットワーク通信は発生しません。
+A To-Do app that lets you see exactly what you can start on at a glance.
+Since data is stored locally in your browser (IndexedDB, LocalStorage), no network communication occurs.
 
-## よくある Todo アプリとの違い
+## Differences from typical Todo apps
 
-着手可能なタスク（ Unlocked ）のみを一覧表示できます。
-着手不可能なタスク（ Locked ）は、以下のようなタスクです。
+Only tasks that can be started (Unlocked) are displayed.
+Tasks that cannot be started (Locked) are those that meet the following criteria.
 
-- 着手するために完了しておくべきタスクが未完了
-- タスクの着手可能な日時が未来
+- Tasks that have prerequisites that are not yet completed
+- Tasks that have a start date in the future
 
-一覧表示されているタスクは完了期限から近い順にソートしているため、優先的に対応すべきタスクがわかりやすくなっています。
-また、現在時刻が期限日時から工数を引いた日時を過ぎているタスクは黄色で表示されるため、遅延しているタスクも一目でわかります。
+The displayed tasks are sorted by their due dates, making it easy to see which tasks should be prioritized.
+Additionally, tasks that have passed their start date minus the estimated effort are highlighted in yellow, making it easy to identify overdue tasks.
 
-## 開発手順
+### Screenshots
 
-```
+![todos](./assets/screenshots/todos.png)
+
+### Build this project
+
+#### Get the source
+
+```bash
 git clone https://github.com/nimzo6689/hakaru-todo.git
-
-# pnpm パッケージのインストール
-pnpm install
-# 開発サーバーの起動
-pnpm dev
+cd hakaru-todo
 ```
 
-## テスト
+#### Prerequisites
 
-```sh
-# 単体テスト
-pnpm test
+- Install pnpm: `npm install -g pnpm`
+- Run `pnpm install`
 
-# Playwright 用ブラウザのインストール
-pnpm e2e:install
+#### Launch the application
 
-# E2E テスト
-pnpm e2e
+- Run `pnpm dev`
 
-# E2E テスト(UI モード)
-pnpm e2e:ui
-```
+#### Build the application
 
-Playwright の E2E は Chromium を対象にしています。実行時は E2E 専用の Vite モードで起動し、Service Worker を無効化してテストの再現性を優先しています。
+- Run `pnpm build`
+
+#### Preview the production build
+
+- Run `pnpm preview`
+
+### Contribute to this project
+
+Pull requests are most welcome!
+Please target the `main` branch and run `pnpm build` (or at least `pnpm lint`) to ensure your changes compile and match the code guidelines.
