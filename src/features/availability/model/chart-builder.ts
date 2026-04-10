@@ -5,9 +5,12 @@ import { formatTimeLabel } from './datetime-utils';
 import { getSortedBreakPeriods } from './schedule-calculator';
 import type { AggregatedLoad } from './types';
 
+type ChartTranslator = (key: string, options?: Record<string, unknown>) => string;
+
 export const buildChartOption = (
   { taskSeries, meetingSeries, slotContributors, slotTotals, slots }: AggregatedLoad,
   schedule: WorkSchedule,
+  t: ChartTranslator,
 ): EChartsOption => {
   const hasBreak = hasBreakTime(schedule);
   const sortedBreakPeriods = getSortedBreakPeriods(schedule);
@@ -77,7 +80,7 @@ export const buildChartOption = (
     animationDurationUpdate: 0,
     grid: {
       left: 48,
-      right: 28,
+      right: 56,
       top: 52,
       bottom: 62,
     },
@@ -94,21 +97,26 @@ export const buildChartOption = (
         const slot = slots[index];
         if (!slot) {
           if (index === slots.length && slots.length > 0) {
-            return `${formatTimeLabel(slots[slots.length - 1].end)}<br/>終了時刻`;
+            return `${formatTimeLabel(slots[slots.length - 1].end)}<br/>${t('availability.chart.tooltip.endTime')}`;
           }
           return '';
         }
 
         if (slot.isElapsed) {
-          return `${slot.label} - ${formatTimeLabel(slot.end)}<br/>この時間は経過済みのため、負荷を表示しません`;
+          return `${slot.label} - ${formatTimeLabel(slot.end)}<br/>${t('availability.chart.tooltip.elapsedSlot')}`;
         }
 
         if (!slot.isWorking) {
-          return `${slot.label} - ${formatTimeLabel(slot.end)}<br/>この時間は非稼働（休憩時間）です`;
+          return `${slot.label} - ${formatTimeLabel(slot.end)}<br/>${t('availability.chart.tooltip.nonWorkingBreak')}`;
         }
 
         const details = slotContributors[index]
-          .map(item => `・${item.title}: ${item.load.toFixed(2)} 人時/h`)
+          .map(item =>
+            t('availability.chart.tooltip.taskLoadLine', {
+              title: item.title,
+              value: item.load.toFixed(2),
+            }),
+          )
           .join('<br/>');
         const total = slotTotals[index] ?? 0;
         const hasMeeting = (meetingSeries[index] ?? 0) > 0;
@@ -120,11 +128,18 @@ export const buildChartOption = (
         return [
           `${slot.label} - ${formatTimeLabel(slot.end)}`,
           isTaskSeries
-            ? `ホバー中: <b>${hoveredSeriesName}</b> ${hoveredTaskLoad.toFixed(2)} 人時/h`
+            ? t('availability.chart.tooltip.hoveredTask', {
+                title: hoveredSeriesName,
+                value: hoveredTaskLoad.toFixed(2),
+              })
             : null,
-          `合計負荷: <b>${total.toFixed(2)} 人時/h</b>`,
-          hasMeeting ? 'Meeting: <b>1.00</b> (非稼働)' : 'Meeting: なし',
-          details || '重なりタスクなし',
+          t('availability.chart.tooltip.totalLoad', { value: total.toFixed(2) }),
+          hasMeeting
+            ? t('availability.chart.tooltip.meetingPresent', {
+                value: (meetingSeries[index] ?? 0).toFixed(2),
+              })
+            : t('availability.chart.tooltip.meetingNone'),
+          details || t('availability.chart.tooltip.noOverlappingTask'),
         ]
           .filter(Boolean)
           .join('<br/>');
@@ -151,7 +166,7 @@ export const buildChartOption = (
       type: 'value',
       min: 0,
       max: yAxisMax,
-      name: '負荷量 (人時/h)',
+      name: t('availability.chart.yAxis.load'),
       axisLabel: {
         formatter: '{value}',
       },
@@ -175,7 +190,7 @@ export const buildChartOption = (
     series: [
       ...stackedTaskSeries,
       {
-        name: 'Meeting',
+        name: t('availability.chart.series.meeting'),
         type: 'bar',
         xAxisIndex: 1,
         barWidth: '100%',
@@ -187,7 +202,7 @@ export const buildChartOption = (
         z: 2,
       },
       {
-        name: '超過ベース',
+        name: t('availability.chart.series.overloadBase'),
         type: 'line',
         step: 'end',
         stack: 'overload',
@@ -205,7 +220,7 @@ export const buildChartOption = (
         })(),
       },
       {
-        name: '超過負荷',
+        name: t('availability.chart.series.overloadLoad'),
         type: 'line',
         step: 'end',
         stack: 'overload',
@@ -223,7 +238,7 @@ export const buildChartOption = (
         })(),
       },
       {
-        name: '合計負荷',
+        name: t('availability.chart.series.totalLoad'),
         type: 'line',
         showSymbol: false,
         smooth: false,
@@ -247,7 +262,9 @@ export const buildChartOption = (
             type: 'dashed',
           },
           label: {
-            formatter: '上限 1.0',
+            position: 'insideEndTop',
+            distance: 8,
+            formatter: t('availability.chart.limitLine.label'),
             color: '#b91c1c',
           },
           data: [{ yAxis: 1 }],
@@ -261,7 +278,7 @@ export const buildChartOption = (
               label: {
                 show: true,
                 color: '#475569',
-                formatter: '休憩時間',
+                formatter: t('availability.chart.breakArea.label'),
               },
               data: sortedBreakPeriods.map(period => [
                 { xAxis: formatMinuteLabel(period.startMinute) },

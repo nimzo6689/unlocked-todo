@@ -171,6 +171,34 @@ export const resources = {
         distributionSummary:
           '各タスクの負荷は、開始可能日時〜期限のうち稼働可能な時間帯に均等配分して計算しています。',
         meetingExcluded: 'Meeting は休憩時間と同様に非稼働時間として除外しています。',
+        chart: {
+          yAxis: {
+            load: '負荷量 (人時/h)',
+          },
+          series: {
+            meeting: 'Meeting',
+            overloadBase: '超過ベース',
+            overloadLoad: '超過負荷',
+            totalLoad: '合計負荷',
+          },
+          limitLine: {
+            label: '上限 1.0',
+          },
+          breakArea: {
+            label: '休憩時間',
+          },
+          tooltip: {
+            endTime: '終了時刻',
+            elapsedSlot: 'この時間は経過済みのため、負荷を表示しません',
+            nonWorkingBreak: 'この時間は非稼働（休憩時間）です',
+            taskLoadLine: '・{{title}}: {{value}} 人時/h',
+            hoveredTask: 'ホバー中: <b>{{title}}</b> {{value}} 人時/h',
+            totalLoad: '合計負荷: <b>{{value}} 人時/h</b>',
+            meetingPresent: 'Meeting: <b>{{value}}</b> (非稼働)',
+            meetingNone: 'Meeting: なし',
+            noOverlappingTask: '重なりタスクなし',
+          },
+        },
         shortcuts: {
           focusChart: '{{dateLabel}} のグラフにフォーカスする',
           prevDay: '表示開始日を前日に移動する',
@@ -712,6 +740,34 @@ export const resources = {
         distributionSummary:
           'Each task load is evenly distributed across workable time between startable time and due date.',
         meetingExcluded: 'Meeting tasks are excluded as non-working time, similar to breaks.',
+        chart: {
+          yAxis: {
+            load: 'Load (person-hour/h)',
+          },
+          series: {
+            meeting: 'Meeting',
+            overloadBase: 'Overload base',
+            overloadLoad: 'Overload',
+            totalLoad: 'Total load',
+          },
+          limitLine: {
+            label: 'Limit 1.0',
+          },
+          breakArea: {
+            label: 'Break time',
+          },
+          tooltip: {
+            endTime: 'End time',
+            elapsedSlot: 'This time slot has already elapsed, so load is hidden.',
+            nonWorkingBreak: 'This time slot is non-working (break time).',
+            taskLoadLine: '- {{title}}: {{value}} person-hour/h',
+            hoveredTask: 'Hovering: <b>{{title}}</b> {{value}} person-hour/h',
+            totalLoad: 'Total load: <b>{{value}} person-hour/h</b>',
+            meetingPresent: 'Meeting: <b>{{value}}</b> (non-working)',
+            meetingNone: 'Meeting: none',
+            noOverlappingTask: 'No overlapping tasks',
+          },
+        },
         shortcuts: {
           focusChart: 'Focus chart for {{dateLabel}}',
           prevDay: 'Move display start date to previous day',
