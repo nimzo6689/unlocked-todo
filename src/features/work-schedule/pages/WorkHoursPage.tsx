@@ -113,12 +113,7 @@ export const WorkHoursPage = () => {
     });
   };
 
-  const commitBreakStart = (
-    index: number,
-    periodStart: number,
-    periodEnd: number,
-    rawValue: string,
-  ) => {
+  const commitBreakStart = (index: number, periodEnd: number, rawValue: string) => {
     const parsedMinute = parseTimeInputValue(rawValue);
     const key = getBreakInputKey(index, 'start');
     clearPendingBreakInputValue(key);
@@ -303,23 +298,16 @@ export const WorkHoursPage = () => {
                               max={formatTimeInputValue(draft.workEndHour * 60)}
                               value={breakStartInputValue}
                               onInput={event =>
-                                setPendingBreakInputValue(breakStartInputKey, event.target.value)
+                                setPendingBreakInputValue(
+                                  breakStartInputKey,
+                                  event.currentTarget.value,
+                                )
                               }
                               onChange={event =>
-                                commitBreakStart(
-                                  index,
-                                  period.startMinute,
-                                  period.endMinute,
-                                  event.target.value,
-                                )
+                                commitBreakStart(index, period.endMinute, event.currentTarget.value)
                               }
                               onBlur={event =>
-                                commitBreakStart(
-                                  index,
-                                  period.startMinute,
-                                  period.endMinute,
-                                  event.target.value,
-                                )
+                                commitBreakStart(index, period.endMinute, event.currentTarget.value)
                               }
                               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
                             />
@@ -343,13 +331,16 @@ export const WorkHoursPage = () => {
                               max={formatTimeInputValue(draft.workEndHour * 60)}
                               value={breakEndInputValue}
                               onInput={event =>
-                                setPendingBreakInputValue(breakEndInputKey, event.target.value)
+                                setPendingBreakInputValue(
+                                  breakEndInputKey,
+                                  event.currentTarget.value,
+                                )
                               }
                               onChange={event =>
-                                commitBreakEnd(index, period.startMinute, event.target.value)
+                                commitBreakEnd(index, period.startMinute, event.currentTarget.value)
                               }
                               onBlur={event =>
-                                commitBreakEnd(index, period.startMinute, event.target.value)
+                                commitBreakEnd(index, period.startMinute, event.currentTarget.value)
                               }
                               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
                             />

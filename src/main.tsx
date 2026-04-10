@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import '@fontsource-variable/geist/index.css';
 import './index.css';
 import App from '@/app/App';
 import '@/shared/i18n';
