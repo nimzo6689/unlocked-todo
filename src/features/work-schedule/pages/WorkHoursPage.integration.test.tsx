@@ -105,4 +105,32 @@ describe('WorkHoursPage integration', () => {
     expect(saved.workEndHour).toBe(18);
     expect(saved.breakPeriods[0]).toEqual({ startMinute: 750, endMinute: 810 });
   });
+
+  it('defers break validation and normalization until editing is finalized', () => {
+    const setWorkSchedule = vi.fn();
+    useTodoContextMock.mockReturnValue({
+      workSchedule: DEFAULT_WORK_SCHEDULE,
+      setWorkSchedule,
+    } as never);
+
+    render(<WorkHoursPage />);
+
+    const breakStartInput = screen.getByLabelText('休憩開始') as HTMLInputElement;
+    const breakEndInput = screen.getByLabelText('休憩終了') as HTMLInputElement;
+
+    expect(breakStartInput.value).toBe('12:00');
+    expect(breakEndInput.value).toBe('13:00');
+
+    breakStartInput.focus();
+    fireEvent.input(breakStartInput, { target: { value: '17:00' } });
+
+    expect(breakStartInput.value).toBe('17:00');
+    expect(breakEndInput.value).toBe('13:00');
+
+    fireEvent.click(screen.getByRole('button', { name: '保存する' }));
+
+    expect(setWorkSchedule).toHaveBeenCalledTimes(1);
+    const saved = setWorkSchedule.mock.calls[0][0];
+    expect(saved.breakPeriods[0]).toEqual({ startMinute: 1019, endMinute: 1020 });
+  });
 });

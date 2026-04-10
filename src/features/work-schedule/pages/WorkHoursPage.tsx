@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Clock3, Plus, Save, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTodoContext } from '@/app/providers/TodoContext';
@@ -49,6 +49,9 @@ export const WorkHoursPage = () => {
   const { t } = useTranslation();
   const { locale } = useAppLocale();
   const weekdayOptions = useMemo(() => getWeekdayOptions(locale), [locale]);
+  const [pendingBreakInputValues, setPendingBreakInputValues] = useState<Record<string, string>>(
+    {},
+  );
   const {
     draft,
     error,
@@ -94,6 +97,64 @@ export const WorkHoursPage = () => {
   );
 
   useRegisterShortcuts(shortcutRegistration);
+
+  const getBreakInputKey = (index: number, field: 'start' | 'end') => `${index}-${field}`;
+  const setPendingBreakInputValue = (key: string, value: string) => {
+    setPendingBreakInputValues(current => ({ ...current, [key]: value }));
+  };
+  const clearPendingBreakInputValue = (key: string) => {
+    setPendingBreakInputValues(current => {
+      if (!(key in current)) {
+        return current;
+      }
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const commitBreakStart = (
+    index: number,
+    periodStart: number,
+    periodEnd: number,
+    rawValue: string,
+  ) => {
+    const parsedMinute = parseTimeInputValue(rawValue);
+    const key = getBreakInputKey(index, 'start');
+    clearPendingBreakInputValue(key);
+    if (parsedMinute === null) {
+      return;
+    }
+
+    const workStartMinute = draft.workStartHour * 60;
+    const workEndMinute = draft.workEndHour * 60;
+    const boundedStart = Math.min(Math.max(parsedMinute, workStartMinute), workEndMinute - 1);
+    const newEnd = Math.min(Math.max(periodEnd, boundedStart + 1), workEndMinute);
+
+    updateBreakPeriod(index, {
+      startMinute: boundedStart,
+      endMinute: newEnd,
+    });
+  };
+
+  const commitBreakEnd = (index: number, periodStart: number, rawValue: string) => {
+    const parsedMinute = parseTimeInputValue(rawValue);
+    const key = getBreakInputKey(index, 'end');
+    clearPendingBreakInputValue(key);
+    if (parsedMinute === null) {
+      return;
+    }
+
+    const workStartMinute = draft.workStartHour * 60;
+    const workEndMinute = draft.workEndHour * 60;
+    const boundedEnd = Math.max(Math.min(parsedMinute, workEndMinute), workStartMinute + 1);
+    const newStart = Math.max(Math.min(periodStart, boundedEnd - 1), workStartMinute);
+
+    updateBreakPeriod(index, {
+      startMinute: newStart,
+      endMinute: boundedEnd,
+    });
+  };
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -228,46 +289,72 @@ export const WorkHoursPage = () => {
                     >
                       <label className="space-y-1 text-sm text-slate-700">
                         <span className="font-medium">{t('workHours.breakStart')}</span>
-                        <input
-                          type="time"
-                          step={60}
-                          min={formatTimeInputValue(draft.workStartHour * 60)}
-                          max={formatTimeInputValue(draft.workEndHour * 60)}
-                          value={formatTimeInputValue(period.startMinute)}
-                          onChange={event => {
-                            const parsedMinute = parseTimeInputValue(event.target.value);
-                            if (parsedMinute === null) {
-                              return;
-                            }
-                            updateBreakPeriod(index, {
-                              startMinute: parsedMinute,
-                              endMinute: Math.max(period.endMinute, parsedMinute + 1),
-                            });
-                          }}
-                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
-                        />
+                        {(() => {
+                          const breakStartInputKey = getBreakInputKey(index, 'start');
+                          const breakStartInputValue =
+                            pendingBreakInputValues[breakStartInputKey] ??
+                            formatTimeInputValue(period.startMinute);
+
+                          return (
+                            <input
+                              type="time"
+                              step={60}
+                              min={formatTimeInputValue(draft.workStartHour * 60)}
+                              max={formatTimeInputValue(draft.workEndHour * 60)}
+                              value={breakStartInputValue}
+                              onInput={event =>
+                                setPendingBreakInputValue(breakStartInputKey, event.target.value)
+                              }
+                              onChange={event =>
+                                commitBreakStart(
+                                  index,
+                                  period.startMinute,
+                                  period.endMinute,
+                                  event.target.value,
+                                )
+                              }
+                              onBlur={event =>
+                                commitBreakStart(
+                                  index,
+                                  period.startMinute,
+                                  period.endMinute,
+                                  event.target.value,
+                                )
+                              }
+                              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+                            />
+                          );
+                        })()}
                       </label>
 
                       <label className="space-y-1 text-sm text-slate-700">
                         <span className="font-medium">{t('workHours.breakEnd')}</span>
-                        <input
-                          type="time"
-                          step={60}
-                          min={formatTimeInputValue(draft.workStartHour * 60)}
-                          max={formatTimeInputValue(draft.workEndHour * 60)}
-                          value={formatTimeInputValue(period.endMinute)}
-                          onChange={event => {
-                            const parsedMinute = parseTimeInputValue(event.target.value);
-                            if (parsedMinute === null) {
-                              return;
-                            }
-                            updateBreakPeriod(index, {
-                              startMinute: Math.min(period.startMinute, parsedMinute - 1),
-                              endMinute: parsedMinute,
-                            });
-                          }}
-                          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
-                        />
+                        {(() => {
+                          const breakEndInputKey = getBreakInputKey(index, 'end');
+                          const breakEndInputValue =
+                            pendingBreakInputValues[breakEndInputKey] ??
+                            formatTimeInputValue(period.endMinute);
+
+                          return (
+                            <input
+                              type="time"
+                              step={60}
+                              min={formatTimeInputValue(draft.workStartHour * 60)}
+                              max={formatTimeInputValue(draft.workEndHour * 60)}
+                              value={breakEndInputValue}
+                              onInput={event =>
+                                setPendingBreakInputValue(breakEndInputKey, event.target.value)
+                              }
+                              onChange={event =>
+                                commitBreakEnd(index, period.startMinute, event.target.value)
+                              }
+                              onBlur={event =>
+                                commitBreakEnd(index, period.startMinute, event.target.value)
+                              }
+                              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
+                            />
+                          );
+                        })()}
                       </label>
 
                       <div className="self-end">
