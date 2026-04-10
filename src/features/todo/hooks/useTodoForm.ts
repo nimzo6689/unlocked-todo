@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import i18n from '@/shared/i18n';
+import { todoDB } from '@/features/todo/model/db';
 import type { Todo } from '@/features/todo/model/types';
 import {
   defaultForm,
@@ -236,8 +237,6 @@ export const useTodoForm = ({
         : [];
     const normalizedDependency = isMeeting ? [] : dependency;
     const hasDependency = normalizedDependency.length > 0;
-    const { todoDB } = await import('@/features/todo/model/db');
-
     if (form.id) {
       const currentTodoId = form.id;
       const currentTodo = getTodo(currentTodoId);
