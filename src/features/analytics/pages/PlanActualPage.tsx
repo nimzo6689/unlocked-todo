@@ -1,10 +1,10 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import type { EChartsOption } from 'echarts';
 import { useTranslation } from 'react-i18next';
-import { useTodoContext } from '@/app/providers/TodoContext';
+import { todoDB } from '@/features/todo/model/db';
 import type { Todo } from '@/features/todo/model/types';
-import { isMeetingTodo } from '@/features/todo/model/todo-utils';
+import { isMeetingTodo, normalizeTodo } from '@/features/todo/model/todo-utils';
 import { useRegisterShortcuts } from '@/features/shortcuts/context/ShortcutContext';
 import { useAppLocale } from '@/shared/i18n/useAppLocale';
 
@@ -120,6 +120,10 @@ const buildChartOption = (
   locale: 'ja' | 'en',
   t: (key: string, options?: Record<string, unknown>) => string,
 ): EChartsOption => {
+  const isDarkTheme =
+    typeof document !== 'undefined' && document.documentElement.dataset.theme === 'dark';
+  const titleColor = isDarkTheme ? '#f8fafc' : '#0f172a';
+  const subTitleColor = isDarkTheme ? '#cbd5e1' : '#475569';
   const categories = rows.map(row => row.title);
   const planned = rows.map(row => Number(row.plannedMinutes.toFixed(1)));
   const actual = rows.map(row => Number(row.actualMinutes.toFixed(1)));
@@ -143,11 +147,11 @@ const buildChartOption = (
       textStyle: {
         fontSize: 20,
         fontWeight: 700,
-        color: '#0f172a',
+        color: titleColor,
       },
       subtextStyle: {
         fontSize: 12,
-        color: '#475569',
+        color: subTitleColor,
       },
     },
     legend: {
@@ -283,10 +287,10 @@ const buildChartOption = (
 };
 
 export const PlanActualPage = () => {
-  const { todos } = useTodoContext();
   const { t } = useTranslation();
   const { locale } = useAppLocale();
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue(new Date()));
+  const [analyticsTodos, setAnalyticsTodos] = useState<Todo[]>([]);
 
   const moveSelectedDate = useCallback(
     (deltaDays: number) => {
@@ -301,7 +305,42 @@ export const PlanActualPage = () => {
     [selectedDate],
   );
 
-  const rows = useMemo(() => buildRows(todos, selectedDate), [todos, selectedDate]);
+  useEffect(() => {
+    let alive = true;
+
+    const loadAnalyticsTodos = async () => {
+      const rangeStart = new Date(`${selectedDate}T00:00:00.000Z`);
+      if (Number.isNaN(rangeStart.getTime())) {
+        if (alive) {
+          setAnalyticsTodos([]);
+        }
+        return;
+      }
+
+      const rangeEnd = new Date(rangeStart.getTime() + 7 * DAY_MS);
+      const rows = await todoDB.fetchCompletedByCompletedAt(
+        rangeStart.toISOString(),
+        rangeEnd.toISOString(),
+      );
+
+      if (!alive) {
+        return;
+      }
+
+      setAnalyticsTodos(rows.map(normalizeTodo));
+    };
+
+    void loadAnalyticsTodos();
+
+    return () => {
+      alive = false;
+    };
+  }, [selectedDate]);
+
+  const rows = useMemo(
+    () => buildRows(analyticsTodos, selectedDate),
+    [analyticsTodos, selectedDate],
+  );
 
   const totalActualMinutes = useMemo(
     () => rows.reduce((sum, row) => sum + row.actualMinutes, 0),

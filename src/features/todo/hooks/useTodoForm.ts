@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import i18n from '@/shared/i18n';
+import { todoDB } from '@/features/todo/model/db';
 import type { Todo } from '@/features/todo/model/types';
 import {
   defaultForm,
@@ -120,6 +121,16 @@ export const useTodoForm = ({
     return Math.floor(numeric);
   };
 
+  const resolveIncompleteStatus = (
+    dependency: string[],
+    currentStatus?: Todo['status'],
+  ): Todo['status'] => {
+    if (currentStatus === 'Locked') {
+      return 'Locked';
+    }
+    return dependency.length > 0 ? 'Locked' : 'Unlocked';
+  };
+
   const getDueDateByQuickAction = useCallback(
     (quickAction: 'today' | 'tomorrow' | 'thisWeek', now: Date) => {
       const withinWorkingHours = isWithinWorkingHours(now, workSchedule);
@@ -207,71 +218,106 @@ export const useTodoForm = ({
     });
   };
 
-  const handleSave = async () => {
+  const handleSave = async (options?: { overrideStatus?: Todo['status'] }) => {
     const now = new Date().toISOString();
-    let newTodos = [...todos];
     const taskType = form.taskType || DEFAULT_TASK_TYPE;
     const isMeeting = isMeetingTodo({ taskType });
 
     if (form.startableAt && form.dueDate) {
       if (new Date(form.startableAt) >= new Date(form.dueDate)) {
         toast.error(i18n.t('todo.validation.startBeforeDue'));
-        return;
+        return false;
       }
     }
 
-    const dependency = Array.isArray(form.dependency)
-      ? form.dependency.filter(Boolean)
-      : form.dependency
-        ? [form.dependency]
+    const dependency = Array.isArray(form.dependsOn)
+      ? form.dependsOn.filter(Boolean)
+      : form.dependsOn
+        ? [form.dependsOn]
         : [];
     const normalizedDependency = isMeeting ? [] : dependency;
     const hasDependency = normalizedDependency.length > 0;
-
     if (form.id) {
       const currentTodoId = form.id;
+      const currentTodo = getTodo(currentTodoId);
+      if (!currentTodo) {
+        toast.error(i18n.t('todo.validation.dependencyInvalid'));
+        return false;
+      }
+
+      const overrideStatus = options?.overrideStatus;
+
       const safeSuccessorIds = isMeeting
         ? []
         : successorIds.filter(todoId => todoId !== currentTodoId);
 
-      newTodos = newTodos.map(todo => {
-        if (todo.id === currentTodoId) {
-          const formActualWorkSeconds = normalizeActualWorkSeconds(form.actualWorkSeconds);
-          return {
-            ...todo,
-            ...form,
-            taskType,
-            dependency: normalizedDependency,
-            startableAt: hasDependency
-              ? form.startableAt || ''
-              : form.startableAt || todo.startableAt,
-            status: isMeeting
-              ? getMeetingStatus(form.dueDate || todo.dueDate, todo.status)
-              : (form.status as Todo['status']) || todo.status,
-            effortMinutes: isMeeting ? 0 : form.effortMinutes || todo.effortMinutes,
-            actualWorkSeconds: isMeeting ? 0 : formActualWorkSeconds,
-          } as Todo;
-        }
+      const formActualWorkSeconds = normalizeActualWorkSeconds(form.actualWorkSeconds);
+      const updatedCurrentTodo: Todo = {
+        ...currentTodo,
+        ...form,
+        taskType,
+        dependsOn: normalizedDependency,
+        startableAt: hasDependency
+          ? form.startableAt || ''
+          : form.startableAt || currentTodo.startableAt,
+        status: isMeeting
+          ? getMeetingStatus(form.dueDate || currentTodo.dueDate, currentTodo.status)
+          : overrideStatus || (form.status as Todo['status']) || currentTodo.status,
+        effortMinutes: isMeeting ? 0 : form.effortMinutes || currentTodo.effortMinutes,
+        actualWorkSeconds: isMeeting ? 0 : formActualWorkSeconds,
+      };
 
+      const dependentTodos = await todoDB.fetchDependentsByDependencyIds([currentTodoId]);
+      const successorFromContext = safeSuccessorIds
+        .map(successorId => getTodo(successorId))
+        .filter((todo): todo is Todo => Boolean(todo));
+      const missingSuccessorIds = safeSuccessorIds.filter(
+        successorId => !successorFromContext.some(todo => todo.id === successorId),
+      );
+      const successorFromDB = await todoDB.bulkGetByIds(missingSuccessorIds);
+
+      const successorTargets = new Map<string, Todo>();
+      [...dependentTodos, ...successorFromContext, ...successorFromDB].forEach(todo => {
+        if (todo.id !== currentTodoId) {
+          successorTargets.set(todo.id, todo);
+        }
+      });
+
+      const updatedSuccessors: Todo[] = [];
+      [...successorTargets.values()].forEach(todo => {
         const depIds = getDependencyIds(todo);
         const shouldDependOnCurrent = safeSuccessorIds.includes(todo.id);
         const alreadyDependsOnCurrent = depIds.includes(currentTodoId);
 
-        if (!shouldDependOnCurrent && !alreadyDependsOnCurrent) return todo;
+        if (!shouldDependOnCurrent && !alreadyDependsOnCurrent) {
+          return;
+        }
 
         if (shouldDependOnCurrent && !alreadyDependsOnCurrent) {
-          return { ...todo, dependency: [...depIds, currentTodoId], startableAt: '' };
+          updatedSuccessors.push({
+            ...todo,
+            dependsOn: [...depIds, currentTodoId],
+            startableAt: '',
+          });
+          return;
         }
 
         if (!shouldDependOnCurrent && alreadyDependsOnCurrent) {
           const nextDeps = depIds.filter(depId => depId !== currentTodoId);
-          return { ...todo, dependency: nextDeps.length > 0 ? nextDeps : undefined };
+          updatedSuccessors.push({
+            ...todo,
+            dependsOn: nextDeps.length > 0 ? nextDeps : undefined,
+          });
         }
-
-        return todo;
       });
+
+      await todoDB.put(updatedCurrentTodo);
+      if (updatedSuccessors.length > 0) {
+        await todoDB.bulkPut(updatedSuccessors);
+      }
     } else {
       const formActualWorkSeconds = normalizeActualWorkSeconds(form.actualWorkSeconds);
+      const overrideStatus = options?.overrideStatus;
       const newTodo: Todo = {
         id: crypto.randomUUID(),
         createdAt: now,
@@ -282,24 +328,26 @@ export const useTodoForm = ({
         dueDate: form.dueDate || '',
         status: isMeeting
           ? getMeetingStatus(form.dueDate || '')
-          : (form.status as Todo['status']) || 'Unlocked',
+          : overrideStatus || (form.status as Todo['status']) || 'Unlocked',
         effortMinutes: isMeeting ? 0 : form.effortMinutes || DEFAULT_EFFORT_MINUTES,
         actualWorkSeconds: isMeeting ? 0 : formActualWorkSeconds,
-        dependency: normalizedDependency,
+        dependsOn: normalizedDependency,
       };
-      newTodos.push(newTodo);
+      await todoDB.put(newTodo);
     }
 
-    const { todoDB } = await import('@/features/todo/model/db');
-    await todoDB.save(newTodos);
     await fetchTodos();
     toast.success(i18n.t('todo.toast.saveSuccess'));
+    return true;
   };
 
-  const handleComplete = async () => {
+  const handleSaveAndClose = async (options?: { overrideStatus?: Todo['status'] }) => {
     setSaving(true);
     try {
-      await handleSave();
+      const saved = await handleSave(options);
+      if (!saved) {
+        return;
+      }
       initializedFormKeyRef.current = null;
       setForm(defaultForm);
       setSuccessorIds([]);
@@ -307,6 +355,21 @@ export const useTodoForm = ({
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleMarkCompletedAndClose = async () => {
+    await handleSaveAndClose({ overrideStatus: 'Completed' });
+  };
+
+  const handleMarkIncompleteAndClose = async () => {
+    const dependency = Array.isArray(form.dependsOn)
+      ? form.dependsOn.filter(Boolean)
+      : form.dependsOn
+        ? [form.dependsOn]
+        : [];
+    const currentStatus = (form.status as Todo['status']) || getTodo(form.id || '')?.status;
+    const nextStatus = resolveIncompleteStatus(dependency, currentStatus);
+    await handleSaveAndClose({ overrideStatus: nextStatus });
   };
 
   const handleCancel = () => {
@@ -330,7 +393,9 @@ export const useTodoForm = ({
     applyDueDateQuickAction,
     applyStartableAtQuickAction,
     handleSave,
-    handleComplete,
+    handleSaveAndClose,
+    handleMarkCompletedAndClose,
+    handleMarkIncompleteAndClose,
     handleCancel,
     handleOpenTodo,
   };

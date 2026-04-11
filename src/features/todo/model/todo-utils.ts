@@ -46,13 +46,13 @@ export const defaultForm: Partial<Todo> = {
   status: 'Unlocked',
   effortMinutes: DEFAULT_EFFORT_MINUTES,
   actualWorkSeconds: 0,
-  dependency: [],
+  dependsOn: [],
 };
 
 export const getDependencyIds = (todo: Todo): string[] => {
-  if (!todo.dependency) return [];
-  if (Array.isArray(todo.dependency)) return todo.dependency.filter(Boolean);
-  return [todo.dependency];
+  if (!todo.dependsOn) return [];
+  if (Array.isArray(todo.dependsOn)) return todo.dependsOn.filter(Boolean);
+  return [todo.dependsOn];
 };
 
 // 画面への表示用（2023/10/25 14:30）
@@ -154,9 +154,15 @@ function validateAndNormalizeTodo(obj: unknown): Todo {
 
   const item = obj as Record<string, unknown>;
   const taskType = normalizeTaskType(item.taskType);
+  const id =
+    typeof item.id === 'string' && item.id.trim().length > 0
+      ? item.id
+      : item.id === undefined || item.id === null || item.id === ''
+        ? crypto.randomUUID()
+        : null;
 
   // 必須フィールドの確認
-  if (typeof item.id !== 'string' || !item.id) {
+  if (id === null) {
     throw new Error(i18n.t('todo.validation.idRequired'));
   }
   if (typeof item.title !== 'string') {
@@ -192,21 +198,21 @@ function validateAndNormalizeTodo(obj: unknown): Todo {
     throw new Error(i18n.t('todo.validation.actualNonNegative'));
   }
 
-  // dependency の正規化
-  let dependency: string | string[] | undefined;
-  if (item.dependency !== undefined) {
-    if (typeof item.dependency === 'string') {
-      dependency = item.dependency || undefined;
-    } else if (Array.isArray(item.dependency)) {
-      const filtered = item.dependency.filter(d => typeof d === 'string' && d);
-      dependency = filtered.length > 0 ? filtered : undefined;
+  // dependsOn の正規化
+  let dependsOn: string | string[] | undefined;
+  if (item.dependsOn !== undefined) {
+    if (typeof item.dependsOn === 'string') {
+      dependsOn = item.dependsOn || undefined;
+    } else if (Array.isArray(item.dependsOn)) {
+      const filtered = item.dependsOn.filter(d => typeof d === 'string' && d);
+      dependsOn = filtered.length > 0 ? filtered : undefined;
     } else {
       throw new Error(i18n.t('todo.validation.dependencyInvalid'));
     }
   }
 
   return {
-    id: item.id,
+    id,
     title: item.title,
     description: typeof item.description === 'string' ? item.description : '',
     taskType,
@@ -217,7 +223,7 @@ function validateAndNormalizeTodo(obj: unknown): Todo {
     status: status as Todo['status'],
     effortMinutes: Math.max(0, effortMinutes),
     actualWorkSeconds: Math.max(0, actualWorkSeconds),
-    dependency,
+    dependsOn,
     completedAt: typeof item.completedAt === 'string' ? item.completedAt : undefined,
   };
 }
@@ -258,7 +264,7 @@ export function normalizeTodo(todo: Todo): Todo {
       : Number.isFinite(Number(todo.actualWorkSeconds))
         ? Math.max(0, Number(todo.actualWorkSeconds))
         : 0,
-    dependency: isMeeting ? undefined : todo.dependency,
+    dependsOn: isMeeting ? undefined : todo.dependsOn,
     completedAt: todo.completedAt,
   };
 }

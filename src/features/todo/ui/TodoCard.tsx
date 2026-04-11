@@ -152,7 +152,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
         {isLongDescription && (
           <button
             onClick={() => onExpandedChange(todo.id, !isExpanded)}
-            className="text-xs text-blue-500 hover:text-blue-700 mb-3"
+            className="todo-list-action-button todo-list-button-link text-xs text-blue-500 hover:text-blue-700 mb-3"
           >
             {isExpanded ? t('todo.card.collapse') : t('todo.card.expand')}
           </button>
@@ -214,7 +214,11 @@ export const TodoCard: React.FC<TodoCardProps> = ({
           {!isMeeting && filter === 'unlocked' && todo.status === 'Unlocked' && (
             <button
               onClick={() => onStartTodo(todo.id)}
-              className={`text-xs sm:text-sm ${
+              className={`todo-list-action-button ${
+                currentInProgressId === todo.id
+                  ? 'todo-list-button-warning'
+                  : 'todo-list-button-primary'
+              } text-xs sm:text-sm ${
                 currentInProgressId === todo.id
                   ? 'bg-yellow-500 hover:bg-yellow-600'
                   : 'bg-blue-500 hover:bg-blue-600'
@@ -226,20 +230,20 @@ export const TodoCard: React.FC<TodoCardProps> = ({
           {!isMeeting && todo.status !== 'Completed' && (
             <button
               onClick={() => onComplete(todo.id)}
-              className="text-xs sm:text-sm bg-green-500 hover:bg-green-600 text-white font-semibold py-1 px-2 sm:px-3 rounded-md"
+              className="todo-list-action-button todo-list-button-success text-xs sm:text-sm bg-green-500 hover:bg-green-600 text-white font-semibold py-1 px-2 sm:px-3 rounded-md"
             >
               {t('todo.card.complete')}
             </button>
           )}
           <button
             onClick={() => onEdit(todo.id)}
-            className="text-xs sm:text-sm bg-slate-500 hover:bg-slate-600 text-white font-semibold py-1 px-2 sm:px-3 rounded-md"
+            className="todo-list-action-button todo-list-button-neutral text-xs sm:text-sm bg-slate-500 hover:bg-slate-600 text-white font-semibold py-1 px-2 sm:px-3 rounded-md"
           >
             {t('todo.card.edit')}
           </button>
           <button
             onClick={() => onDelete(todo.id)}
-            className="text-xs sm:text-sm bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-2 sm:px-3 rounded-md"
+            className="todo-list-action-button todo-list-button-danger text-xs sm:text-sm bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-2 sm:px-3 rounded-md"
           >
             {t('todo.card.delete')}
           </button>

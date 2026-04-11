@@ -6,7 +6,7 @@ export const WORK_SCHEDULE_STORAGE_KEY = 'workSchedule';
 export const DEFAULT_WORK_SCHEDULE: WorkSchedule = {
   workingDays: [1, 2, 3, 4, 5],
   workStartHour: 9,
-  workEndHour: 17,
+  workEndHour: 18,
   breakPeriods: [{ startMinute: 12 * 60, endMinute: 13 * 60 }],
 };
 

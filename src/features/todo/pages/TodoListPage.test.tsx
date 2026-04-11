@@ -6,6 +6,8 @@ import { useTodoContext } from '@/app/providers/TodoContext';
 import { useRegisterShortcuts } from '@/features/shortcuts/context/ShortcutContext';
 import { createTodo } from '@/test/factories/todo';
 
+const TODO_LIST_VIEW_STORAGE_KEY = 'todo-list-view';
+
 vi.mock('@/app/providers/TodoContext', () => ({
   useTodoContext: vi.fn(),
 }));
@@ -47,6 +49,8 @@ const useRegisterShortcutsMock = vi.mocked(useRegisterShortcuts);
 
 describe('TodoListPage', () => {
   beforeEach(async () => {
+    localStorage.removeItem(TODO_LIST_VIEW_STORAGE_KEY);
+
     const { useTodoListFilter } = await import('@/features/todo/hooks/useTodoListFilter');
     const { useTodoSelection } = await import('@/features/todo/hooks/useTodoSelection');
     const { useExportImport } = await import('@/features/todo/hooks/useExportImport');
@@ -87,9 +91,11 @@ describe('TodoListPage', () => {
       handleDelete: vi.fn(),
       handleComplete: vi.fn(),
       currentInProgressId: null,
+      hasMoreTodos: false,
+      loadMoreTodos: vi.fn(async () => undefined),
       startTodo: vi.fn(),
       exportTodos: vi.fn(async () => undefined),
-      exportTodosToText: vi.fn(() => '[]'),
+      exportTodosToText: vi.fn(async () => '[]'),
       importTodos: vi.fn(async () => ({
         success: true,
         addedCount: 0,
@@ -143,9 +149,34 @@ describe('TodoListPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'リスト表示' }));
     expect(screen.getByLabelText('todo-list-rows')).toBeInTheDocument();
+    expect(localStorage.getItem(TODO_LIST_VIEW_STORAGE_KEY)).toBe('list');
 
     fireEvent.click(screen.getByRole('button', { name: 'カード表示' }));
     expect(screen.queryByLabelText('todo-list-rows')).not.toBeInTheDocument();
+    expect(localStorage.getItem(TODO_LIST_VIEW_STORAGE_KEY)).toBe('card');
+  });
+
+  it('uses saved list view when query has no view parameter', () => {
+    localStorage.setItem(TODO_LIST_VIEW_STORAGE_KEY, 'list');
+
+    render(
+      <MemoryRouter initialEntries={['/?filter=unlocked']}>
+        <TodoListPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByLabelText('todo-list-rows')).toBeInTheDocument();
+  });
+
+  it('defaults to card view when saved view does not exist', () => {
+    render(
+      <MemoryRouter initialEntries={['/?filter=unlocked']}>
+        <TodoListPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByLabelText('todo-list-rows')).not.toBeInTheDocument();
+    expect(localStorage.getItem(TODO_LIST_VIEW_STORAGE_KEY)).toBe('card');
   });
 
   it('opens menu and invokes export/import handlers', async () => {
@@ -226,9 +257,11 @@ describe('TodoListPage', () => {
       handleDelete: vi.fn(),
       handleComplete: vi.fn(),
       currentInProgressId: null,
+      hasMoreTodos: false,
+      loadMoreTodos: vi.fn(async () => undefined),
       startTodo: vi.fn(),
       exportTodos: vi.fn(async () => undefined),
-      exportTodosToText: vi.fn(() => '[]'),
+      exportTodosToText: vi.fn(async () => '[]'),
       importTodos: vi.fn(async () => ({
         success: true,
         addedCount: 0,
@@ -314,9 +347,11 @@ describe('TodoListPage', () => {
       handleDelete,
       handleComplete,
       currentInProgressId: null,
+      hasMoreTodos: false,
+      loadMoreTodos: vi.fn(async () => undefined),
       startTodo,
       exportTodos: vi.fn(async () => undefined),
-      exportTodosToText: vi.fn(() => '[]'),
+      exportTodosToText: vi.fn(async () => '[]'),
       importTodos: vi.fn(async () => ({
         success: true,
         addedCount: 0,
@@ -384,5 +419,95 @@ describe('TodoListPage', () => {
     expect(handleTextImport).toHaveBeenCalledTimes(1);
     expect(closeExportDialog).toHaveBeenCalledTimes(1);
     expect(closeImportDialog).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides load more button when displayed todo count is less than page size', async () => {
+    const { useTodoListFilter } = await import('@/features/todo/hooks/useTodoListFilter');
+    const loadMoreTodos = vi.fn(async () => undefined);
+    const displayedTodos = Array.from({ length: 19 }, (_, index) =>
+      createTodo({ id: `todo-${index}`, title: `タスク ${index}` }),
+    );
+
+    vi.mocked(useTodoListFilter).mockReturnValue(displayedTodos);
+    useTodoContextMock.mockReturnValue({
+      todos: displayedTodos,
+      getTodo: vi.fn(),
+      modal: null,
+      setModal: vi.fn(),
+      handleDelete: vi.fn(),
+      handleComplete: vi.fn(),
+      currentInProgressId: null,
+      hasMoreTodos: true,
+      loadMoreTodos,
+      startTodo: vi.fn(),
+      exportTodos: vi.fn(async () => undefined),
+      exportTodosToText: vi.fn(async () => '[]'),
+      importTodos: vi.fn(async () => ({
+        success: true,
+        addedCount: 0,
+        updatedCount: 0,
+        message: '',
+      })),
+      importTodosFromText: vi.fn(async () => ({
+        success: true,
+        addedCount: 0,
+        updatedCount: 0,
+        message: '',
+      })),
+    } as never);
+
+    render(
+      <MemoryRouter initialEntries={['/?filter=unlocked']}>
+        <TodoListPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole('button', { name: 'もっと見る' })).not.toBeInTheDocument();
+    expect(loadMoreTodos).not.toHaveBeenCalled();
+  });
+
+  it('shows load more button when displayed todo count reaches page size', async () => {
+    const { useTodoListFilter } = await import('@/features/todo/hooks/useTodoListFilter');
+    const loadMoreTodos = vi.fn(async () => undefined);
+    const displayedTodos = Array.from({ length: 20 }, (_, index) =>
+      createTodo({ id: `todo-${index}`, title: `タスク ${index}` }),
+    );
+
+    vi.mocked(useTodoListFilter).mockReturnValue(displayedTodos);
+    useTodoContextMock.mockReturnValue({
+      todos: displayedTodos,
+      getTodo: vi.fn(),
+      modal: null,
+      setModal: vi.fn(),
+      handleDelete: vi.fn(),
+      handleComplete: vi.fn(),
+      currentInProgressId: null,
+      hasMoreTodos: true,
+      loadMoreTodos,
+      startTodo: vi.fn(),
+      exportTodos: vi.fn(async () => undefined),
+      exportTodosToText: vi.fn(async () => '[]'),
+      importTodos: vi.fn(async () => ({
+        success: true,
+        addedCount: 0,
+        updatedCount: 0,
+        message: '',
+      })),
+      importTodosFromText: vi.fn(async () => ({
+        success: true,
+        addedCount: 0,
+        updatedCount: 0,
+        message: '',
+      })),
+    } as never);
+
+    render(
+      <MemoryRouter initialEntries={['/?filter=unlocked']}>
+        <TodoListPage />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'もっと見る' }));
+    expect(loadMoreTodos).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Todo, WorkSchedule } from '@/features/todo/model/types';
 import { buildChartOption } from '../model/chart-builder';
 import { formatDateLabel } from '../model/datetime-utils';
@@ -12,6 +13,8 @@ export const useAvailabilityCharts = (
   selfMeetings: Todo[],
   workSchedule: WorkSchedule,
 ): AvailabilityChartData[] => {
+  const { t } = useTranslation();
+
   return useMemo(() => {
     const loadsByDate = aggregateLoadForDates(
       selfNormalTodos,
@@ -40,8 +43,8 @@ export const useAvailabilityCharts = (
         maxLoad,
         overloadedSlots,
         dateLabel: formatDateLabel(dateStr),
-        option: buildChartOption(load, workSchedule),
+        option: buildChartOption(load, workSchedule, t),
       };
     });
-  }, [displayDates, selfMeetings, selfNormalTodos, workSchedule]);
+  }, [displayDates, selfMeetings, selfNormalTodos, t, workSchedule]);
 };

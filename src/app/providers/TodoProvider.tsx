@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import toast from 'react-hot-toast';
 import { todoDB } from '@/features/todo/model/db';
 import type { Todo, ModalState, TodoContextType, ImportResult } from '@/features/todo/model/types';
 import {
@@ -10,6 +11,7 @@ import {
   todosToJSON,
   todosFromJSON,
 } from '@/features/todo/model/todo-utils';
+import { getRecurringHorizonRange } from '@/features/todo/model/recurring-utils';
 import {
   DEFAULT_WORK_SCHEDULE,
   sanitizeWorkSchedule,
@@ -22,7 +24,9 @@ import { TodoContext } from './TodoContext';
 const NOTIFIED_TODOS_KEY = 'notified-todos';
 const NOTIFICATION_PERMISSION_KEY = 'notificationPermission';
 const IN_PROGRESS_TODO_KEY = 'in-progress-todo';
+const RECURRING_SYNC_LAST_RUN_DATE_KEY = 'recurring-sync-last-run-date';
 const MEETING_AUTOCOMPLETE_INTERVAL_MS = 30_000;
+const TODO_PAGE_SIZE = 20;
 
 interface TodoProviderProps {
   children: ReactNode;
@@ -30,6 +34,8 @@ interface TodoProviderProps {
 
 export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [loadedOffset, setLoadedOffset] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
   const [isTodosLoaded, setIsTodosLoaded] = useState(false);
   const [isInProgressRestoreDone, setIsInProgressRestoreDone] = useState(false);
   const [form, setForm] = useState<Partial<Todo>>(defaultForm);
@@ -55,78 +61,234 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
   const [currentInProgressId, setCurrentInProgressId] = useState<string | null>(null);
   const [currentInProgressStartedAt, setCurrentInProgressStartedAt] = useState<number | null>(null);
   const todosRef = useRef<Todo[]>([]);
+  const todoMapRef = useRef<Map<string, Todo>>(new Map());
   const currentInProgressIdRef = useRef<string | null>(null);
   const currentInProgressStartedAtRef = useRef<number | null>(null);
   const trackedElapsedSecondsRef = useRef(0);
   const hasRestoredInProgressRef = useRef(false);
 
-  const fetchTodos = useCallback(async () => {
-    const data = await todoDB.fetch();
-    const normalizedTodos = data.map(normalizeTodo);
-    todosRef.current = normalizedTodos;
-    setTodos(normalizedTodos);
-    setIsTodosLoaded(true);
+  const notifyPersistenceError = useCallback((error: unknown, messageKey: string) => {
+    console.error('Todo persistence error:', error);
+    toast.error(i18n.t(messageKey));
   }, []);
-  const completeTodos = useCallback(async (ids: string[]) => {
-    const targetIds = new Set(ids);
-    if (targetIds.size === 0) {
-      return false;
+
+  const collectDependencyIds = useCallback((sourceTodos: Todo[]) => {
+    return [...new Set(sourceTodos.flatMap(todo => getDependencyIds(todo)))];
+  }, []);
+
+  const syncTodoMap = useCallback((visibleTodos: Todo[], extraTodos: Todo[] = []) => {
+    const nextMap = new Map<string, Todo>();
+    [...visibleTodos, ...extraTodos].forEach(todo => {
+      nextMap.set(todo.id, todo);
+    });
+    todoMapRef.current = nextMap;
+  }, []);
+
+  const appendTodos = useCallback((current: Todo[], next: Todo[]) => {
+    const seen = new Set(current.map(todo => todo.id));
+    const merged = [...current];
+    next.forEach(todo => {
+      if (seen.has(todo.id)) {
+        return;
+      }
+
+      seen.add(todo.id);
+      merged.push(todo);
+    });
+    return merged;
+  }, []);
+
+  const fetchMissingDependencies = useCallback(
+    async (sourceTodos: Todo[]) => {
+      const dependencyIds = collectDependencyIds(sourceTodos);
+      const missingDependencyIds = dependencyIds.filter(depId => !todoMapRef.current.has(depId));
+
+      if (missingDependencyIds.length === 0) {
+        return [] as Todo[];
+      }
+
+      const dependencies = await todoDB.bulkGetByIds(missingDependencyIds);
+      return dependencies.map(normalizeTodo);
+    },
+    [collectDependencyIds],
+  );
+
+  const fetchTodos = useCallback(async () => {
+    try {
+      const [pageRows, count] = await Promise.all([
+        todoDB.fetchPage(0, TODO_PAGE_SIZE),
+        todoDB.fetchTotalCount(),
+      ]);
+      const visibleTodos = pageRows.map(normalizeTodo);
+      todoMapRef.current = new Map(visibleTodos.map(todo => [todo.id, todo]));
+      const dependencyTodos = await fetchMissingDependencies(visibleTodos);
+
+      syncTodoMap(visibleTodos, dependencyTodos);
+      todosRef.current = visibleTodos;
+      setTodos(visibleTodos);
+      setLoadedOffset(visibleTodos.length);
+      setTotalCount(count);
+    } catch (error) {
+      notifyPersistenceError(error, 'todo.toast.migrationFailed');
+      setIsInProgressRestoreDone(true);
+    }
+    setIsTodosLoaded(true);
+  }, [fetchMissingDependencies, notifyPersistenceError, syncTodoMap]);
+
+  const loadMoreTodos = useCallback(async () => {
+    if (loadedOffset >= totalCount) {
+      return;
     }
 
-    const completedAt = new Date().toISOString();
-    let changed = false;
+    try {
+      const [pageRows, count] = await Promise.all([
+        todoDB.fetchPage(loadedOffset, TODO_PAGE_SIZE),
+        todoDB.fetchTotalCount(),
+      ]);
+      const nextTodos = pageRows.map(normalizeTodo);
+      const mergedTodos = appendTodos(todosRef.current, nextTodos);
 
-    let newTodos = todosRef.current.map(todo => {
-      if (!targetIds.has(todo.id) || todo.status === 'Completed') {
-        return todo;
-      }
+      todosRef.current = mergedTodos;
+      setTodos(mergedTodos);
+      setLoadedOffset(Math.min(loadedOffset + nextTodos.length, count));
+      setTotalCount(count);
 
-      changed = true;
-      return { ...todo, status: 'Completed' as const, completedAt };
-    });
-
-    newTodos = newTodos.map(todo => {
-      if (!todo.dependency) {
-        return todo;
-      }
-
-      const depIds = getDependencyIds(todo);
-      if (!depIds.some(depId => targetIds.has(depId))) {
-        return todo;
-      }
-
-      const allDepsCompleted = depIds.every(depId => {
-        const depTodo = newTodos.find(item => item.id === depId);
-        return depTodo?.status === 'Completed';
+      nextTodos.forEach(todo => {
+        todoMapRef.current.set(todo.id, todo);
       });
 
-      if (!allDepsCompleted) {
-        return todo;
-      }
-
-      const maxCompletedAt = depIds
-        .map(depId => newTodos.find(item => item.id === depId)?.completedAt)
-        .filter(Boolean)
-        .sort()
-        .pop();
-
-      if (maxCompletedAt && maxCompletedAt !== todo.startableAt) {
-        changed = true;
-        return { ...todo, startableAt: maxCompletedAt };
-      }
-
-      return todo;
-    });
-
-    if (!changed) {
-      return false;
+      const dependencyTodos = await fetchMissingDependencies(nextTodos);
+      dependencyTodos.forEach(todo => {
+        todoMapRef.current.set(todo.id, todo);
+      });
+    } catch (error) {
+      notifyPersistenceError(error, 'todo.toast.persistenceFailed');
     }
+  }, [appendTodos, fetchMissingDependencies, loadedOffset, notifyPersistenceError, totalCount]);
 
-    todosRef.current = newTodos;
-    setTodos(newTodos);
-    await todoDB.save(newTodos);
-    return true;
-  }, []);
+  const hasMoreTodos = loadedOffset < totalCount;
+  const completeTodos = useCallback(
+    async (ids: string[]) => {
+      const targetIds = new Set(ids);
+      if (targetIds.size === 0) {
+        return false;
+      }
+
+      const completedAt = new Date().toISOString();
+      let changed = false;
+
+      const updatedById = new Map<string, Todo>();
+
+      let newTodos = todosRef.current.map(todo => {
+        if (!targetIds.has(todo.id) || todo.status === 'Completed') {
+          updatedById.set(todo.id, todo);
+          return todo;
+        }
+
+        changed = true;
+        const updatedTodo = { ...todo, status: 'Completed' as const, completedAt };
+        updatedById.set(updatedTodo.id, updatedTodo);
+        return updatedTodo;
+      });
+
+      const impactedTodos = await todoDB.fetchDependentsByDependencyIds([...targetIds]);
+      const normalizedImpactedTodos = impactedTodos.map(normalizeTodo);
+
+      normalizedImpactedTodos.forEach(todo => {
+        if (!updatedById.has(todo.id)) {
+          updatedById.set(todo.id, todo);
+        }
+      });
+
+      const missingDepIds = new Set<string>();
+      normalizedImpactedTodos.forEach(todo => {
+        getDependencyIds(todo).forEach(depId => {
+          if (!updatedById.has(depId) && !todoMapRef.current.has(depId)) {
+            missingDepIds.add(depId);
+          }
+        });
+      });
+
+      if (missingDepIds.size > 0) {
+        const dependencyRows = await todoDB.bulkGetByIds([...missingDepIds]);
+        dependencyRows.map(normalizeTodo).forEach(todo => {
+          todoMapRef.current.set(todo.id, todo);
+        });
+      }
+
+      const dependencyLookup = new Map<string, Todo>(todoMapRef.current);
+      updatedById.forEach((todo, id) => {
+        dependencyLookup.set(id, todo);
+      });
+
+      const updatedImpactedTodos: Todo[] = [];
+      normalizedImpactedTodos.forEach(todo => {
+        if (!todo.dependsOn) {
+          return;
+        }
+
+        const depIds = getDependencyIds(todo);
+        if (!depIds.some(depId => targetIds.has(depId))) {
+          return;
+        }
+
+        const allDepsCompleted = depIds.every(depId => {
+          const depTodo = dependencyLookup.get(depId);
+          return depTodo?.status === 'Completed';
+        });
+
+        if (!allDepsCompleted) {
+          return;
+        }
+
+        const maxCompletedAt = depIds
+          .map(depId => dependencyLookup.get(depId)?.completedAt)
+          .filter(Boolean)
+          .sort()
+          .pop();
+
+        if (maxCompletedAt && maxCompletedAt !== todo.startableAt) {
+          changed = true;
+          const updatedTodo = { ...todo, startableAt: maxCompletedAt };
+          updatedImpactedTodos.push(updatedTodo);
+          updatedById.set(updatedTodo.id, updatedTodo);
+        }
+      });
+
+      if (!changed) {
+        return false;
+      }
+
+      try {
+        const changedTodos = [...updatedById.values()].filter(
+          todo => targetIds.has(todo.id) || updatedImpactedTodos.some(item => item.id === todo.id),
+        );
+
+        if (changedTodos.length > 0) {
+          await todoDB.bulkPut(changedTodos);
+        }
+
+        const visibleTodoLookup = new Map(newTodos.map(todo => [todo.id, todo]));
+        updatedImpactedTodos.forEach(todo => {
+          if (visibleTodoLookup.has(todo.id)) {
+            visibleTodoLookup.set(todo.id, todo);
+          }
+        });
+
+        newTodos = [...visibleTodoLookup.values()];
+        todosRef.current = newTodos;
+        setTodos(newTodos);
+        changedTodos.forEach(todo => {
+          todoMapRef.current.set(todo.id, todo);
+        });
+        return true;
+      } catch (error) {
+        notifyPersistenceError(error, 'todo.toast.persistenceFailed');
+        return false;
+      }
+    },
+    [notifyPersistenceError],
+  );
 
   useEffect(() => {
     todosRef.current = todos;
@@ -161,6 +323,36 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
   }, [fetchTodos]);
 
   useEffect(() => {
+    if (!isTodosLoaded) {
+      return;
+    }
+
+    const runRecurringSync = async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const lastRunDate = localStorage.getItem(RECURRING_SYNC_LAST_RUN_DATE_KEY);
+
+      if (lastRunDate === today) {
+        return;
+      }
+
+      try {
+        const { from, to } = getRecurringHorizonRange(new Date());
+        const generatedTodos = await todoDB.syncRecurringTodosInRange(from, to);
+
+        localStorage.setItem(RECURRING_SYNC_LAST_RUN_DATE_KEY, today);
+
+        if (generatedTodos.length > 0) {
+          await fetchTodos();
+        }
+      } catch (error) {
+        notifyPersistenceError(error, 'todo.toast.persistenceFailed');
+      }
+    };
+
+    void runRecurringSync();
+  }, [fetchTodos, isTodosLoaded, notifyPersistenceError]);
+
+  useEffect(() => {
     if ('serviceWorker' in navigator) {
       const baseUrl = import.meta.env.BASE_URL || '/';
       const isDev = import.meta.env.DEV;
@@ -182,7 +374,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     localStorage.setItem(WORK_SCHEDULE_STORAGE_KEY, JSON.stringify(workSchedule));
   }, [workSchedule]);
 
-  const getTodo = useCallback((id: string) => todos.find(t => t.id === id), [todos]);
+  const getTodo = useCallback((id: string) => todoMapRef.current.get(id), []);
 
   useEffect(() => {
     const showNotification = (title: string, options: NotificationOptions) => {
@@ -278,11 +470,50 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     });
   };
 
-  const syncInProgressActualWork = useCallback(async (stopAfterSync = false) => {
-    const activeId = currentInProgressIdRef.current;
-    const startedAt = currentInProgressStartedAtRef.current;
+  const syncInProgressActualWork = useCallback(
+    async (stopAfterSync = false) => {
+      const activeId = currentInProgressIdRef.current;
+      const startedAt = currentInProgressStartedAtRef.current;
 
-    if (!activeId || startedAt === null) {
+      if (!activeId || startedAt === null) {
+        if (stopAfterSync) {
+          trackedElapsedSecondsRef.current = 0;
+          currentInProgressIdRef.current = null;
+          currentInProgressStartedAtRef.current = null;
+          setCurrentInProgressId(null);
+          setCurrentInProgressStartedAt(null);
+        }
+        return;
+      }
+
+      const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+      const deltaSeconds = elapsedSeconds - trackedElapsedSecondsRef.current;
+
+      if (deltaSeconds > 0) {
+        const currentTodo = todosRef.current.find(todo => todo.id === activeId);
+        const updatedTodo = currentTodo
+          ? {
+              ...currentTodo,
+              actualWorkSeconds: (currentTodo.actualWorkSeconds || 0) + deltaSeconds,
+            }
+          : null;
+        const newTodos = updatedTodo
+          ? todosRef.current.map(todo => (todo.id === activeId ? updatedTodo : todo))
+          : todosRef.current;
+
+        trackedElapsedSecondsRef.current = elapsedSeconds;
+        todosRef.current = newTodos;
+        setTodos(newTodos);
+        if (updatedTodo) {
+          try {
+            await todoDB.put(updatedTodo);
+            todoMapRef.current.set(updatedTodo.id, updatedTodo);
+          } catch (error) {
+            notifyPersistenceError(error, 'todo.toast.persistenceFailed');
+          }
+        }
+      }
+
       if (stopAfterSync) {
         trackedElapsedSecondsRef.current = 0;
         currentInProgressIdRef.current = null;
@@ -290,36 +521,9 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
         setCurrentInProgressId(null);
         setCurrentInProgressStartedAt(null);
       }
-      return;
-    }
-
-    const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
-    const deltaSeconds = elapsedSeconds - trackedElapsedSecondsRef.current;
-
-    if (deltaSeconds > 0) {
-      const newTodos = todosRef.current.map(todo =>
-        todo.id === activeId
-          ? {
-              ...todo,
-              actualWorkSeconds: (todo.actualWorkSeconds || 0) + deltaSeconds,
-            }
-          : todo,
-      );
-
-      trackedElapsedSecondsRef.current = elapsedSeconds;
-      todosRef.current = newTodos;
-      setTodos(newTodos);
-      await todoDB.save(newTodos);
-    }
-
-    if (stopAfterSync) {
-      trackedElapsedSecondsRef.current = 0;
-      currentInProgressIdRef.current = null;
-      currentInProgressStartedAtRef.current = null;
-      setCurrentInProgressId(null);
-      setCurrentInProgressStartedAt(null);
-    }
-  }, []);
+    },
+    [notifyPersistenceError],
+  );
 
   useEffect(() => {
     if (!isTodosLoaded || hasRestoredInProgressRef.current) {
@@ -367,17 +571,28 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     const restoreDeltaSeconds = Math.max(0, Math.floor((now - parsedState.startedAt) / 1000));
 
     if (restoreDeltaSeconds > 0) {
-      const updatedTodos = todosRef.current.map(todo =>
-        todo.id === parsedState.id
-          ? {
-              ...todo,
-              actualWorkSeconds: (todo.actualWorkSeconds || 0) + restoreDeltaSeconds,
-            }
-          : todo,
-      );
+      const currentTodo = todosRef.current.find(todo => todo.id === parsedState.id);
+      const updatedTodo = currentTodo
+        ? {
+            ...currentTodo,
+            actualWorkSeconds: (currentTodo.actualWorkSeconds || 0) + restoreDeltaSeconds,
+          }
+        : null;
+      const updatedTodos = updatedTodo
+        ? todosRef.current.map(todo => (todo.id === parsedState.id ? updatedTodo : todo))
+        : todosRef.current;
       todosRef.current = updatedTodos;
       setTodos(updatedTodos);
-      void todoDB.save(updatedTodos);
+      if (updatedTodo) {
+        void todoDB.put(updatedTodo).then(
+          () => {
+            todoMapRef.current.set(updatedTodo.id, updatedTodo);
+          },
+          error => {
+            notifyPersistenceError(error, 'todo.toast.persistenceFailed');
+          },
+        );
+      }
     }
 
     trackedElapsedSecondsRef.current = 0;
@@ -391,7 +606,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
       JSON.stringify({ id: parsedState.id, startedAt: now }),
     );
     setIsInProgressRestoreDone(true);
-  }, [isTodosLoaded]);
+  }, [isTodosLoaded, notifyPersistenceError]);
 
   useEffect(() => {
     if (!currentInProgressId || currentInProgressStartedAt === null) {
@@ -416,18 +631,47 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
           await syncInProgressActualWork(true);
         }
         const deletedAt = new Date().toISOString();
-        const newTodos = todosRef.current.filter(todo => todo.id !== id);
-        newTodos.forEach(todo => {
+        const dependentTodos = (await todoDB.fetchDependentsByDependencyIds([id])).map(
+          normalizeTodo,
+        );
+        const updatedDependents: Todo[] = [];
+        dependentTodos.forEach(todo => {
           const originalDeps = getDependencyIds(todo);
           const newDeps = originalDeps.filter(depId => depId !== id);
           const dependencyChanged = newDeps.length < originalDeps.length;
-          todo.dependency = newDeps.length > 0 ? newDeps : undefined;
-          if (dependencyChanged) {
-            todo.startableAt = deletedAt;
+          if (!dependencyChanged) {
+            return;
           }
+
+          updatedDependents.push({
+            ...todo,
+            dependsOn: newDeps.length > 0 ? newDeps : undefined,
+            startableAt: deletedAt,
+          });
         });
-        const { todoDB } = await import('@/features/todo/model/db');
-        await todoDB.save(newTodos);
+
+        try {
+          await todoDB.delete(id);
+          if (updatedDependents.length > 0) {
+            await todoDB.bulkPut(updatedDependents);
+          }
+        } catch (error) {
+          notifyPersistenceError(error, 'todo.toast.persistenceFailed');
+          return;
+        }
+
+        const updatedDependentsById = new Map(updatedDependents.map(todo => [todo.id, todo]));
+        const newTodos = todosRef.current
+          .filter(todo => todo.id !== id)
+          .map(todo => updatedDependentsById.get(todo.id) ?? todo);
+
+        todoMapRef.current.delete(id);
+        updatedDependents.forEach(todo => {
+          todoMapRef.current.set(todo.id, todo);
+        });
+        setTotalCount(current => Math.max(0, current - 1));
+        setLoadedOffset(newTodos.length);
+        todosRef.current = newTodos;
         setTodos(newTodos);
         setModal(null);
       },
@@ -467,12 +711,16 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
 
     if (targetTodo && !targetTodo.startedAt) {
       const firstStartedAt = new Date().toISOString();
-      const updatedTodos = todosRef.current.map(todo =>
-        todo.id === id ? { ...todo, startedAt: firstStartedAt } : todo,
-      );
+      const updatedTodo: Todo = { ...targetTodo, startedAt: firstStartedAt };
+      const updatedTodos = todosRef.current.map(todo => (todo.id === id ? updatedTodo : todo));
       todosRef.current = updatedTodos;
       setTodos(updatedTodos);
-      await todoDB.save(updatedTodos);
+      try {
+        await todoDB.put(updatedTodo);
+        todoMapRef.current.set(updatedTodo.id, updatedTodo);
+      } catch (error) {
+        notifyPersistenceError(error, 'todo.toast.persistenceFailed');
+      }
     }
 
     trackedElapsedSecondsRef.current = 0;
@@ -484,7 +732,8 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
   };
 
   const exportTodos = async () => {
-    const json = todosToJSON(todosRef.current);
+    const exportSource = await todoDB.fetchAll();
+    const json = todosToJSON(exportSource.map(normalizeTodo));
     const fileName = `todos-${new Date().toISOString().split('T')[0]}.json`;
 
     // showSaveFilePicker が利用可能かチェック
@@ -530,41 +779,40 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     URL.revokeObjectURL(url);
   };
 
-  const exportTodosToText = () => todosToJSON(todosRef.current);
+  const exportTodosToText = async () => {
+    const exportSource = await todoDB.fetchAll();
+    return todosToJSON(exportSource.map(normalizeTodo));
+  };
 
   const importTodosFromText = async (fileContent: string): Promise<ImportResult> => {
     try {
       const importedTodos = todosFromJSON(fileContent);
 
-      // 既存 todos と id で突合して upsert を実行
-      const existingIds = new Set(todosRef.current.map(t => t.id));
+      const existingRows = await todoDB.bulkGetByIds(importedTodos.map(todo => todo.id));
+      const existingIds = new Set(existingRows.map(todo => todo.id));
       let addedCount = 0;
       let updatedCount = 0;
 
-      const mergedTodos = [...todosRef.current];
-      for (const importedTodo of importedTodos) {
-        const index = mergedTodos.findIndex(t => t.id === importedTodo.id);
-        if (index >= 0) {
-          // UPDATE: 既存IDは上書き
-          mergedTodos[index] = importedTodo;
-          updatedCount++;
-        } else {
-          // INSERT: 新規IDは追加
-          mergedTodos.push(importedTodo);
-          addedCount++;
+      importedTodos.forEach(todo => {
+        if (existingIds.has(todo.id)) {
+          updatedCount += 1;
+          return;
         }
+        addedCount += 1;
+      });
+
+      try {
+        await todoDB.bulkPut(importedTodos.map(normalizeTodo));
+      } catch (error) {
+        notifyPersistenceError(error, 'todo.toast.persistenceFailed');
+        return {
+          success: false,
+          addedCount: 0,
+          updatedCount: 0,
+          message: i18n.t('todo.toast.persistenceFailed'),
+        };
       }
 
-      // 進行中タスクと衝突する場合、計測を同期停止
-      if (currentInProgressIdRef.current && !existingIds.has(currentInProgressIdRef.current)) {
-        const importedId = importedTodos.find(t => t.id === currentInProgressIdRef.current);
-        if (!importedId) {
-          // 進行中タスクが削除された場合も同期停止
-          await syncInProgressActualWork(true);
-        }
-      }
-
-      await todoDB.save(mergedTodos);
       await fetchTodos();
 
       return {
@@ -611,6 +859,8 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({ children }) => {
     workSchedule,
     currentInProgressId,
     fetchTodos,
+    loadMoreTodos,
+    hasMoreTodos,
     getTodo,
     setTodos,
     requestNotificationPermission,

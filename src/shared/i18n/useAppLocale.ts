@@ -22,8 +22,8 @@ export const useAppLocale = () => {
     locale,
     setLocale,
     locales: [
-      { value: 'ja' as const, label: t('common.locale.ja') },
       { value: 'en' as const, label: t('common.locale.en') },
+      { value: 'ja' as const, label: t('common.locale.ja') },
     ],
     defaultLocale: DEFAULT_LOCALE,
     storageKey: LOCALE_STORAGE_KEY,

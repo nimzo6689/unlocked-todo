@@ -20,8 +20,8 @@ test('サイドバーから主要ページへ遷移できる', async ({
 
   await page.getByRole('button', { name: '設定とヘルプ' }).click();
 
-  await page.getByRole('button', { name: '通知と言語' }).click();
-  await waitForAppReady('通知と言語');
+  await page.getByRole('button', { name: '一般' }).click();
+  await waitForAppReady('一般');
 
   await page.getByRole('button', { name: '稼働設定' }).click();
   await waitForAppReady('稼働設定');

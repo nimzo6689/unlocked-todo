@@ -53,9 +53,7 @@ describe('NotificationsSettingsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'English' }));
 
-    expect(
-      await screen.findByRole('heading', { name: 'Notifications & Language' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'General' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Enable notifications' })).toBeInTheDocument();
     expect(i18n.resolvedLanguage).toBe('en');
   });

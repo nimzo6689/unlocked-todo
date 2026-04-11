@@ -8,7 +8,6 @@ import {
   formatDurationFromSeconds,
   getTodoTaskTypeLabel,
   getTodoTitleFallback,
-  getTodoStatusLabel,
   isMeetingTodo,
 } from '@/features/todo/model/todo-utils';
 import { useAppLocale } from '@/shared/i18n/useAppLocale';
@@ -22,9 +21,12 @@ export type TodoFormProps = {
   onApplyDueDateQuickAction: (quickAction: 'today' | 'tomorrow' | 'thisWeek') => void;
   onApplyStartableAtQuickAction: (quickAction: 'now' | 'tomorrow' | 'nextWeek') => void;
   onSave: () => void;
-  onComplete: () => void;
+  onSaveAndClose: () => void;
+  onMarkCompletedAndClose: () => void;
+  onMarkIncompleteAndClose: () => void;
   onCancel: () => void;
   onOpenTodo: (id: string) => void;
+  onRegisterRecurringTask?: () => void;
   saving?: boolean;
 };
 
@@ -36,7 +38,6 @@ export type TodoFormFocusHandle = {
   focusDueDate: () => void;
   focusEffortMinutes: () => void;
   focusActualWorkMinutes: () => void;
-  focusStatus: () => void;
   focusDependency: () => void;
 };
 
@@ -51,9 +52,12 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
       onApplyDueDateQuickAction,
       onApplyStartableAtQuickAction,
       onSave,
-      onComplete,
+      onSaveAndClose,
+      onMarkCompletedAndClose,
+      onMarkIncompleteAndClose,
       onCancel,
       onOpenTodo,
+      onRegisterRecurringTask,
       saving = false,
     },
     ref,
@@ -62,18 +66,18 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
     const { locale } = useAppLocale();
     const taskType = form.taskType || 'Normal';
     const isMeeting = isMeetingTodo({ taskType });
-    const hasDependency = form.dependency
-      ? Array.isArray(form.dependency)
-        ? form.dependency.length > 0
+    const hasDependency = form.dependsOn
+      ? Array.isArray(form.dependsOn)
+        ? form.dependsOn.length > 0
         : true
       : false;
     const availableDependencyTodos = todos.filter(
       t => t.id !== form.id && t.status !== 'Completed',
     );
-    const currentDeps = Array.isArray(form.dependency)
-      ? form.dependency
-      : form.dependency
-        ? [form.dependency]
+    const currentDeps = Array.isArray(form.dependsOn)
+      ? form.dependsOn
+      : form.dependsOn
+        ? [form.dependsOn]
         : [];
 
     const [isPredecessorExpanded, setIsPredecessorExpanded] = React.useState(false);
@@ -82,6 +86,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
       ? Math.max(0, Math.floor(Number(form.actualWorkSeconds)))
       : 0;
     const actualWorkMinutes = Math.floor(normalizedActualWorkSeconds / 60);
+    const currentStatus = (form.status as Todo['status']) || 'Unlocked';
     const titleRef = React.useRef<HTMLInputElement>(null);
     const taskTypeRef = React.useRef<HTMLSelectElement>(null);
     const descriptionRef = React.useRef<HTMLTextAreaElement>(null);
@@ -89,7 +94,6 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
     const dueDateRef = React.useRef<HTMLInputElement>(null);
     const effortMinutesRef = React.useRef<HTMLInputElement>(null);
     const actualWorkMinutesRef = React.useRef<HTMLInputElement>(null);
-    const statusRef = React.useRef<HTMLSelectElement>(null);
     const dependencyFirstCheckboxRef = React.useRef<HTMLInputElement>(null);
 
     React.useEffect(() => {
@@ -131,11 +135,6 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
             actualWorkMinutesRef.current?.focus();
           }
         },
-        focusStatus: () => {
-          if (!isMeeting) {
-            statusRef.current?.focus();
-          }
-        },
         focusDependency: () => {
           if (isMeeting || availableDependencyTodos.length === 0) {
             return;
@@ -157,7 +156,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
 
       onChange({
         ...form,
-        dependency: newDeps,
+        dependsOn: newDeps,
         ...(newDeps.length > 0 ? { startableAt: '' } : {}),
       });
     }
@@ -177,7 +176,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
           event.preventDefault();
           onSave();
         }}
-        className="p-2 sm:p-4"
+        className="todo-form p-2 sm:p-4"
       >
         <input type="hidden" value={form.id || ''} />
         <div className="mb-4">
@@ -216,7 +215,7 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
                   ? {
                       effortMinutes: 0,
                       actualWorkSeconds: 0,
-                      dependency: [],
+                      dependsOn: [],
                     }
                   : {}),
               })
@@ -410,29 +409,6 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
         </div>
         {!isMeeting && (
           <div className="mb-6">
-            <div>
-              <label
-                htmlFor="status"
-                className="block text-xs sm:text-sm font-medium text-slate-700 mb-1"
-              >
-                {t('todo.form.status')}
-              </label>
-              <select
-                id="status"
-                ref={statusRef}
-                value={form.status || 'Unlocked'}
-                onChange={e => onChange({ ...form, status: e.target.value as Todo['status'] })}
-                className="w-full px-2 sm:px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 bg-white text-xs sm:text-sm"
-              >
-                <option value="Unlocked">{getTodoStatusLabel('Unlocked', locale)}</option>
-                <option value="Locked">{getTodoStatusLabel('Locked', locale)}</option>
-                <option value="Completed">{getTodoStatusLabel('Completed', locale)}</option>
-              </select>
-            </div>
-          </div>
-        )}
-        {!isMeeting && (
-          <div className="mb-6">
             <button
               type="button"
               onClick={() => setIsPredecessorExpanded(prev => !prev)}
@@ -589,6 +565,15 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
           </div>
         )}
         <div className="flex flex-wrap justify-end gap-2 mt-2">
+          {form.id && onRegisterRecurringTask && (
+            <button
+              type="button"
+              onClick={onRegisterRecurringTask}
+              className="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
+            >
+              {t('todo.form.registerRecurringTask')}
+            </button>
+          )}
           <button
             type="button"
             onClick={onCancel}
@@ -600,18 +585,38 @@ export const TodoForm = React.forwardRef<TodoFormFocusHandle, TodoFormProps>(
             type="button"
             onClick={onSave}
             disabled={saving}
-            className="bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
+            className="todo-form-button-save bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
           >
             {t('todo.form.save')}
           </button>
           <button
             type="button"
-            onClick={onComplete}
+            onClick={onSaveAndClose}
             disabled={saving}
-            className="bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
+            className="todo-form-button-save-close bg-blue-500 hover:bg-blue-600 disabled:bg-blue-300 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
           >
-            {t('todo.form.complete')}
+            {t('todo.form.saveAndClose')}
           </button>
+          {!isMeeting && currentStatus === 'Unlocked' && (
+            <button
+              type="button"
+              onClick={onMarkCompletedAndClose}
+              disabled={saving}
+              className="todo-form-button-complete-close bg-indigo-500 hover:bg-indigo-600 disabled:bg-indigo-300 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
+            >
+              {t('todo.form.completeAndClose')}
+            </button>
+          )}
+          {!isMeeting && currentStatus === 'Completed' && (
+            <button
+              type="button"
+              onClick={onMarkIncompleteAndClose}
+              disabled={saving}
+              className="bg-amber-500 hover:bg-amber-600 disabled:bg-amber-300 text-white font-bold py-2 px-3 sm:px-4 rounded-lg shadow-md text-xs sm:text-sm"
+            >
+              {t('todo.form.markIncompleteAndClose')}
+            </button>
+          )}
         </div>
       </form>
     );

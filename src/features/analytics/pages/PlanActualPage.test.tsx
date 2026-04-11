@@ -1,9 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PlanActualPage } from '@/features/analytics/pages/PlanActualPage';
-import { useTodoContext } from '@/app/providers/TodoContext';
 import { useRegisterShortcuts } from '@/features/shortcuts/context/ShortcutContext';
 import { createTodo } from '@/test/factories/todo';
+import { todoDB } from '@/features/todo/model/db';
 
 const chartSpy = vi.fn();
 
@@ -14,49 +14,62 @@ vi.mock('echarts-for-react', () => ({
   },
 }));
 
-vi.mock('@/app/providers/TodoContext', () => ({
-  useTodoContext: vi.fn(),
-}));
-
 vi.mock('@/features/shortcuts/context/ShortcutContext', () => ({
   useRegisterShortcuts: vi.fn(),
 }));
 
-const useTodoContextMock = vi.mocked(useTodoContext);
+vi.mock('@/features/todo/model/db', () => ({
+  todoDB: {
+    fetchCompletedByCompletedAt: vi.fn(),
+  },
+}));
+
 const useRegisterShortcutsMock = vi.mocked(useRegisterShortcuts);
+const fetchCompletedByCompletedAtMock = vi.mocked(todoDB.fetchCompletedByCompletedAt);
 
 describe('PlanActualPage', () => {
   beforeEach(() => {
     chartSpy.mockReset();
+    fetchCompletedByCompletedAtMock.mockResolvedValue([]);
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-04-04T09:00:00.000Z'));
   });
 
-  it('shows empty message when no completed todos are in range', () => {
-    useTodoContextMock.mockReturnValue({ todos: [] } as never);
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('shows empty message when no completed todos are in range', async () => {
+    fetchCompletedByCompletedAtMock.mockResolvedValue([]);
 
     render(<PlanActualPage />);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     expect(
       screen.getByText('指定期間内に、表示対象の完了タスクがありません。'),
     ).toBeInTheDocument();
   });
 
-  it('renders chart and normalizes invalid numeric fields', () => {
-    useTodoContextMock.mockReturnValue({
-      todos: [
-        createTodo({
-          id: 'done-1',
-          status: 'Completed',
-          startedAt: '2026-04-04T10:00:00.000Z',
-          dueDate: '2026-04-04T12:00:00.000Z',
-          effortMinutes: -10,
-          actualWorkSeconds: Number.NaN,
-        }),
-      ],
-    } as never);
+  it('renders chart and normalizes invalid numeric fields', async () => {
+    fetchCompletedByCompletedAtMock.mockResolvedValue([
+      createTodo({
+        id: 'done-1',
+        status: 'Completed',
+        startedAt: '2026-04-04T10:00:00.000Z',
+        dueDate: '2026-04-04T12:00:00.000Z',
+        effortMinutes: -10,
+        actualWorkSeconds: Number.NaN,
+      }),
+    ]);
 
     render(<PlanActualPage />);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     expect(screen.getByTestId('plan-actual-chart')).toBeInTheDocument();
 
@@ -67,57 +80,61 @@ describe('PlanActualPage', () => {
     expect(chartProps.option.series[1].data[0]).toBe(0);
   });
 
-  it('filters out meeting, invalid startedAt and out-of-range rows', () => {
-    useTodoContextMock.mockReturnValue({
-      todos: [
-        createTodo({
-          id: 'in-range',
-          title: '対象',
-          status: 'Completed',
-          startedAt: '2026-04-04T10:00:00.000Z',
-          dueDate: '2026-04-04T12:00:00.000Z',
-          effortMinutes: 30,
-          actualWorkSeconds: 2400,
-        }),
-        createTodo({
-          id: 'meeting',
-          taskType: 'Meeting',
-          status: 'Completed',
-          startedAt: '2026-04-04T10:00:00.000Z',
-          dueDate: '2026-04-04T11:00:00.000Z',
-        }),
-        createTodo({
-          id: 'invalid-started-at',
-          status: 'Completed',
-          startedAt: 'invalid',
-        }),
-        createTodo({
-          id: 'out-of-range',
-          status: 'Completed',
-          startedAt: '2026-03-20T10:00:00.000Z',
-        }),
-      ],
-    } as never);
+  it('filters out meeting, invalid startedAt and out-of-range rows', async () => {
+    fetchCompletedByCompletedAtMock.mockResolvedValue([
+      createTodo({
+        id: 'in-range',
+        title: '対象',
+        status: 'Completed',
+        startedAt: '2026-04-04T10:00:00.000Z',
+        dueDate: '2026-04-04T12:00:00.000Z',
+        effortMinutes: 30,
+        actualWorkSeconds: 2400,
+      }),
+      createTodo({
+        id: 'meeting',
+        taskType: 'Meeting',
+        status: 'Completed',
+        startedAt: '2026-04-04T10:00:00.000Z',
+        dueDate: '2026-04-04T11:00:00.000Z',
+      }),
+      createTodo({
+        id: 'invalid-started-at',
+        status: 'Completed',
+        startedAt: 'invalid',
+      }),
+      createTodo({
+        id: 'out-of-range',
+        status: 'Completed',
+        startedAt: '2026-03-20T10:00:00.000Z',
+      }),
+    ]);
 
     render(<PlanActualPage />);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     const chartProps = chartSpy.mock.calls[0]?.[0] as { option: { xAxis: { data: string[] } } };
     expect(chartProps.option.xAxis.data).toEqual(['対象']);
   });
 
-  it('updates date with shortcuts and date input', () => {
-    useTodoContextMock.mockReturnValue({
-      todos: [
-        createTodo({
-          id: 'done-1',
-          status: 'Completed',
-          startedAt: '2026-04-04T10:00:00.000Z',
-          dueDate: '2026-04-04T12:00:00.000Z',
-        }),
-      ],
-    } as never);
+  it('updates date with shortcuts and date input', async () => {
+    fetchCompletedByCompletedAtMock.mockResolvedValue([
+      createTodo({
+        id: 'done-1',
+        status: 'Completed',
+        startedAt: '2026-04-04T10:00:00.000Z',
+        dueDate: '2026-04-04T12:00:00.000Z',
+      }),
+    ]);
 
     render(<PlanActualPage />);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     const input = screen.getByLabelText('集計開始日') as HTMLInputElement;
     expect(input.value).toBe('2026-04-04');
@@ -145,31 +162,33 @@ describe('PlanActualPage', () => {
     expect(chartSpy).toHaveBeenCalled();
   });
 
-  it('handles tooltip and axis label format branches', () => {
-    useTodoContextMock.mockReturnValue({
-      todos: [
-        createTodo({
-          id: 'over',
-          title: 'とても長いタイトルABCDEFGHIJK',
-          status: 'Completed',
-          startedAt: '2026-04-04T10:00:00.000Z',
-          dueDate: '2026-04-04T12:00:00.000Z',
-          effortMinutes: 10,
-          actualWorkSeconds: 1800,
-        }),
-        createTodo({
-          id: 'under',
-          title: '短い',
-          status: 'Completed',
-          startedAt: '2026-04-04T11:00:00.000Z',
-          dueDate: '2026-04-04T13:00:00.000Z',
-          effortMinutes: 40,
-          actualWorkSeconds: 600,
-        }),
-      ],
-    } as never);
+  it('handles tooltip and axis label format branches', async () => {
+    fetchCompletedByCompletedAtMock.mockResolvedValue([
+      createTodo({
+        id: 'over',
+        title: 'とても長いタイトルABCDEFGHIJK',
+        status: 'Completed',
+        startedAt: '2026-04-04T10:00:00.000Z',
+        dueDate: '2026-04-04T12:00:00.000Z',
+        effortMinutes: 10,
+        actualWorkSeconds: 1800,
+      }),
+      createTodo({
+        id: 'under',
+        title: '短い',
+        status: 'Completed',
+        startedAt: '2026-04-04T11:00:00.000Z',
+        dueDate: '2026-04-04T13:00:00.000Z',
+        effortMinutes: 40,
+        actualWorkSeconds: 600,
+      }),
+    ]);
 
     render(<PlanActualPage />);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     const chartProps = chartSpy.mock.calls.at(-1)?.[0] as {
       option: {
@@ -192,19 +211,21 @@ describe('PlanActualPage', () => {
     expect(axisFormatter('短い')).toBe('短い');
   });
 
-  it('keeps invalid date input unchanged on shortcut move', () => {
-    useTodoContextMock.mockReturnValue({
-      todos: [
-        createTodo({
-          id: 'done-1',
-          status: 'Completed',
-          startedAt: '2026-04-04T10:00:00.000Z',
-          dueDate: '2026-04-04T12:00:00.000Z',
-        }),
-      ],
-    } as never);
+  it('keeps invalid date input unchanged on shortcut move', async () => {
+    fetchCompletedByCompletedAtMock.mockResolvedValue([
+      createTodo({
+        id: 'done-1',
+        status: 'Completed',
+        startedAt: '2026-04-04T10:00:00.000Z',
+        dueDate: '2026-04-04T12:00:00.000Z',
+      }),
+    ]);
 
     render(<PlanActualPage />);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     const input = screen.getByLabelText('集計開始日') as HTMLInputElement;
     fireEvent.change(input, { target: { value: '' } });

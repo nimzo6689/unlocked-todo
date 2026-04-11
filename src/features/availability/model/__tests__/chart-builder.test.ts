@@ -3,6 +3,30 @@ import type { WorkSchedule } from '@/features/todo/model/types';
 import type { AggregatedLoad } from '../types';
 import { buildChartOption } from '../chart-builder';
 
+const chartTranslations: Record<string, string> = {
+  'availability.chart.tooltip.endTime': '終了時刻',
+  'availability.chart.tooltip.elapsedSlot': 'この時間は経過済みのため、負荷を表示しません',
+  'availability.chart.tooltip.nonWorkingBreak': 'この時間は非稼働（休憩時間）です',
+  'availability.chart.tooltip.taskLoadLine': '・{{title}}: {{value}} 人時/h',
+  'availability.chart.tooltip.hoveredTask': 'ホバー中: <b>{{title}}</b> {{value}} 人時/h',
+  'availability.chart.tooltip.totalLoad': '合計負荷: <b>{{value}} 人時/h</b>',
+  'availability.chart.tooltip.meetingPresent': 'Meeting: <b>{{value}}</b> (非稼働)',
+  'availability.chart.tooltip.meetingNone': 'Meeting: なし',
+  'availability.chart.tooltip.noOverlappingTask': '重なりタスクなし',
+  'availability.chart.yAxis.load': '負荷量 (人時/h)',
+  'availability.chart.series.meeting': 'Meeting',
+  'availability.chart.series.overloadBase': '超過ベース',
+  'availability.chart.series.overloadLoad': '超過負荷',
+  'availability.chart.series.totalLoad': '合計負荷',
+  'availability.chart.limitLine.label': '上限 1.0',
+  'availability.chart.breakArea.label': '休憩時間',
+};
+
+const t = (key: string, options?: Record<string, unknown>) => {
+  const template = chartTranslations[key] ?? key;
+  return template.replace(/\{\{(\w+)\}\}/g, (_, token: string) => `${options?.[token] ?? ''}`);
+};
+
 const schedule: WorkSchedule = {
   workingDays: [1, 2, 3, 4, 5],
   workStartHour: 9,
@@ -49,7 +73,7 @@ const baseLoad = (): AggregatedLoad => {
 
 describe('buildChartOption tooltip', () => {
   it('shows hovered task load in tooltip for task series', () => {
-    const option = buildChartOption(baseLoad(), schedule);
+    const option = buildChartOption(baseLoad(), schedule, t);
     const tooltip = option.tooltip;
     expect(tooltip).toBeDefined();
     expect(Array.isArray(tooltip)).toBe(false);
@@ -69,7 +93,7 @@ describe('buildChartOption tooltip', () => {
   });
 
   it('does not show hovered task line for total-load series', () => {
-    const option = buildChartOption(baseLoad(), schedule);
+    const option = buildChartOption(baseLoad(), schedule, t);
     const tooltip = option.tooltip;
     expect(tooltip).toBeDefined();
     expect(Array.isArray(tooltip)).toBe(false);

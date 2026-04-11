@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { useTranslation } from 'react-i18next';
 import { useTodoContext } from '@/app/providers/TodoContext';
@@ -8,7 +8,7 @@ import {
   getWeekdayOptions,
   hasBreakTime,
 } from '@/features/work-schedule/model/settings';
-import { isMeetingTodo } from '@/features/todo/model/todo-utils';
+import { isMeetingTodo, normalizeTodo } from '@/features/todo/model/todo-utils';
 import { useRegisterShortcuts } from '@/features/shortcuts/context/ShortcutContext';
 import { useAvailabilityCharts } from '@/features/availability/hooks/useAvailabilityCharts';
 import { useStableAvailabilityTodos } from '@/features/availability/hooks/useStableAvailabilityTodos';
@@ -17,13 +17,16 @@ import {
   buildDisplayDates,
   getSortedBreakPeriods,
 } from '@/features/availability/model/schedule-calculator';
+import { todoDB } from '@/features/todo/model/db';
+import type { Todo } from '@/features/todo/model/types';
 import { useAppLocale } from '@/shared/i18n/useAppLocale';
 
 export const AvailabilityPage = () => {
-  const { todos, workSchedule } = useTodoContext();
+  const { workSchedule } = useTodoContext();
   const { t } = useTranslation();
   const { locale } = useAppLocale();
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue(new Date()));
+  const [availabilityTodos, setAvailabilityTodos] = useState<Todo[]>([]);
   const chartSectionRefs = useRef<Array<HTMLElement | null>>([]);
   const moveSelectedDate = useCallback(
     (deltaDays: number) => {
@@ -50,22 +53,51 @@ export const AvailabilityPage = () => {
     ? `${businessHourRange} (${t('availability.breakLabel')}: ${breakLabels})`
     : `${businessHourRange} (${t('availability.noBreakLabel')})`;
 
-  const filteredSelfNormalTodos = useMemo(
-    () => todos.filter(todo => !isMeetingTodo(todo) && todo.status !== 'Completed'),
-    [todos],
-  );
-  const selfNormalTodos = useStableAvailabilityTodos(filteredSelfNormalTodos);
-
-  const filteredSelfMeetings = useMemo(
-    () => todos.filter(todo => isMeetingTodo(todo) && todo.status !== 'Completed'),
-    [todos],
-  );
-  const selfMeetings = useStableAvailabilityTodos(filteredSelfMeetings);
-
   const displayDates = useMemo(
     () => buildDisplayDates(selectedDate, workSchedule),
     [selectedDate, workSchedule],
   );
+
+  useEffect(() => {
+    let alive = true;
+
+    const loadWeeklyTodos = async () => {
+      if (displayDates.length === 0) {
+        if (alive) {
+          setAvailabilityTodos([]);
+        }
+        return;
+      }
+
+      const weekStart = `${displayDates[0]}T00:00:00.000Z`;
+      const weekEnd = `${displayDates[displayDates.length - 1]}T23:59:59.999Z`;
+      const rows = await todoDB.fetchForAvailability(weekStart, weekEnd);
+
+      if (!alive) {
+        return;
+      }
+
+      setAvailabilityTodos(rows.map(normalizeTodo));
+    };
+
+    void loadWeeklyTodos();
+
+    return () => {
+      alive = false;
+    };
+  }, [displayDates]);
+
+  const filteredSelfNormalTodos = useMemo(
+    () => availabilityTodos.filter(todo => !isMeetingTodo(todo) && todo.status !== 'Completed'),
+    [availabilityTodos],
+  );
+  const selfNormalTodos = useStableAvailabilityTodos(filteredSelfNormalTodos);
+
+  const filteredSelfMeetings = useMemo(
+    () => availabilityTodos.filter(todo => isMeetingTodo(todo) && todo.status !== 'Completed'),
+    [availabilityTodos],
+  );
+  const selfMeetings = useStableAvailabilityTodos(filteredSelfMeetings);
 
   const availabilityCharts = useAvailabilityCharts(
     displayDates,

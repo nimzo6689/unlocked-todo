@@ -11,7 +11,7 @@ describe('TodoCard', () => {
 
   it('shows locked reason when dependency is incomplete', async () => {
     const todo = createTodo({
-      dependency: ['dep-1'],
+      dependsOn: ['dep-1'],
       status: 'Unlocked',
     });
     const dependency = createTodo({ id: 'dep-1', title: '先行タスク', status: 'Locked' });

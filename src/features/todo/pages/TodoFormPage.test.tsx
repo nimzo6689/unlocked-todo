@@ -23,7 +23,9 @@ vi.mock('@/features/todo/hooks/useTodoForm', () => ({
     applyDueDateQuickAction: vi.fn(),
     applyStartableAtQuickAction: vi.fn(),
     handleSave: vi.fn(async () => undefined),
-    handleComplete: vi.fn(async () => undefined),
+    handleSaveAndClose: vi.fn(async () => undefined),
+    handleMarkCompletedAndClose: vi.fn(async () => undefined),
+    handleMarkIncompleteAndClose: vi.fn(async () => undefined),
     handleCancel: vi.fn(),
     handleOpenTodo: vi.fn(),
   }),
@@ -62,17 +64,17 @@ describe('TodoFormPage', () => {
   it('renders new form title on /new', () => {
     renderFormPage('/new');
 
-    expect(screen.getByRole('heading', { name: 'Todoの新規作成' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'タスクの新規作成' })).toBeInTheDocument();
     expect(screen.getByLabelText('タイトル *')).toBeInTheDocument();
   });
 
   it('renders edit form title on /edit/:id', () => {
     renderFormPage('/edit/todo-1');
 
-    expect(screen.getByRole('heading', { name: 'Todoの編集' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'タスクの編集' })).toBeInTheDocument();
   });
 
-  it('registers focus shortcuts with alt+1..9 and quick effort shortcuts with alt+shift+1..5', () => {
+  it('registers focus shortcuts and quick effort shortcuts with expected bindings', () => {
     renderFormPage('/edit/todo-1');
 
     const registration = useRegisterShortcutsMock.mock.calls.at(-1)?.[0];
@@ -88,7 +90,6 @@ describe('TodoFormPage', () => {
     expect(byId('form-focus-due-date')?.bindings).toEqual(['alt+5']);
     expect(byId('form-focus-effort')?.bindings).toEqual(['alt+6']);
     expect(byId('form-focus-actual-work')?.bindings).toEqual(['alt+7']);
-    expect(byId('form-focus-status')?.bindings).toEqual(['alt+8']);
     expect(byId('form-focus-dependency')?.bindings).toEqual(['alt+9']);
     expect(byId('form-focus-title')?.allowInInput).toBe(true);
 
@@ -127,5 +128,47 @@ describe('TodoFormPage', () => {
     await waitFor(() => {
       expect(screen.getByLabelText('依存先Todo')).toHaveFocus();
     });
+  });
+
+  it('shows complete-and-close button only when status is Unlocked', () => {
+    useTodoContextMock.mockReturnValue({
+      todos: [
+        createTodo({ id: 'todo-1', title: '編集中Todo', status: 'Unlocked' }),
+        createTodo({ id: 'todo-2', title: '依存先Todo', status: 'Unlocked' }),
+      ],
+      form: { id: 'todo-1', title: 'sample', taskType: 'Normal', status: 'Unlocked' },
+      setForm: vi.fn(),
+      getTodo: vi.fn(),
+      fetchTodos: vi.fn(async () => undefined),
+      workSchedule: DEFAULT_WORK_SCHEDULE,
+    } as never);
+
+    renderFormPage('/edit/todo-1');
+
+    expect(screen.getByRole('button', { name: '保存' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '保存して閉じる' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '完了にして閉じる' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '未完了にして閉じる' })).not.toBeInTheDocument();
+  });
+
+  it('shows mark-incomplete-and-close button only when status is Completed', () => {
+    useTodoContextMock.mockReturnValue({
+      todos: [
+        createTodo({ id: 'todo-1', title: '編集中Todo', status: 'Completed' }),
+        createTodo({ id: 'todo-2', title: '依存先Todo', status: 'Unlocked' }),
+      ],
+      form: { id: 'todo-1', title: 'sample', taskType: 'Normal', status: 'Completed' },
+      setForm: vi.fn(),
+      getTodo: vi.fn(),
+      fetchTodos: vi.fn(async () => undefined),
+      workSchedule: DEFAULT_WORK_SCHEDULE,
+    } as never);
+
+    renderFormPage('/edit/todo-1');
+
+    expect(screen.getByRole('button', { name: '保存' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '保存して閉じる' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '完了にして閉じる' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '未完了にして閉じる' })).toBeInTheDocument();
   });
 });

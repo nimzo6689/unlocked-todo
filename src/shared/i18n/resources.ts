@@ -7,6 +7,10 @@ export const resources = {
         close: '閉じる',
         cancel: 'キャンセル',
         ok: 'OK',
+        theme: {
+          light: 'ライト',
+          dark: 'ダーク',
+        },
         locale: {
           label: '表示言語',
           description:
@@ -26,8 +30,9 @@ export const resources = {
         availability: '空き状況',
         planActual: '予実管理',
         settingsHelp: '設定とヘルプ',
-        notifications: '通知と言語',
+        notifications: '一般',
         workHours: '稼働設定',
+        recurring: '定期タスク',
         usage: '使い方',
         about: 'アプリ情報',
       },
@@ -66,7 +71,7 @@ export const resources = {
           navNew: '新規作成へ移動',
           navAvailability: '空き状況へ移動',
           navPlanActual: '予実管理へ移動',
-          navNotifications: '通知と言語へ移動',
+          navNotifications: '一般へ移動',
           navWorkHours: '稼働設定へ移動',
           navUsage: '使い方へ移動',
           navAbout: 'アプリ情報へ移動',
@@ -74,11 +79,11 @@ export const resources = {
         },
       },
       notifications: {
-        pageLabel: '通知と言語',
+        pageLabel: '一般',
         enableShortcut: '通知を有効にする',
-        title: '通知と言語',
+        title: '一般',
         description:
-          '開始可能になったタスクの通知を管理します。通知はこのブラウザ内でのみ有効になり、Todo データは外部へ送信されません。',
+          '通知・表示言語・テーマを管理します。設定はこのブラウザに保存され、すぐに反映されます。',
         enabled: '通知は有効です',
         disabled: '通知はまだ有効ではありません',
         targetDescription: '対象は「開始可能」になったタスクです。',
@@ -94,6 +99,10 @@ export const resources = {
         },
         languageSectionTitle: '言語設定',
         languageCurrent: '現在: {{language}}',
+        themeSectionTitle: 'テーマ',
+        themeDescription:
+          'アプリ全体の表示テーマを切り替えます。カードやグラフを含む画面全体に反映されます。',
+        themeCurrent: '現在: {{theme}}',
         unsupportedBrowser: 'このブラウザは通知をサポートしていません。',
         browserNotificationTitle: 'タスクが開始可能です！',
         browserNotificationBody: '「{{title}}」に着手できます。',
@@ -162,6 +171,34 @@ export const resources = {
         distributionSummary:
           '各タスクの負荷は、開始可能日時〜期限のうち稼働可能な時間帯に均等配分して計算しています。',
         meetingExcluded: 'Meeting は休憩時間と同様に非稼働時間として除外しています。',
+        chart: {
+          yAxis: {
+            load: '負荷量 (人時/h)',
+          },
+          series: {
+            meeting: 'Meeting',
+            overloadBase: '超過ベース',
+            overloadLoad: '超過負荷',
+            totalLoad: '合計負荷',
+          },
+          limitLine: {
+            label: '上限 1.0',
+          },
+          breakArea: {
+            label: '休憩時間',
+          },
+          tooltip: {
+            endTime: '終了時刻',
+            elapsedSlot: 'この時間は経過済みのため、負荷を表示しません',
+            nonWorkingBreak: 'この時間は非稼働（休憩時間）です',
+            taskLoadLine: '・{{title}}: {{value}} 人時/h',
+            hoveredTask: 'ホバー中: <b>{{title}}</b> {{value}} 人時/h',
+            totalLoad: '合計負荷: <b>{{value}} 人時/h</b>',
+            meetingPresent: 'Meeting: <b>{{value}}</b> (非稼働)',
+            meetingNone: 'Meeting: なし',
+            noOverlappingTask: '重なりタスクなし',
+          },
+        },
         shortcuts: {
           focusChart: '{{dateLabel}} のグラフにフォーカスする',
           prevDay: '表示開始日を前日に移動する',
@@ -250,8 +287,7 @@ export const resources = {
           },
           enableNotifications: {
             title: '通知を有効にする',
-            description:
-              '設定とヘルプ > 通知と言語から、開始可能になったタスクの通知をオンにできます。',
+            description: '設定とヘルプ > 一般から、開始可能になったタスクの通知をオンにできます。',
           },
         },
         shortcutTitle: 'ショートカット早見表',
@@ -277,7 +313,7 @@ export const resources = {
           saveForm: 'フォームや設定を保存します。',
           saveAndBack: 'フォームを保存して一覧に戻ります。',
           closeDialog: 'ダイアログやフォーム編集を閉じます。',
-          quickEffort: 'Todo フォームの工数をクイック設定します。',
+          quickEffort: 'タスクの工数をクイック設定します。',
           dateMove: '空き状況・予実管理の日付を前日、翌日、今日へ切り替えます。',
         },
       },
@@ -285,10 +321,9 @@ export const resources = {
         common: {
           noDate: 'N/A',
           untitled: '（タイトル未設定）',
-          enableNotifications: {
-            description:
-              '設定とヘルプ > 通知と言語から、開始可能になったタスクの通知をオンにできます。',
-            meeting: 'ミーティング',
+          taskTypes: {
+            normal: '普通',
+            meeting: '会議',
           },
           statuses: {
             Unlocked: '着手可能',
@@ -308,6 +343,7 @@ export const resources = {
           title: 'タスク一覧',
           count_one: '現在 {{count}} 件のタスクがあります。',
           count_other: '現在 {{count}} 件のタスクがあります。',
+          loadMore: 'もっと見る',
           new: '新規作成',
           export: 'エクスポート',
           import: 'インポート',
@@ -345,8 +381,52 @@ export const resources = {
         formPage: {
           newPageLabel: 'Todo 新規作成',
           editPageLabel: 'Todo 編集',
-          newTitle: 'Todoの新規作成',
-          editTitle: 'Todoの編集',
+          newTitle: 'タスクの新規作成',
+          editTitle: 'タスクの編集',
+        },
+        recurring: {
+          title: '定期タスク',
+          description:
+            '繰り返し登録したいタスク定義を作成します。開始日時と周期から、14日先までのタスクが毎日自動で補填登録されます。',
+          editingBadge: '編集中の定期タスクがあります',
+          startAt: '開始日時',
+          endAt: '終了日時（任意）',
+          firstDueAt: '初回期限',
+          interval: '周期',
+          units: {
+            day: '日',
+            week: '週',
+            month: '月',
+          },
+          save: '定期タスクを保存',
+          update: '定期タスクを更新',
+          cancelEdit: '編集をキャンセル',
+          edit: '編集',
+          delete: '削除',
+          registered: '登録済みの定期タスク',
+          registeredDescription: '作成した定期タスク定義の一覧です。',
+          sort: {
+            label: '並び替え',
+            updatedAt: '更新日時が新しい順',
+            createdAt: '作成日時が新しい順',
+          },
+          empty: '登録済みの定期タスクはありません。',
+          ruleSummary: '{{interval}}{{unit}}ごと',
+          prefilledFromEdit: 'タスク編集から初期値を反映しました (ID: {{id}})',
+          confirmDelete: '「{{title}}」の定期タスク定義を削除しますか？',
+          validation: {
+            titleRequired: 'タイトルは必須です',
+            startRequired: '開始日時は必須です',
+            firstDueRequired: '初回期限は必須です',
+            firstDueAfterStart: '初回期限は開始日時以降に設定してください',
+            endAfterStart: '終了日時は開始日時以降に設定してください',
+            intervalPositive: '周期は1以上の整数で設定してください',
+          },
+          toast: {
+            saved: '定期タスクを保存しました',
+            updated: '定期タスクを更新しました',
+            deleted: '定期タスクを削除しました',
+          },
         },
         form: {
           title: 'タイトル',
@@ -371,14 +451,18 @@ export const resources = {
           predecessor: '先行タスク',
           successor: '後続タスク',
           openTodo: '開く',
-          openTodoAria: '{{title}} のTodoフォームを開く',
-          noSelectableTodos: '選択可能なTodoはありません。',
+          openTodoAria: '{{title}} のフォームを開く',
+          noSelectableTodos: '選択可能なタスクはありません。',
           predecessorHint: '行を押すと先行タスクを複数選択できます。',
           successorHint: '行を押すと後続タスクを複数選択できます。',
           successorAfterSave: '後続タスクは保存後に設定できます。',
+          registerRecurringTask: '定期タスクに登録する',
           cancel: 'キャンセル',
           save: '保存',
           complete: '完了',
+          saveAndClose: '保存して閉じる',
+          completeAndClose: '完了にして閉じる',
+          markIncompleteAndClose: '未完了にして閉じる',
           shortcuts: {
             focusTitle: 'タイトルへフォーカスする',
             focusTaskType: 'タスク種別へフォーカスする',
@@ -398,7 +482,7 @@ export const resources = {
         card: {
           expand: '展開',
           collapse: '折りたたむ',
-          dependencyLabel: '依存Todo',
+          dependencyLabel: '依存タスク',
           lockedByDependency: '依存タスク「{{titles}}」が未完了です。',
           lockedByStartableAt: '着手可能日時 ({{date}}) になっていません。',
           start: '着手',
@@ -440,6 +524,9 @@ export const resources = {
         toast: {
           exportSuccess: 'タスクをエクスポートしました',
           exportFailed: 'エクスポートに失敗しました',
+          migrationFailed:
+            'データ移行に失敗しました。保存データを確認できないため処理を停止しました。',
+          persistenceFailed: 'データの保存に失敗しました。しばらくしてから再試行してください。',
           noExportText: '出力するテキストがありません',
           exportCopied: 'エクスポートテキストをコピーしました',
           copyFailed: 'コピーに失敗しました',
@@ -470,7 +557,7 @@ export const resources = {
             'statusは "Unlocked", "Locked", "Completed" のいずれかである必要があります',
           effortNonNegative: 'effortMinutesは0以上の数値である必要があります',
           actualNonNegative: 'actualWorkSecondsは0以上の数値である必要があります',
-          dependencyInvalid: 'dependencyは文字列または文字列配列である必要があります',
+          dependencyInvalid: 'dependsOnは文字列または文字列配列である必要があります',
           taskTypeInvalid: 'taskTypeは "Normal" または "Meeting" である必要があります',
         },
         importResult: {
@@ -487,6 +574,10 @@ export const resources = {
         close: 'Close',
         cancel: 'Cancel',
         ok: 'OK',
+        theme: {
+          light: 'Light',
+          dark: 'Dark',
+        },
         locale: {
           label: 'Display language',
           description:
@@ -506,8 +597,9 @@ export const resources = {
         availability: 'Availability',
         planActual: 'Plan vs Actual',
         settingsHelp: 'Settings & Help',
-        notifications: 'Notifications & Language',
+        notifications: 'General',
         workHours: 'Work Hours',
+        recurring: 'Recurring Tasks',
         usage: 'Usage',
         about: 'About',
       },
@@ -546,7 +638,7 @@ export const resources = {
           navNew: 'Go to new todo',
           navAvailability: 'Go to availability',
           navPlanActual: 'Go to plan vs actual',
-          navNotifications: 'Go to notifications and language',
+          navNotifications: 'Go to general settings',
           navWorkHours: 'Go to work hours settings',
           navUsage: 'Go to usage',
           navAbout: 'Go to about',
@@ -554,11 +646,11 @@ export const resources = {
         },
       },
       notifications: {
-        pageLabel: 'Notifications & Language',
+        pageLabel: 'General',
         enableShortcut: 'Enable notifications',
-        title: 'Notifications & Language',
+        title: 'General',
         description:
-          'Manage notifications for tasks that become ready to start. Notifications stay inside this browser, and todo data is not sent externally.',
+          'Manage notifications, language, and theme. Changes are saved in this browser and applied immediately.',
         enabled: 'Notifications are enabled',
         disabled: 'Notifications are not enabled yet',
         targetDescription: 'Notifications target tasks that become ready to start.',
@@ -575,6 +667,10 @@ export const resources = {
         },
         languageSectionTitle: 'Language',
         languageCurrent: 'Current: {{language}}',
+        themeSectionTitle: 'Theme',
+        themeDescription:
+          'Switch the app theme. It applies across the whole app, including cards and charts.',
+        themeCurrent: 'Current: {{theme}}',
         unsupportedBrowser: 'This browser does not support notifications.',
         browserNotificationTitle: 'A task is ready to start!',
         browserNotificationBody: 'You can start "{{title}}" now.',
@@ -644,6 +740,34 @@ export const resources = {
         distributionSummary:
           'Each task load is evenly distributed across workable time between startable time and due date.',
         meetingExcluded: 'Meeting tasks are excluded as non-working time, similar to breaks.',
+        chart: {
+          yAxis: {
+            load: 'Load (person-hour/h)',
+          },
+          series: {
+            meeting: 'Meeting',
+            overloadBase: 'Overload base',
+            overloadLoad: 'Overload',
+            totalLoad: 'Total load',
+          },
+          limitLine: {
+            label: 'Limit 1.0',
+          },
+          breakArea: {
+            label: 'Break time',
+          },
+          tooltip: {
+            endTime: 'End time',
+            elapsedSlot: 'This time slot has already elapsed, so load is hidden.',
+            nonWorkingBreak: 'This time slot is non-working (break time).',
+            taskLoadLine: '- {{title}}: {{value}} person-hour/h',
+            hoveredTask: 'Hovering: <b>{{title}}</b> {{value}} person-hour/h',
+            totalLoad: 'Total load: <b>{{value}} person-hour/h</b>',
+            meetingPresent: 'Meeting: <b>{{value}}</b> (non-working)',
+            meetingNone: 'Meeting: none',
+            noOverlappingTask: 'No overlapping tasks',
+          },
+        },
         shortcuts: {
           focusChart: 'Focus chart for {{dateLabel}}',
           prevDay: 'Move display start date to previous day',
@@ -734,7 +858,7 @@ export const resources = {
           enableNotifications: {
             title: 'Enable notifications',
             description:
-              'From Settings & Help > Notifications, turn on alerts when tasks become startable.',
+              'From Settings & Help > General, turn on alerts when tasks become startable.',
           },
         },
         shortcutTitle: 'Shortcut reference',
@@ -791,6 +915,7 @@ export const resources = {
           title: 'Todos',
           count_one: '{{count}} task currently shown.',
           count_other: '{{count}} tasks currently shown.',
+          loadMore: 'Load more',
           new: 'New Todo',
           export: 'Export',
           import: 'Import',
@@ -831,6 +956,50 @@ export const resources = {
           newTitle: 'Create Todo',
           editTitle: 'Edit Todo',
         },
+        recurring: {
+          title: 'Recurring Tasks',
+          description:
+            'Create recurring task definitions. Tasks up to 14 days ahead are automatically generated once per day from start time and interval.',
+          editingBadge: 'A recurring task is being edited',
+          startAt: 'Start date/time',
+          endAt: 'End date/time (optional)',
+          firstDueAt: 'Initial due date/time',
+          interval: 'Interval',
+          units: {
+            day: 'day',
+            week: 'week',
+            month: 'month',
+          },
+          save: 'Save recurring task',
+          update: 'Update recurring task',
+          cancelEdit: 'Cancel editing',
+          edit: 'Edit',
+          delete: 'Delete',
+          registered: 'Registered recurring tasks',
+          registeredDescription: 'List of saved recurring task definitions.',
+          sort: {
+            label: 'Sort by',
+            updatedAt: 'Latest updated first',
+            createdAt: 'Latest created first',
+          },
+          empty: 'No recurring tasks have been registered.',
+          ruleSummary: 'Every {{interval}} {{unit}}',
+          prefilledFromEdit: 'Prefilled from task edit (ID: {{id}})',
+          confirmDelete: 'Delete recurring task definition "{{title}}"?',
+          validation: {
+            titleRequired: 'Title is required.',
+            startRequired: 'Start date/time is required.',
+            firstDueRequired: 'Initial due date/time is required.',
+            firstDueAfterStart: 'Initial due date/time must be on or after start date/time.',
+            endAfterStart: 'End date/time must be on or after start date/time.',
+            intervalPositive: 'Interval must be an integer greater than or equal to 1.',
+          },
+          toast: {
+            saved: 'Recurring task has been saved.',
+            updated: 'Recurring task has been updated.',
+            deleted: 'Recurring task has been deleted.',
+          },
+        },
         form: {
           title: 'Title',
           taskType: 'Task type',
@@ -859,9 +1028,13 @@ export const resources = {
           predecessorHint: 'Click a row to select multiple predecessor tasks.',
           successorHint: 'Click a row to select multiple successor tasks.',
           successorAfterSave: 'Successor tasks can be configured after saving.',
+          registerRecurringTask: 'Register as recurring task',
           cancel: 'Cancel',
           save: 'Save',
           complete: 'Done',
+          saveAndClose: 'Save and close',
+          completeAndClose: 'Complete and close',
+          markIncompleteAndClose: 'Mark incomplete and close',
           shortcuts: {
             focusTitle: 'Focus title',
             focusTaskType: 'Focus task type',
@@ -922,6 +1095,9 @@ export const resources = {
         toast: {
           exportSuccess: 'Tasks exported',
           exportFailed: 'Failed to export tasks',
+          migrationFailed:
+            'Data migration failed. Loading was stopped because saved data could not be validated.',
+          persistenceFailed: 'Failed to save data. Please try again in a moment.',
           noExportText: 'There is no text to export',
           exportCopied: 'Exported text copied',
           copyFailed: 'Failed to copy text',

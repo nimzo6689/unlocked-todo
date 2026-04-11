@@ -1,5 +1,29 @@
 export type TodoTaskType = 'Normal' | 'Meeting';
 
+export type RecurringTaskUnit = 'day' | 'week' | 'month';
+
+export type RecurringTaskDefinition = {
+  id: string;
+  title: string;
+  description: string;
+  taskType: TodoTaskType;
+  effortMinutes: number;
+  startAt: string;
+  endAt?: string;
+  firstDueAt: string;
+  interval: number;
+  unit: RecurringTaskUnit;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RecurringTaskInstanceKey = {
+  id: string;
+  recurringTaskId: string;
+  startableAt: string;
+  generatedAt: string;
+};
+
 export type Todo = {
   id: string;
   title: string;
@@ -12,7 +36,7 @@ export type Todo = {
   status: 'Unlocked' | 'Locked' | 'Completed';
   effortMinutes: number;
   actualWorkSeconds: number;
-  dependency?: string | string[];
+  dependsOn?: string | string[];
   completedAt?: string;
 };
 
@@ -57,6 +81,8 @@ export type TodoContextType = {
   setWorkSchedule: (value: WorkSchedule) => void;
   currentInProgressId: string | null;
   fetchTodos: () => Promise<void>;
+  loadMoreTodos: () => Promise<void>;
+  hasMoreTodos: boolean;
   getTodo: (id: string) => Todo | undefined;
   setTodos: (todos: Todo[]) => void;
   requestNotificationPermission: () => void;
@@ -64,7 +90,7 @@ export type TodoContextType = {
   handleComplete: (id: string) => void;
   startTodo: (id: string) => void;
   exportTodos: () => Promise<void>;
-  exportTodosToText: () => string;
+  exportTodosToText: () => Promise<string>;
   importTodos: (file: File) => Promise<ImportResult>;
   importTodosFromText: (text: string) => Promise<ImportResult>;
 };

@@ -1,7 +1,12 @@
 import { createTodo, getTodoCard } from '../utils/todo';
 import { expect, test } from '../fixtures/app.fixture';
 
-test('Todo を作成して編集し、削除できる', async ({ page, gotoApp, waitForAppReady, setLocale }) => {
+test('タスクを作成して編集し、削除できる', async ({
+  page,
+  gotoApp,
+  waitForAppReady,
+  setLocale,
+}) => {
   await setLocale('ja');
   const initialTitle = `Playwright CRUD ${Date.now()}`;
   const updatedTitle = `${initialTitle} Updated`;
@@ -14,9 +19,9 @@ test('Todo を作成して編集し、削除できる', async ({ page, gotoApp, 
   await expect(createdCard).toBeVisible();
 
   await createdCard.getByRole('button', { name: /編集|Edit/ }).click();
-  await expect(page.getByRole('heading', { name: 'Todoの編集' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'タスクの編集' })).toBeVisible();
   await page.locator('#title').fill(updatedTitle);
-  await page.getByRole('button', { name: /完了|Done/ }).click();
+  await page.getByRole('button', { name: /保存して閉じる|Save and Close/ }).click();
 
   await waitForAppReady();
   const updatedCard = getTodoCard(page, updatedTitle);
