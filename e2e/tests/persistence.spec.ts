@@ -11,7 +11,12 @@ test('作成したタスクがリロード後も保持される', async ({
   const title = `Playwright Persist ${Date.now()}`;
 
   await gotoApp('/new');
-  await createTodo(page, { title, dueDate: '2026-04-11T15:30', effortMinutes: 55 });
+  await createTodo(page, {
+    title,
+    startableAt: '2000-01-01T00:00',
+    dueDate: '2099-12-31T23:59',
+    effortMinutes: 55,
+  });
 
   await waitForAppReady();
   await expect(getTodoCard(page, title)).toBeVisible();
