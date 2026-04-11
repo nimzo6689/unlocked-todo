@@ -21,7 +21,7 @@ test('タスクを作成して編集し、削除できる', async ({
   await createdCard.getByRole('button', { name: /編集|Edit/ }).click();
   await expect(page.getByRole('heading', { name: 'タスクの編集' })).toBeVisible();
   await page.locator('#title').fill(updatedTitle);
-  await page.getByRole('button', { name: /完了|Done/ }).click();
+  await page.getByRole('button', { name: /保存して閉じる|Save and Close/ }).click();
 
   await waitForAppReady();
   const updatedCard = getTodoCard(page, updatedTitle);
