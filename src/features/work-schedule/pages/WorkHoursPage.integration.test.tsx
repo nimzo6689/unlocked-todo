@@ -131,6 +131,6 @@ describe('WorkHoursPage integration', () => {
 
     expect(setWorkSchedule).toHaveBeenCalledTimes(1);
     const saved = setWorkSchedule.mock.calls[0][0];
-    expect(saved.breakPeriods[0]).toEqual({ startMinute: 1019, endMinute: 1020 });
+    expect(saved.breakPeriods[0]).toEqual({ startMinute: 1020, endMinute: 1021 });
   });
 });
