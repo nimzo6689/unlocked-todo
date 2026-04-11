@@ -1,0 +1,5 @@
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/hakaru-todo/sw.js', { scope: '/hakaru-todo/' });
+  });
+}

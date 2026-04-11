@@ -1,0 +1,18 @@
+#!/bin/sh
+
+# Git hook PATH may miss Linux-side node. Try common managers first.
+if ! command -v node >/dev/null 2>&1; then
+	for dir in "$HOME/.local/share/mise/installs/node"/*/bin "$HOME/.nvm/versions/node"/*/bin; do
+		if [ -x "$dir/node" ]; then
+			PATH="$dir:$PATH"
+			break
+		fi
+	done
+fi
+
+if ! command -v node >/dev/null 2>&1; then
+	echo "[husky] node is not available in PATH" >&2
+	exit 127
+fi
+
+./node_modules/.bin/lint-staged
