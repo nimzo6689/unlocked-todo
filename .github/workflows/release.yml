@@ -44,11 +44,8 @@ jobs:
           git checkout --orphan docs
 
           # Remove all files except the dist directory
-          find . -maxdepth 1 ! -name '.' ! -name 'dist' -exec rm -rf {} +
-
-          # Move the contents of dist to the root
-          mv dist/* dist/.* . 2>/dev/null
-          rmdir dist
+          shopt -s extglob nullglob
+          rm -rf !(dist) && mv dist/!(|.) . && rmdir dist
 
           # Add all changes
           git add -A
