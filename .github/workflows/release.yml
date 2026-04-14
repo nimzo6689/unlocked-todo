@@ -43,8 +43,12 @@ jobs:
           # Create and switch to a new docs branch
           git checkout --orphan docs
 
-          # Rename dist to docs
-          mv dist docs
+          # Remove all files except the dist directory
+          find . -maxdepth 1 ! -name '.' ! -name 'dist' -exec rm -rf {} +
+
+          # Move the contents of dist to the root
+          mv dist/* dist/.* . 2>/dev/null
+          rmdir dist
 
           # Add all changes
           git add -A
@@ -52,3 +56,8 @@ jobs:
 
           # Force push to docs branch
           git push origin docs --force
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
