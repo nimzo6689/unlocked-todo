@@ -15,6 +15,10 @@ export const buildChartOption = (
   const hasBreak = hasBreakTime(schedule);
   const sortedBreakPeriods = getSortedBreakPeriods(schedule);
   const xAxisLabels = slots.map(slot => slot.label);
+  const slotMinutes =
+    slots.length > 0 ? (slots[0].end.getTime() - slots[0].start.getTime()) / (60 * 1000) : 1;
+  const labelStepByMinutes = Math.max(1, Math.round(30 / Math.max(slotMinutes, 1)));
+  const xAxisLabelInterval = Math.max(labelStepByMinutes - 1, 0);
   if (slots.length > 0) {
     xAxisLabels.push(formatTimeLabel(slots[slots.length - 1].end));
   }
@@ -151,7 +155,7 @@ export const buildChartOption = (
         boundaryGap: false,
         data: xAxisLabels,
         axisLabel: {
-          interval: 1,
+          interval: xAxisLabelInterval,
           hideOverlap: true,
         },
       },

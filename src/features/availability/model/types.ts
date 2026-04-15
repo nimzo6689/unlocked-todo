@@ -1,6 +1,6 @@
 import type { EChartsOption } from 'echarts';
 
-export const SLOT_MINUTES = 30;
+export const SLOT_MINUTES = 1;
 export const DISPLAY_WINDOW_DAYS = 7;
 export const HOUR_MS = 60 * 60 * 1000;
 export const SLOT_MS = SLOT_MINUTES * 60 * 1000;

@@ -71,7 +71,50 @@ const baseLoad = (): AggregatedLoad => {
   };
 };
 
+const oneMinuteLoad = (minutes: number): AggregatedLoad => {
+  const base = new Date('2026-04-06T09:00:00');
+  const slots = Array.from({ length: minutes }, (_, index) => {
+    const start = new Date(base.getTime() + index * 60 * 1000);
+    const end = new Date(base.getTime() + (index + 1) * 60 * 1000);
+    return {
+      label: `${start.getHours().toString().padStart(2, '0')}:${start
+        .getMinutes()
+        .toString()
+        .padStart(2, '0')}`,
+      start,
+      end,
+      isWorking: true,
+      isElapsed: false,
+    };
+  });
+
+  return {
+    slots,
+    taskSeries: [
+      {
+        id: 'task-1',
+        title: '実装',
+        data: Array(minutes).fill(0.2),
+      },
+    ],
+    meetingSeries: Array(minutes).fill(0),
+    slotTotals: Array(minutes).fill(0.2),
+    slotContributors: Array.from({ length: minutes }, () => [
+      { taskId: 'task-1', title: '実装', load: 0.2 },
+    ]),
+  };
+};
+
 describe('buildChartOption tooltip', () => {
+  it('thins x-axis labels for 1-minute slots to keep chart readable', () => {
+    const option = buildChartOption(oneMinuteLoad(60), schedule, t);
+    const xAxis = option.xAxis;
+    expect(Array.isArray(xAxis)).toBe(true);
+    const primaryAxis = (xAxis as Array<{ axisLabel?: { interval?: number } }>)[0];
+
+    expect(primaryAxis?.axisLabel?.interval).toBe(29);
+  });
+
   it('shows hovered task load in tooltip for task series', () => {
     const option = buildChartOption(baseLoad(), schedule, t);
     const tooltip = option.tooltip;

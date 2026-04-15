@@ -4,6 +4,7 @@ import {
   allocateTaskEffortAcrossSlots,
   sortTasksByPriority,
 } from '../load-allocator';
+import { SLOT_MINUTES } from '../types';
 import { afterEach, vi } from 'vitest';
 
 const schedule: WorkSchedule = {
@@ -168,7 +169,7 @@ describe('load-allocator', () => {
     expect(day.meetingSeries.every(value => value === 0)).toBe(true);
   });
 
-  it('treats 25-minute task as 30 minutes in chart load', () => {
+  it('adds fixed buffer to 25-minute task and results in 30-minute chart load', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-04-06T00:00:00.000Z'));
 
@@ -183,12 +184,15 @@ describe('load-allocator', () => {
 
     const aggregated = aggregateLoadForDates(todos, [], ['2026-04-06'], schedule);
     const day = aggregated['2026-04-06'];
-    const totalLoadHours = day.slotTotals.reduce((sum, value) => sum + value * 0.5, 0);
+    const totalLoadHours = day.slotTotals.reduce(
+      (sum, value) => sum + value * (SLOT_MINUTES / 60),
+      0,
+    );
 
     expect(totalLoadHours).toBeCloseTo(0.5, 6);
   });
 
-  it('treats 55-minute task as 60 minutes in chart load', () => {
+  it('adds fixed buffer to 55-minute task and results in 60-minute chart load', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-04-06T00:00:00.000Z'));
 
@@ -203,7 +207,10 @@ describe('load-allocator', () => {
 
     const aggregated = aggregateLoadForDates(todos, [], ['2026-04-06'], schedule);
     const day = aggregated['2026-04-06'];
-    const totalLoadHours = day.slotTotals.reduce((sum, value) => sum + value * 0.5, 0);
+    const totalLoadHours = day.slotTotals.reduce(
+      (sum, value) => sum + value * (SLOT_MINUTES / 60),
+      0,
+    );
 
     expect(totalLoadHours).toBeCloseTo(1, 6);
   });

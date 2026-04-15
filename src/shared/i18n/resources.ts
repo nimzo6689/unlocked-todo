@@ -126,7 +126,7 @@ export const resources = {
         breakEnd: '休憩終了',
         deleteBreak: '削除',
         preview: 'プレビュー',
-        previewDescription: '空き状況ページでは、上記の勤務時間内だけを 30 分単位で集計します。',
+        previewDescription: '空き状況ページでは、上記の勤務時間内だけを 1 分単位で集計します。',
         save: '保存する',
         validation: {
           noWorkingDay: '少なくとも 1 つの稼働日を選択してください。',
@@ -153,7 +153,7 @@ export const resources = {
       availability: {
         pageLabel: '空き状況',
         title: '空き状況',
-        description: 'タスクを 30分単位で積み上げ表示しています。',
+        description: 'タスクを 1分単位で積み上げ表示しています。',
         targetDate: '対象日',
         rangeLabel: '表示期間: {{start}} から 7 日間（稼働日のみ表示）',
         breakLabel: '休憩',
@@ -167,7 +167,7 @@ export const resources = {
         workHoursTitle: '稼働時間について',
         workDays: '稼働日は {{days}} を対象としています。',
         workRange: '稼働時間帯は {{businessHours}} です。',
-        slotSummary: '負荷は 30 分単位のスロットに分割して集計しています。',
+        slotSummary: '負荷は 1 分単位のスロットに分割して集計しています。',
         distributionSummary:
           '各タスクの負荷は、開始可能日時〜期限のうち稼働可能な時間帯に均等配分して計算しています。',
         meetingExcluded: 'Meeting は休憩時間と同様に非稼働時間として除外しています。',
@@ -695,7 +695,7 @@ export const resources = {
         deleteBreak: 'Delete',
         preview: 'Preview',
         previewDescription:
-          'The availability page aggregates only the time inside these working hours in 30-minute increments.',
+          'The availability page aggregates only the time inside these working hours in 1-minute increments.',
         save: 'Save',
         validation: {
           noWorkingDay: 'Select at least one working day.',
@@ -722,7 +722,7 @@ export const resources = {
       availability: {
         pageLabel: 'Availability',
         title: 'Availability',
-        description: 'Tasks are stacked in 30-minute slots to visualize load over time.',
+        description: 'Tasks are stacked in 1-minute slots to visualize load over time.',
         targetDate: 'Target date',
         rangeLabel: 'Display range: 7 days from {{start}} (working days only)',
         breakLabel: 'break',
@@ -736,7 +736,7 @@ export const resources = {
         workHoursTitle: 'About work hours',
         workDays: 'Working days: {{days}}.',
         workRange: 'Business hours: {{businessHours}}.',
-        slotSummary: 'Load is aggregated in 30-minute slots.',
+        slotSummary: 'Load is aggregated in 1-minute slots.',
         distributionSummary:
           'Each task load is evenly distributed across workable time between startable time and due date.',
         meetingExcluded: 'Meeting tasks are excluded as non-working time, similar to breaks.',
