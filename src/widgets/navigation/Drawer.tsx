@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronRight, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -23,6 +23,7 @@ type DrawerProps = {
 };
 
 export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: DrawerProps) => {
+  const bottomPopupRootRef = useRef<HTMLLIElement | null>(null);
   const [expandedKeys, setExpandedKeys] = useState<string[]>(() =>
     getExpandedKeysForPath(items, currentPath),
   );
@@ -42,6 +43,30 @@ export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: Dra
     setExpandedKeys(previous => [...new Set([...previous, ...activeKeys])]);
   }, [items, currentPath, bottomAnchoredItemKey]);
 
+  useEffect(() => {
+    if (!expandedKeys.includes(bottomAnchoredItemKey)) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const targetNode = event.target as Node | null;
+      if (!targetNode) {
+        return;
+      }
+
+      if (bottomPopupRootRef.current?.contains(targetNode)) {
+        return;
+      }
+
+      setExpandedKeys(previous => previous.filter(key => key !== bottomAnchoredItemKey));
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [expandedKeys, bottomAnchoredItemKey]);
+
   const toggleExpanded = (key: string) => {
     setExpandedKeys(previous =>
       previous.includes(key)
@@ -59,7 +84,11 @@ export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: Dra
       const isBottomAnchoredRoot = depth === 0 && item.key === bottomAnchoredItemKey;
 
       return (
-        <li key={item.key} className={isBottomAnchoredRoot ? 'relative space-y-1' : 'space-y-1'}>
+        <li
+          key={item.key}
+          ref={isBottomAnchoredRoot ? bottomPopupRootRef : null}
+          className={isBottomAnchoredRoot ? 'relative space-y-1' : 'space-y-1'}
+        >
           <button
             onClick={() => {
               if (hasChildren) {

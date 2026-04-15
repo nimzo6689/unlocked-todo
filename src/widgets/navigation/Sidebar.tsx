@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronRight, Menu } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -16,6 +16,7 @@ type SidebarProps = {
 export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
   const [collapsed, setCollapsed] = useState(true);
   const { t } = useTranslation();
+  const bottomPopupRootRef = useRef<HTMLDivElement | null>(null);
   const [expandedKeys, setExpandedKeys] = useState<string[]>(() =>
     getExpandedKeysForPath(items, currentPath),
   );
@@ -33,6 +34,30 @@ export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
 
     setExpandedKeys(previous => [...new Set([...previous, ...activeKeys])]);
   }, [items, currentPath, bottomAnchoredItemKey]);
+
+  useEffect(() => {
+    if (!expandedKeys.includes(bottomAnchoredItemKey)) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const targetNode = event.target as Node | null;
+      if (!targetNode) {
+        return;
+      }
+
+      if (bottomPopupRootRef.current?.contains(targetNode)) {
+        return;
+      }
+
+      setExpandedKeys(previous => previous.filter(key => key !== bottomAnchoredItemKey));
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [expandedKeys, bottomAnchoredItemKey]);
 
   const toggleExpanded = (key: string) => {
     setExpandedKeys(previous =>
@@ -57,7 +82,11 @@ export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
       const basePaddingClass = depth === 0 ? 'px-2' : 'pl-11 pr-2';
 
       return (
-        <div key={item.key} className={isBottomAnchoredRoot ? 'relative space-y-1' : 'space-y-1'}>
+        <div
+          key={item.key}
+          ref={isBottomAnchoredRoot ? bottomPopupRootRef : null}
+          className={isBottomAnchoredRoot ? 'relative space-y-1' : 'space-y-1'}
+        >
           <button
             onClick={() => {
               if (hasChildren) {
