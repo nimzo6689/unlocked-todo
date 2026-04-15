@@ -32,13 +32,15 @@ export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: Dra
   const bottomItems = items.filter(item => item.key === bottomAnchoredItemKey);
 
   useEffect(() => {
-    const activeKeys = getExpandedKeysForPath(items, currentPath);
+    const activeKeys = getExpandedKeysForPath(items, currentPath).filter(
+      key => key !== bottomAnchoredItemKey,
+    );
     if (activeKeys.length === 0) {
       return;
     }
 
     setExpandedKeys(previous => [...new Set([...previous, ...activeKeys])]);
-  }, [items, currentPath]);
+  }, [items, currentPath, bottomAnchoredItemKey]);
 
   const toggleExpanded = (key: string) => {
     setExpandedKeys(previous =>
@@ -48,15 +50,16 @@ export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: Dra
     );
   };
 
-  const renderItems = (navigationItems: NavigationItem[], depth = 0) =>
+  const renderItems = (navigationItems: NavigationItem[], depth = 0, popupParentKey?: string) =>
     navigationItems.map(item => {
       const hasChildren = Boolean(item.children?.length);
       const isExpanded = expandedKeys.includes(item.key);
       const isActive = isNavigationItemActive(item, currentPath);
       const Icon = item.icon;
+      const isBottomAnchoredRoot = depth === 0 && item.key === bottomAnchoredItemKey;
 
       return (
-        <li key={item.key} className="space-y-1">
+        <li key={item.key} className={isBottomAnchoredRoot ? 'relative space-y-1' : 'space-y-1'}>
           <button
             onClick={() => {
               if (hasChildren) {
@@ -65,6 +68,11 @@ export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: Dra
               }
 
               if (item.path) {
+                if (popupParentKey) {
+                  setExpandedKeys(previous =>
+                    previous.filter(currentKey => currentKey !== popupParentKey),
+                  );
+                }
                 onSelect?.(item.path);
                 onOpenChange(false);
               }
@@ -73,7 +81,7 @@ export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: Dra
               isActive
                 ? 'bg-blue-100 text-blue-700 font-medium'
                 : 'text-slate-700 hover:bg-slate-100'
-            } ${depth > 0 ? 'pl-10' : ''}`}
+            } ${depth > 0 ? 'pl-10' : ''} ${isBottomAnchoredRoot ? 'relative z-10' : ''}`}
           >
             {Icon ? <Icon size={depth === 0 ? 18 : 16} className="shrink-0" /> : null}
             <span className="min-w-0 flex-1 truncate">{item.label}</span>
@@ -86,7 +94,19 @@ export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: Dra
           </button>
 
           {hasChildren && isExpanded && (
-            <ul className="space-y-1">{renderItems(item.children ?? [], depth + 1)}</ul>
+            <ul
+              className={
+                isBottomAnchoredRoot
+                  ? 'absolute inset-x-0 bottom-full z-20 mb-1 max-h-[20rem] space-y-1 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-xl'
+                  : 'space-y-1'
+              }
+            >
+              {renderItems(
+                item.children ?? [],
+                depth + 1,
+                isBottomAnchoredRoot ? item.key : popupParentKey,
+              )}
+            </ul>
           )}
         </li>
       );

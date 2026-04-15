@@ -24,13 +24,15 @@ export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
   const bottomItems = items.filter(item => item.key === bottomAnchoredItemKey);
 
   useEffect(() => {
-    const activeKeys = getExpandedKeysForPath(items, currentPath);
+    const activeKeys = getExpandedKeysForPath(items, currentPath).filter(
+      key => key !== bottomAnchoredItemKey,
+    );
     if (activeKeys.length === 0) {
       return;
     }
 
     setExpandedKeys(previous => [...new Set([...previous, ...activeKeys])]);
-  }, [items, currentPath]);
+  }, [items, currentPath, bottomAnchoredItemKey]);
 
   const toggleExpanded = (key: string) => {
     setExpandedKeys(previous =>
@@ -40,27 +42,35 @@ export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
     );
   };
 
-  const renderItems = (navigationItems: NavigationItem[], depth = 0) =>
+  const renderItems = (
+    navigationItems: NavigationItem[],
+    depth = 0,
+    forceExpandedContent = false,
+    popupParentKey?: string,
+  ) =>
     navigationItems.map(item => {
       const Icon = item.icon;
       const hasChildren = Boolean(item.children?.length);
       const isExpanded = expandedKeys.includes(item.key);
       const isActive = isNavigationItemActive(item, currentPath);
+      const isBottomAnchoredRoot = depth === 0 && item.key === bottomAnchoredItemKey;
       const basePaddingClass = depth === 0 ? 'px-2' : 'pl-11 pr-2';
 
       return (
-        <div key={item.key} className="space-y-1">
+        <div key={item.key} className={isBottomAnchoredRoot ? 'relative space-y-1' : 'space-y-1'}>
           <button
             onClick={() => {
               if (hasChildren) {
-                if (collapsed) {
-                  setCollapsed(false);
-                }
                 toggleExpanded(item.key);
                 return;
               }
 
               if (item.path) {
+                if (popupParentKey) {
+                  setExpandedKeys(previous =>
+                    previous.filter(currentKey => currentKey !== popupParentKey),
+                  );
+                }
                 onSelect?.(item.path);
               }
             }}
@@ -69,14 +79,14 @@ export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
               isActive
                 ? 'bg-slate-600 text-white font-medium'
                 : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-            }`}
+            } ${isBottomAnchoredRoot ? 'relative z-10' : ''}`}
           >
             {Icon ? (
               <Icon size={depth === 0 ? 20 : 16} className="shrink-0" />
             ) : (
               <span className="h-2 w-2 shrink-0 rounded-full bg-current opacity-70" />
             )}
-            {!collapsed && (
+            {(forceExpandedContent || !collapsed) && (
               <>
                 <span className="min-w-0 flex-1 truncate text-left">{item.label}</span>
                 {hasChildren &&
@@ -89,8 +99,25 @@ export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
             )}
           </button>
 
-          {!collapsed && hasChildren && isExpanded && (
-            <div className="space-y-1">{renderItems(item.children ?? [], depth + 1)}</div>
+          {hasChildren && isExpanded && (
+            <div
+              className={
+                isBottomAnchoredRoot
+                  ? 'absolute bottom-full left-0 z-20 mb-2 w-56 max-w-[calc(100vw-1.5rem)] rounded-xl border border-slate-700 bg-slate-800/95 p-1 shadow-2xl backdrop-blur-sm'
+                  : 'space-y-1'
+              }
+            >
+              <div
+                className={isBottomAnchoredRoot ? 'max-h-[20rem] space-y-1 overflow-y-auto' : ''}
+              >
+                {renderItems(
+                  item.children ?? [],
+                  depth + 1,
+                  isBottomAnchoredRoot || forceExpandedContent,
+                  isBottomAnchoredRoot ? item.key : popupParentKey,
+                )}
+              </div>
+            </div>
           )}
         </div>
       );
@@ -98,7 +125,7 @@ export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
 
   return (
     <aside
-      className={`app-sidebar sticky top-0 flex h-screen flex-col overflow-hidden bg-slate-800 text-white transition-all duration-300 ease-in-out ${
+      className={`app-sidebar sticky top-0 z-30 flex h-screen flex-col overflow-visible bg-slate-800 text-white transition-all duration-300 ease-in-out ${
         collapsed ? 'w-14' : 'w-48'
       }`}
     >
