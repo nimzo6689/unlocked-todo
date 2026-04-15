@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight, Menu } from 'lucide-react';
+import { ChevronRight, Menu } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   getExpandedKeysForPath,
@@ -89,27 +89,26 @@ export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
             {(forceExpandedContent || !collapsed) && (
               <>
                 <span className="min-w-0 flex-1 truncate text-left">{item.label}</span>
-                {hasChildren &&
-                  (isExpanded ? (
-                    <ChevronDown size={16} className="shrink-0" />
-                  ) : (
-                    <ChevronRight size={16} className="shrink-0" />
-                  ))}
+                {hasChildren && (
+                  <ChevronRight
+                    size={16}
+                    className={`shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                  />
+                )}
               </>
             )}
           </button>
 
-          {hasChildren && isExpanded && (
+          {isBottomAnchoredRoot && hasChildren && (
             <div
-              className={
-                isBottomAnchoredRoot
-                  ? 'absolute bottom-full left-0 z-20 mb-2 w-56 max-w-[calc(100vw-1.5rem)] rounded-xl border border-slate-700 bg-slate-800/95 p-1 shadow-2xl backdrop-blur-sm'
-                  : 'space-y-1'
-              }
+              className={`absolute bottom-full left-0 z-20 mb-2 w-56 max-w-[calc(100vw-1.5rem)] rounded-xl border border-slate-700 bg-slate-800/95 p-1 shadow-2xl backdrop-blur-sm transition-all duration-150 ${
+                isExpanded
+                  ? 'pointer-events-auto translate-y-0 opacity-100'
+                  : 'pointer-events-none translate-y-1 opacity-0'
+              }`}
+              aria-hidden={!isExpanded}
             >
-              <div
-                className={isBottomAnchoredRoot ? 'max-h-[20rem] space-y-1 overflow-y-auto' : ''}
-              >
+              <div className="max-h-[20rem] space-y-1 overflow-y-auto">
                 {renderItems(
                   item.children ?? [],
                   depth + 1,
@@ -117,6 +116,12 @@ export const Sidebar = ({ items, currentPath, onSelect }: SidebarProps) => {
                   isBottomAnchoredRoot ? item.key : popupParentKey,
                 )}
               </div>
+            </div>
+          )}
+
+          {!isBottomAnchoredRoot && hasChildren && isExpanded && (
+            <div className="space-y-1">
+              {renderItems(item.children ?? [], depth + 1, forceExpandedContent, popupParentKey)}
             </div>
           )}
         </div>

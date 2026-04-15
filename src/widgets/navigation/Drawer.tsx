@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight, X } from 'lucide-react';
+import { ChevronRight, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import {
   getExpandedKeysForPath,
@@ -85,27 +85,34 @@ export const Drawer = ({ open, onOpenChange, items, currentPath, onSelect }: Dra
           >
             {Icon ? <Icon size={depth === 0 ? 18 : 16} className="shrink-0" /> : null}
             <span className="min-w-0 flex-1 truncate">{item.label}</span>
-            {hasChildren &&
-              (isExpanded ? (
-                <ChevronDown size={16} className="shrink-0" />
-              ) : (
-                <ChevronRight size={16} className="shrink-0" />
-              ))}
+            {hasChildren && (
+              <ChevronRight
+                size={16}
+                className={`shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+              />
+            )}
           </button>
 
-          {hasChildren && isExpanded && (
+          {isBottomAnchoredRoot && hasChildren && (
             <ul
-              className={
-                isBottomAnchoredRoot
-                  ? 'absolute inset-x-0 bottom-full z-20 mb-1 max-h-[20rem] space-y-1 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-xl'
-                  : 'space-y-1'
-              }
+              className={`absolute inset-x-0 bottom-full z-20 mb-1 max-h-[20rem] space-y-1 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-xl transition-all duration-150 ${
+                isExpanded
+                  ? 'pointer-events-auto translate-y-0 opacity-100'
+                  : 'pointer-events-none translate-y-1 opacity-0'
+              }`}
+              aria-hidden={!isExpanded}
             >
               {renderItems(
                 item.children ?? [],
                 depth + 1,
                 isBottomAnchoredRoot ? item.key : popupParentKey,
               )}
+            </ul>
+          )}
+
+          {!isBottomAnchoredRoot && hasChildren && isExpanded && (
+            <ul className="space-y-1">
+              {renderItems(item.children ?? [], depth + 1, popupParentKey)}
             </ul>
           )}
         </li>
